@@ -1,0 +1,18 @@
+--------------------------------------------------------------------------------
+-- Basic Docker reference sheet
+--------------------------------------------------------------------------------
+
+-- start a new container in interactive mode
+nvidia-docker run -ti --rm [image]
+
+-- start a new container with a local directory mounted
+nvidia-docker run -ti --rm -v HOST_PATH:CONTAINER_PATH [image] 
+
+-- detach from a running docker container
+ctrl-p ctrl-q ctrl-z
+
+-- commit a docker image
+nvidia-docker commit [container ID] [image]:[tag]
+
+-- push a docker container
+nvidia-docker push [image]
