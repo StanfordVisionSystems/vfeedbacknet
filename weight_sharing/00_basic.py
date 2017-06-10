@@ -15,7 +15,7 @@ def main():
 
     i2 = tf.Variable(0)
     h2 = tf.Variable(0)
-    o2 = tf.Variable(0)
+    o2 = tf.Variable(0, name='OUTPUT')
 
     i2 = o1
     h2 = i2 + w
@@ -24,6 +24,10 @@ def main():
     #init_op = tf.global_variables_initializer()
     
     with tf.Session() as sess:        
+
+        writer = tf.summary.FileWriter("/tmp/mnist", sess.graph)
+        writer.add_graph(sess.graph)
+        
         #sess.run(init_op)
         sess.run(o2)
         print o2.eval()

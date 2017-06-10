@@ -11,7 +11,7 @@ def tensorflow_model():
     # begin describing the model
     ###########################################################################
 
-    x_image = tf.placeholder(tf.float32, [None, 28, 28, 1])
+    x_image = tf.placeholder(tf.float32, [None, 28, 28, 1], name='INPUT')
     
     # 5x5x1 conv
     W_conv1 = tf.Variable( tf.truncated_normal([5, 5, 1, 32], stddev=0.1) )
@@ -24,6 +24,7 @@ def tensorflow_model():
     conv_f1 = tf.nn.relu( tf.nn.conv2d(h_conv1, W_conv_f1, strides=[1,1,1,1], padding='SAME') + b_conv_f1)
 
     W_conv_i1 = tf.Variable( tf.truncated_normal([5, 5, 32, 1], stddev=0.1) )
+
     b_conv_i1 = tf.Variable( tf.truncated_normal([1], stddev=0.1) )
     conv_i1 = tf.nn.relu( tf.nn.conv2d(h_conv1, W_conv_i1, strides=[1,1,1,1], padding='SAME') + b_conv_i1)
 
@@ -103,7 +104,7 @@ def tensorflow_model():
     with tf.Session() as sess:
          sess.run(tf.global_variables_initializer())
 
-         writer = tf.summary.FileWriter("/tmp/", sess.graph)
+         writer = tf.summary.FileWriter("/tmp/mnist", sess.graph)
          writer.add_graph(sess.graph)
 
          # train the model
