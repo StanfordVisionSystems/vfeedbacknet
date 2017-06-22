@@ -1,0 +1,18 @@
+Idea:
+    - The initial hidden state for the first frame of a video should be zero (or possibly learned)
+    
+    - The initial hidden state for frames after the first frame should be the hidden state produced by the frist frame
+
+    - The hidden state for frames after the first frame should be the addition of the hidden states produced from the previous and current frames (need to try other things)
+
+    - This will extend the case where there are mutliple feedback blocks in the network
+
+Training considerations:
+    - Weights for the convolutions need to be shared across the frames of a video
+
+    - Somehow, the hidden state between frames needs to be communicated and updated (perhaps the easiest thing to do is to force fixed length videos for now)
+
+Possibly improvements:
+    - Add conditionals (tf.cond) in the TF code for early termination (i.e. early stopping)
+
+    - 
