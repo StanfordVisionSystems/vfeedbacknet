@@ -61,7 +61,7 @@ if(__name__ == '__main__'):
     ''')
     
     parser.add_argument('metadata_file', type=str, nargs=None,
-                        help='the something-something labels file')
+                        help='the metadata file to summarize')
 
     args = parser.parse_args()
     main(args)
