@@ -55,6 +55,7 @@ def main(args):
     with mp.Pool(POOL_SIZE) as pool:
         count = 0
         for i in range(0, len(data_video_nums), BATCH_SIZE):
+            print('processing chunk: ' + str(count))
             begin = i
             end = min(i + BATCH_SIZE, len(data_video_nums))
 
@@ -65,7 +66,7 @@ def main(args):
             num_videos = len(prepared_videos)
     
             # store videos on disk
-            with h5py.File(os.path.join(args.output_hdf5, 'chunk_'+str(i)+'.hdf5'), 'w') as f:
+            with h5py.File(os.path.join(args.output_hdf5, 'chunk_'+str(count)+'.hdf5'), 'w') as f:
                 metadata = { 'num_videos' : num_videos, 
                              'video_width' : args.video_width, 
                              'video_height' : VIDEO_HEIGHT, 
@@ -76,23 +77,23 @@ def main(args):
                 
                 metadata = json.dumps(metadata, sort_keys=True, indent=2)
                 f.create_dataset("metadata", data=np.string_(metadata))
-                
-                f.create_dataset("label_strings", data=np.string_( json.dumps(labels_num2str, sort_keys=True, indent=2) ))
+                f.create_dataset("label_strings", data=np.string_( json.dumps(labels_num2str[begin:end], sort_keys=True, indent=2) ))
 
-                raw_video = f.create_dataset("raw_videos", (num_videos, NUM_FRAMES_PER_VIDEO, VIDEO_HEIGHT, args.video_width, 3), dtype='float32')
-                num_frames = f.create_dataset("num_frames", (num_videos,), dtype='int32')
-                video_labels = f.create_dataset('video_labels', (num_videos,), dtype='int32')
+                f.create_dataset( "video_datasetnums", data=np.asarray(list(data_labels.keys())[begin:end], dtype=np.int32) )
+                video_rawframes = f.create_dataset("video_rawframes", (num_videos, NUM_FRAMES_PER_VIDEO, VIDEO_HEIGHT, args.video_width, 3), dtype='float32', compression='lzf')
+                video_numframes = f.create_dataset("video_numframes", (num_videos,), dtype='int32')
+                video_labelnums = f.create_dataset('video_labelnums', (num_videos,), dtype='int32')
                 
                 for i in range(num_videos):
-                    raw_video[i,:,:,:,:] = prepared_videos[i]['raw_video']
-                    num_frames[i] = prepared_videos[i]['num_frames']
-                    video_labels[i] = data_labels[ prepared_videos[i]['video_num'] ] 
+                    video_rawframes[i,:,:,:,:] = prepared_videos[i]['raw_video']
+                    video_numframes[i] = prepared_videos[i]['num_frames']
+                    video_labelnums[i] = data_labels[ prepared_videos[i]['video_num'] ] 
                 
             count += 1
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='''
-    train the feedbacknet for the 20BN data set
+    preprocess the dataset for the something-something 20B data set
     ''')
     
     parser.add_argument('label_file', type=str, nargs=None,
