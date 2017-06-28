@@ -80,7 +80,7 @@ def main(args):
                 f.create_dataset("label_strings", data=np.string_( json.dumps(labels_num2str[begin:end], sort_keys=True, indent=2) ))
 
                 f.create_dataset( "video_datasetnums", data=np.asarray(list(data_labels.keys())[begin:end], dtype=np.int32) )
-                video_rawframes = f.create_dataset("video_rawframes", (num_videos, NUM_FRAMES_PER_VIDEO, VIDEO_HEIGHT, args.video_width, 3), dtype='float32', compression='lzf')
+                video_rawframes = f.create_dataset("video_rawframes", (num_videos, NUM_FRAMES_PER_VIDEO, VIDEO_HEIGHT, args.video_width, 3), dtype='float32')
                 video_numframes = f.create_dataset("video_numframes", (num_videos,), dtype='int32')
                 video_labelnums = f.create_dataset('video_labelnums', (num_videos,), dtype='int32')
                 
