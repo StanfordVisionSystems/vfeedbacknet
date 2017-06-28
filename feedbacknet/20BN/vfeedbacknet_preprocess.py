@@ -54,7 +54,7 @@ def main(args):
     # start up a pool of workers
     with mp.Pool(POOL_SIZE) as pool:
         count = 0
-        for i in range(BATCH_SIZE):
+        for i in range(0, len(data_video_nums), BATCH_SIZE):
             begin = i
             end = min(i + BATCH_SIZE, len(data_video_nums))
 
