@@ -8,6 +8,7 @@ import h5py
 import multiprocessing as mp
 import numpy as np
 
+import keras
 import tensorflow as tf
 from convLSTM import ConvLSTMCell # https://github.com/StanfordVisionSystems/tensorflow-convlstm-cell
 
@@ -22,33 +23,52 @@ VIDEO_HEIGHT = 100
 NUM_FRAMES_PER_VIDEO = 75
 VIDEO_BATCH_SIZE = 2048 # num videos per batch
 
-def vfeedback_model_basic(args, input_placeholder, output_placeholder, video_length):
+def vfeedback_model_basic(args, input_placeholder, output_placeholder, video_length, zeros):
     '''
     conv_b = new_bais()
     conv_w = new_conv2dweight(10, 10, 3, 32)
 
-    input_frames = tf.unstack(input_placeholder, axis=0)
+    input_frames = tf.unstack(input_placeholder, axis=1)
     conv_outputs = [ conv2d(input_frame, conv_w, conv_b) for input_frame in input_frames ]
     '''
 
     return None, None, None
 
-def vfeedback_model_nofeedback(args, input_placeholder, output_placeholder, video_length):
+def vfeedback_model_nofeedback(args, input_placeholder, output_placeholder, video_length, zeros):
     '''
     This model is just an ConvLSTM based RNN. (Let's get something working first before we add feedback).
     '''
+    
+    conv_b = new_bias()
+    conv_w = new_conv2dweight(10, 10, 3, 1)
 
+    input_frames = tf.unstack(input_placeholder, axis=1)
+    conv_outputs = tf.stack([ conv2d(input_frame, conv_w, conv_b) for input_frame in input_frames ], axis=1)
+
+    num_filters = 1 # convLSTM internal fitlers
     output, state = tf.nn.dynamic_rnn(
-        ConvLSTMCell([VIDEO_HEIGHT, args.video_width], 32, [5, 5]),
-        input_placeholder,
+        ConvLSTMCell([VIDEO_HEIGHT, args.video_width], num_filters, [5, 5]),
+        conv_outputs,
         dtype=tf.float32,
         sequence_length=video_length,
     )
 
-    print(output.shape)
-    print(state)
-    
-    return None, None, None
+    intermediate_output = tf.unstack(output, axis=1)
+    intermediate_output_flat = [ tf.reshape(output, [-1, VIDEO_HEIGHT*args.video_width*num_filters]) for output in intermediate_output ]
+
+    b_fc = new_bias()
+    w_fc = tf.Variable( tf.truncated_normal([VIDEO_HEIGHT*args.video_width*num_filters, len(args.labels)], stddev=0.1) )
+
+    fc_outputs = [ tf.matmul(output_flat, w_fc) + b_fc for output_flat in intermediate_output_flat ]
+
+    cross_entropies = [ tf.nn.softmax_cross_entropy_with_logits(labels=output_placeholder, logits=fc_output) for fc_output in fc_outputs ]
+    cross_entropies_truncated = tf.stack([ tf.where(video_length > i, cross_entropies[i], zeros) for i in range(NUM_FRAMES_PER_VIDEO) ], axis=1)
+    #print(cross_entropies_truncated.shape)
+
+    loss = tf.reduce_sum(cross_entropies, axis=0) / tf.to_float(video_length)
+    #print(loss.shape)
+
+    return loss, None, None
     
 def conv2d(x, w, b):
     '''
@@ -58,11 +78,13 @@ def conv2d(x, w, b):
     output = tf.nn.relu(tf.nn.conv2d(x, w, strides=[1,1,1,1], padding='SAME') + b)
     return output
 
-def new_bais():
+def new_bias():
     return tf.Variable( tf.truncated_normal([1], stddev=0.1) )
 
 def new_conv2dweight(xdim, ydim, input_depth, output_depth):
     return tf.Variable( tf.truncated_normal([xdim, ydim, input_depth, output_depth], stddev=0.1) )
+
+def prepare_video(args):
     video_num, video_width, video_root = args
 
     pathgen = lambda x : os.path.join(video_root, str(video_num), x)
@@ -100,7 +122,7 @@ def get_video_batch(pool, args):
         video_labelnums[i] = args.data_labels[ prepared_videos[i]['video_num'] ]
 
     batch = {
-        'num_videos' : num_videos,
+       'num_videos' : num_videos,
         'video_rawframes' : video_rawframes,
         'video_numframes' : video_numframes,
         'video_labelnums' : video_labelnums,
@@ -130,21 +152,35 @@ def main(args):
     x_input = tf.placeholder(tf.float32, [None, NUM_FRAMES_PER_VIDEO, VIDEO_HEIGHT, args.video_width, 3], name='input')
     x_length = tf.placeholder(tf.int32, [None,], name='input_length')
     y_label = tf.placeholder(tf.float32, [None, len(labels_num2str)], name='label')
-    loss, correct_prediction, accruacy = vfeedback_model_nofeedback(args, x_input, y_label, x_length)
+    y_zeros = tf.placeholder(tf.float32, [None,],  name='zeros')
+    loss, correct_prediction, accruacy = vfeedback_model_nofeedback(args, x_input, y_label, x_length, y_zeros)
 
-    return # TODO: remove this
-    
+    train_step = tf.train.AdamOptimizer(1e-4).minimize(loss)
+
     # get batch of data and train
     with mp.Pool(POOL_SIZE) as pool:
-        for epoch in range(NUM_EPOCHS):
-            batch = get_video_batch(pool, args)
-            print(batch.keys())
+        with tf.Session() as sess:
+            sess.run(tf.global_variables_initializer())
 
-            # train the model
-            # ...
+            for epoch in range(NUM_EPOCHS):
+                batch = get_video_batch(pool, args)
+                print('completed batch creation')
 
-            break
+                # train the model
+                for i in range(0, batch['num_videos']-TRAINING_BATCH_SIZE+1, TRAINING_BATCH_SIZE):
+                    begin = i
+                    end = i + TRAINING_BATCH_SIZE
+                    print('starting a training batch')
+                    
+                    train_step.run(feed_dict={ 
+                        x_input : batch['video_rawframes'][begin:end,:,:,:,:],
+                        x_length : batch['video_numframes'][begin:end],
+                        y_label : keras.utils.to_categorical(batch['video_labelnums'][begin:end], len(args.labels)),
+                        y_zeros : np.zeros((TRAINING_BATCH_SIZE,))})
 
+                    print('completed an iteration!'); #break
+                
+                break
     # save the trained model!
     # ...
 
