@@ -7,22 +7,62 @@ import os
 import h5py
 import multiprocessing as mp
 import numpy as np
-import json
+
+import tensorflow as tf
+from convLSTM import ConvLSTMCell # https://github.com/StanfordVisionSystems/tensorflow-convlstm-cell
 
 import PIL
 from PIL import Image
 
-NUM_EPOCHS = 1000
+NUM_EPOCHS = 1024
+TRAINING_BATCH_SIZE = 32
 
 POOL_SIZE = 32
 VIDEO_HEIGHT = 100
 NUM_FRAMES_PER_VIDEO = 75
 VIDEO_BATCH_SIZE = 2048 # num videos per batch
 
-def vfeedback_model_basic(args):
-    pass
+def vfeedback_model_basic(args, input_placeholder, output_placeholder, video_length):
+    '''
+    conv_b = new_bais()
+    conv_w = new_conv2dweight(10, 10, 3, 32)
 
-def prepare_video(args):
+    input_frames = tf.unstack(input_placeholder, axis=0)
+    conv_outputs = [ conv2d(input_frame, conv_w, conv_b) for input_frame in input_frames ]
+    '''
+
+    return None, None, None
+
+def vfeedback_model_nofeedback(args, input_placeholder, output_placeholder, video_length):
+    '''
+    This model is just an ConvLSTM based RNN. (Let's get something working first before we add feedback).
+    '''
+
+    output, state = tf.nn.dynamic_rnn(
+        ConvLSTMCell([VIDEO_HEIGHT, args.video_width], 32, [5, 5]),
+        input_placeholder,
+        dtype=tf.float32,
+        sequence_length=video_length,
+    )
+
+    print(output.shape)
+    print(state)
+    
+    return None, None, None
+    
+def conv2d(x, w, b):
+    '''
+    Given an input, weight matrix, and bias this function will create a 2D convolution
+    '''
+
+    output = tf.nn.relu(tf.nn.conv2d(x, w, strides=[1,1,1,1], padding='SAME') + b)
+    return output
+
+def new_bais():
+    return tf.Variable( tf.truncated_normal([1], stddev=0.1) )
+
+def new_conv2dweight(xdim, ydim, input_depth, output_depth):
+    return tf.Variable( tf.truncated_normal([xdim, ydim, input_depth, output_depth], stddev=0.1) )
     video_num, video_width, video_root = args
 
     pathgen = lambda x : os.path.join(video_root, str(video_num), x)
@@ -76,6 +116,8 @@ def main(args):
         labels_num2str = [ item[0].lower() for item in reader ]
         labels_str2num =  { label : idx  for idx,label in zip(range(len(labels_num2str)), labels_num2str) }
 
+        args.labels = labels_num2str
+
     with open(args.data_file, 'r') as csvfile:
         reader = csv.reader(csvfile, delimiter=';')
         data_labels = { int(item[0]) : labels_str2num[item[1].lower()] for item in reader }; 
@@ -85,7 +127,12 @@ def main(args):
         args.data_video_nums = data_video_nums
     
     # build model
-    model = vfeedback_model_basic(None)
+    x_input = tf.placeholder(tf.float32, [None, NUM_FRAMES_PER_VIDEO, VIDEO_HEIGHT, args.video_width, 3], name='input')
+    x_length = tf.placeholder(tf.int32, [None,], name='input_length')
+    y_label = tf.placeholder(tf.float32, [None, len(labels_num2str)], name='label')
+    loss, correct_prediction, accruacy = vfeedback_model_nofeedback(args, x_input, y_label, x_length)
+
+    return # TODO: remove this
     
     # get batch of data and train
     with mp.Pool(POOL_SIZE) as pool:
