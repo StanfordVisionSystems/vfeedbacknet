@@ -4,13 +4,11 @@ import argparse
 import csv
 import os
 
-import h5py
-import multiprocessing as mp
 import numpy as np
 
 import keras
 import tensorflow as tf
-from convLSTM import ConvLSTMCell # https://github.com/StanfordVisionSystems/tensorflow-convlstm-cell
+from vfeedbacknet.convLSTM import ConvLSTMCell # https://github.com/StanfordVisionSystems/tensorflow-convlstm-cell
 
 import PIL
 from PIL import Image
@@ -23,20 +21,19 @@ VIDEO_HEIGHT = 100
 NUM_FRAMES_PER_VIDEO = 75
 VIDEO_BATCH_SIZE = 2048 # num videos per batch
 
-def vfeedback_model_basic(args, input_placeholder, output_placeholder, video_length, zeros):
-    '''
-    conv_b = new_bais()
-    conv_w = new_conv2dweight(10, 10, 3, 32)
+# def basic_model(args, input_placeholder, output_placeholder, video_length, zeros):
+#     '''
+#     conv_b = new_bais()
+#     conv_w = new_conv2dweight(10, 10, 3, 32)
 
-    input_frames = tf.unstack(input_placeholder, axis=1)
-    conv_outputs = [ conv2d(input_frame, conv_w, conv_b) for input_frame in input_frames ]
+#     input_frames = tf.unstack(input_placeholder, axis=1)
+#     conv_outputs = [ conv2d(input_frame, conv_w, conv_b) for input_frame in input_frames ]
+#     '''
+#     return None, None, None
+    
+def nofeedback_model(input_placeholder, output_placeholder, video_length, zeros):
     '''
-
-    return None, None, None
-
-def vfeedback_model_nofeedback(args, input_placeholder, output_placeholder, video_length, zeros, ):
-    '''
-    This model is just an ConvLSTM based RNN. (Let's get something working first before we add feedback).
+    This model is just an ConvLSTM based RNN. (Let's get something working first before we add feedback...).
     '''
     
     conv_b = new_bias()
@@ -70,10 +67,6 @@ def vfeedback_model_nofeedback(args, input_placeholder, output_placeholder, vide
     return loss, None, None
     
 def conv2d(x, w, b):
-    '''
-    Given an input, weight matrix, and bias this function will create a 2D convolution
-    '''
-
     output = tf.nn.relu(tf.nn.conv2d(x, w, strides=[1,1,1,1], padding='SAME') + b)
     return output
 
