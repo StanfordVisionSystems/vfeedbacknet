@@ -3,6 +3,9 @@ import tensorflow as tf
 class ConvLSTMCell(tf.nn.rnn_cell.RNNCell):
   """A LSTM cell with convolutions instead of multiplications.
 
+  URL: 
+    https://github.com/StanfordVisionSystems/tensorflow-convlstm-cell
+
   Reference:
     Xingjian, S. H. I., et al. "Convolutional LSTM network: A machine learning approach for precipitation nowcasting." Advances in Neural Information Processing Systems. 2015.
   """

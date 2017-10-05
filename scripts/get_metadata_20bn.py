@@ -4,7 +4,6 @@ from PIL import Image
 
 import argparse
 import csv
-import h5py
 import json
 import os
 import multiprocessing as mp
