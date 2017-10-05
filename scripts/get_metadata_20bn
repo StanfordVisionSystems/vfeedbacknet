@@ -51,9 +51,7 @@ def main(args):
     print( json.dumps(metadata, indent=4, sort_keys=True) )    
 
 if(__name__ == '__main__'):
-    parser = argparse.ArgumentParser(description='''
-    collect metadata on videos the 20BN dataset and output to STDOUT in json format
-    ''')
+    parser = argparse.ArgumentParser(description='collect metadata on videos the 20BN dataset and output to STDOUT in json format')
     
     parser.add_argument('label_file', type=str, nargs=None,
                         help='the something-something labels file')
