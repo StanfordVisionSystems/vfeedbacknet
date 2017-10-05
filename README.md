@@ -17,7 +17,7 @@ pip install -r requirements.txt
 # install the vfeedbacknet library
 python setup.py install
 
-# download dataset
+# download dataset (if training from scratch)
 twentybn-dl obtain jester
   Set storage directory [Enter for "/home/user/20bn-datasets"]:
   Using: '/home/user/20bn-datasets' as storage.
