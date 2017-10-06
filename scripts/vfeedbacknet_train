@@ -88,7 +88,7 @@ def main(args):
     y_zeros = tf.placeholder(tf.float32, [None,],  name='zeros')
 
     loss, predictions, accruacy = v.nofeedback_model(args.video_length, args.video_width, args.video_height, len(labels_num2str), x_input, x_length, y_label, y_zeros)
-    train_step = tf.train.AdamOptimizer(1e-4).minimize(loss)
+    train_step = tf.train.AdamOptimizer(1e-5).minimize(loss)
 
     # allocate shared memory up front
     logging.debug('begin allocate memory buffers')
@@ -130,8 +130,10 @@ def main(args):
                     #     im = Image.fromarray(frame)
                     #     im.save('/home/jemmons/frame{}.jpg'.format(i))
                         
+                    assert(not np.any(np.isnan(video_batch)))
+                    
                     logging.debug('begin train batch')
-                    t1 = timeit.default_timer() 
+                    t1 = timeit.default_timer()
                     for j in range(0, num_batch_videos, args.train_batch_size):
                         begin = j
                         end = j + args.train_batch_size
@@ -141,16 +143,19 @@ def main(args):
                                                                       x_length : video_batch['video_numframes'][begin:end],
                                                                       y_label : keras.utils.to_categorical(video_batch['video_labelnums'][begin:end],
                                                                       len(labels_num2str)), y_zeros : zeros})                        
+
                         predict_vals = predict_vals[args.video_length-1,:,:]
                         #print('prediction:', predict_vals.shape)
                         #print(np.arrayvideo_batch['video_labelnums'][begin:end])
                         #print(np.argmax(predict_vals, axis=1))
-                        print('training accuracy:', sum((np.array(video_batch['video_labelnums'][begin:end]) == np.argmax(predict_vals, axis=1))) / args.train_batch_size)
-                        print('loss:', loss_val)
+                        sys.stdout.write('training accuracy: {}\n'.format(sum(video_batch['video_labelnums'][begin:end] == np.argmax(predict_vals, axis=1)) / args.train_batch_size))
+                        sys.stdout.write('loss: {}\n'.format(loss_val))
+                        sys.stdout.flush()
                         
                     t2 = timeit.default_timer()
                     logging.debug('done! (train batch: {})'.format(t2-t1))
                     
+        
                 #t1 = timeit.default_timer() 
                 #validation_set = load_videos(pool, mem_pool, args.data_root, validation_video_nums, args.video_width, args.video_height, args.video_length, len(validation_video_nums))
                 #t2 = timeit.default_timer()
