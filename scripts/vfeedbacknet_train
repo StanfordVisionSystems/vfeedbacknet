@@ -16,7 +16,7 @@ from PIL import Image
 
 import vfeedbacknet as v
 
-logging.basicConfig(level=logging.DEBUG)
+#logging.basicConfig(level=logging.DEBUG)
 
 def pool_init(mem_pool_):
     global mem_pool
@@ -43,10 +43,8 @@ def prepare_video(args):
 
 def load_videos(pool, data_root, data_labels, video_nums, video_width, video_height, video_length, batch_size, mem_pool, pool_index):
 
-    logging.debug('begin loading videos')
     prepare_video_jobs = [ (data_root, video_nums[i], video_width, video_height, video_length, i, batch_size, pool_index) for i in range(batch_size) ]
     prepared_videos = pool.map(prepare_video, prepare_video_jobs)
-    logging.debug('done! (loading videos)')
 
     video_numframes = np.zeros((batch_size,), dtype=np.int32)
     video_labelnums = np.zeros((batch_size,), dtype=np.int32)
@@ -89,19 +87,22 @@ def main(args):
     y_label = tf.placeholder(tf.float32, [None, len(labels_num2str)], name='label')
     y_zeros = tf.placeholder(tf.float32, [None,],  name='zeros')
 
-    # loss, correct_prediction, accruacy = v.vfeedback_model_nofeedback(args, x_input, y_label, x_length, y_zeros)
-    # train_step = tf.train.AdamOptimizer(1e-4).minimize(loss)
+    loss, predictions, accruacy = v.nofeedback_model(args.video_length, args.video_width, args.video_height, len(labels_num2str), x_input, x_length, y_label, y_zeros)
+    train_step = tf.train.AdamOptimizer(1e-4).minimize(loss)
 
-    # allocate memory up front
+    # allocate shared memory up front
     logging.debug('begin allocate memory buffers')
     t1 = timeit.default_timer()
     mem_pool = [mp.RawArray(np.ctypeslib.ctypes.c_float, args.prefetch_batch_size*args.video_length*args.video_height*args.video_width*3) for _ in range(args.mem_pool_size)]
+    zeros = np.zeros((args.train_batch_size,))
     t2 = timeit.default_timer()
     logging.debug('done! (allocate memory buffers: {})'.format(t2-t1))
     
-    round2batch = lambda x: args.prefetch_batch_size * (x // args.prefetch_batch_size)
-    num_data_videos = round2batch(len(data_video_nums))
-
+    round2num = lambda x, num: num * (x // num)
+    num_data_videos = round2num(len(data_video_nums), args.prefetch_batch_size)
+    num_batch_videos = round2num(args.prefetch_batch_size, args.train_batch_size)
+    assert(num_batch_videos == args.prefetch_batch_size) # make `prefetch_batch_size` a multiple of `train_batch_size`
+    
     # get batch of data and train
     with mp.Pool(processes=mp.cpu_count(), initializer=pool_init, initargs=(mem_pool,)) as pool:
         mem_pool_index = 0
@@ -116,33 +117,40 @@ def main(args):
                 for i in range(0, num_data_videos, args.prefetch_batch_size):
                     video_nums_batch = video_nums[i:i+args.prefetch_batch_size]
 
+                    logging.debug('begin loading videos')
                     t1 = timeit.default_timer() 
                     video_batch = load_videos(pool, args.data_root, data_labels, video_nums_batch, args.video_width, args.video_height, args.video_length, args.prefetch_batch_size, mem_pool, mem_pool_index)
                     mem_pool_index = (mem_pool_index + 1) % args.mem_pool_size
                     t2 = timeit.default_timer()
-                    print('batch creation time:', t2 - t1)
+                    logging.debug('done! (loading videos: {})'.format(t2-t1))
 
+                    # print out a video to make sure things are working
                     # for i in range(40):
                     #     frame = (128*(video_batch['video_rawframes'][0,i,:,:,:] + 1)).astype(dtype=np.uint8)
                     #     im = Image.fromarray(frame)
                     #     im.save('/home/jemmons/frame{}.jpg'.format(i))
                         
+                    logging.debug('begin train batch')
+                    t1 = timeit.default_timer() 
+                    for j in range(0, num_batch_videos, args.train_batch_size):
+                        begin = j
+                        end = j + args.train_batch_size
 
-                    # train the model
-                    # for i in range(0, batch['num_videos']-TRAINING_BATCH_SIZE+1, TRAINING_BATCH_SIZE):
-                    #     begin = i
-                    #     end = i + TRAINING_BATCH_SIZE
-                    #     print('starting a training batch')
+                        _, loss_val, predict_vals = sess.run([train_step, loss, predictions],
+                                                           feed_dict={x_input : video_batch['video_rawframes'][begin:end,:,:,:,:],
+                                                                      x_length : video_batch['video_numframes'][begin:end],
+                                                                      y_label : keras.utils.to_categorical(video_batch['video_labelnums'][begin:end],
+                                                                      len(labels_num2str)), y_zeros : zeros})                        
+                        predict_vals = predict_vals[args.video_length-1,:,:]
+                        #print('prediction:', predict_vals.shape)
+                        #print(np.arrayvideo_batch['video_labelnums'][begin:end])
+                        #print(np.argmax(predict_vals, axis=1))
+                        print('training accuracy:', sum((np.array(video_batch['video_labelnums'][begin:end]) == np.argmax(predict_vals, axis=1))) / args.train_batch_size)
+                        print('loss:', loss_val)
+                        
+                    t2 = timeit.default_timer()
+                    logging.debug('done! (train batch: {})'.format(t2-t1))
                     
-                    #     train_step.run(feed_dict={ 
-                    #         x_input : batch['video_rawframes'][begin:end,:,:,:,:],
-                    #         x_length : batch['video_numframes'][begin:end],
-                    #         y_label : keras.utils.to_categorical(batch['video_labelnums'][begin:end], len(args.labels)),
-                    #         y_zeros : np.zeros((TRAINING_BATCH_SIZE,))})
-
-                    #     print('completed an iteration!')
-
-                
                 #t1 = timeit.default_timer() 
                 #validation_set = load_videos(pool, mem_pool, args.data_root, validation_video_nums, args.video_width, args.video_height, args.video_length, len(validation_video_nums))
                 #t2 = timeit.default_timer()
@@ -182,15 +190,15 @@ if __name__ == '__main__':
 
     parser.add_argument('--num_epoch', type=int, nargs=None,
                         help='number of training epochs over the whole dataset (official run: 16 for 20bn)',
-                        default=1)
+                        default=16)
 
     parser.add_argument('--train_batch_size', type=int, nargs=None,
                         help='training batch size; num videos per batch (official run: XXX for 20bn)',
-                        default=1)
+                        default=64)
 
     parser.add_argument('--prefetch_batch_size', type=int, nargs=None,
                         help='number of videos to prefetch (official run: 1024 for 20bn)',
-                        default=1)
+                        default=1024)
 
     parser.add_argument('--mem_pool_size', type=int, nargs=None,
                         help='number of batches to preallocate in memory pool (official run: 1 for 20bn)',

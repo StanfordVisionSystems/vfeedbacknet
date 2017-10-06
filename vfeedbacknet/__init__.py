@@ -1,3 +1,3 @@
-from vfeedbacknet.vfeedbacknet_model import imported
+from vfeedbacknet.vfeedbacknet_model import nofeedback_model
 #from vfeedbacknet_model import vfeedback_model_basic
 #from vfeedbacknet_model import vfeedback_model_nofeedback
