@@ -1,4 +1,5 @@
 # user added ignores
+scripts/jemmons_setup.sh
 .venv
 
 # Byte-compiled / optimized / DLL files
