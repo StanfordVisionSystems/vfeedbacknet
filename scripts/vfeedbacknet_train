@@ -42,22 +42,26 @@ def prepare_video(args):
         
     return { 'num_frames' : num_frames, 'video_num' : video_num }
 
-def load_videos(pool, data_root, video_nums, video_width, video_height, video_length, batch_size, pool_index):
+def load_videos(pool, data_root, data_labels, video_nums, video_width, video_height, video_length, batch_size, mem_pool, pool_index):
 
     logging.debug('begin loading videos')
     prepare_video_jobs = [ (data_root, video_nums[i], video_width, video_height, video_length, i, batch_size, pool_index) for i in range(batch_size) ]
     prepared_videos = pool.map(prepare_video, prepare_video_jobs)
     logging.debug('done! (loading videos)')
-    
-    return
 
-    logging.debug('begin filter invalid videos')
-    # prepared_videos = list(filter(None, prepared_videos))
-    # num_videos = len(prepared_videos)
-    logging.debug('done! (fillter invalid videos)')
+    video_numframes = np.zeros((batch_size,), dtype=np.int32)
+    video_labelnums = np.zeros((batch_size,), dtype=np.int32)
+
+    for i in range(batch_size):
+        video_numframes[i] = prepared_videos[i]['num_frames']
+        video_labelnums[i] = data_labels[ prepared_videos[i]['video_num'] ]
+        
+    video_mem = np.frombuffer(mem_pool[pool_index], np.ctypeslib.ctypes.c_float)
+    video_mem = video_mem.reshape((batch_size, video_length, video_height, video_width, 3))
 
     batch = {
-        'num_videos' : num_videos,
+        'num_videos' : batch_size,
+        'video_rawframes' : video_mem,
         'video_numframes' : video_numframes,
         'video_labelnums' : video_labelnums,
     }
@@ -81,13 +85,12 @@ def main(args):
         data_video_nums = np.asarray( list(data_labels.keys()) )
 
     # build model
-    # x_input = tf.placeholder(tf.float32, [None, NUM_FRAMES_PER_VIDEO, VIDEO_HEIGHT, args.video_width, 3], name='input')
-    # x_length = tf.placeholder(tf.int32, [None,], name='input_length')
-    # y_label = tf.placeholder(tf.float32, [None, len(labels_num2str)], name='label')
-    # y_zeros = tf.placeholder(tf.float32, [None,],  name='zeros')
+    x_input = tf.placeholder(tf.float32, [None, args.video_length, args.video_height, args.video_width, 3], name='input')
+    x_length = tf.placeholder(tf.int32, [None,], name='input_length')
+    y_label = tf.placeholder(tf.float32, [None, len(labels_num2str)], name='label')
+    y_zeros = tf.placeholder(tf.float32, [None,],  name='zeros')
 
     # loss, correct_prediction, accruacy = v.vfeedback_model_nofeedback(args, x_input, y_label, x_length, y_zeros)
-
     # train_step = tf.train.AdamOptimizer(1e-4).minimize(loss)
 
     # allocate memory up front
@@ -110,16 +113,16 @@ def main(args):
             for epoch in range(args.num_epoch):
                 video_nums = data_video_nums.copy()
                 random.shuffle(video_nums)
-
                 
                 for i in range(0, num_data_videos, args.prefetch_batch_size):
                     video_nums_batch = video_nums[i:i+args.prefetch_batch_size]
 
                     t1 = timeit.default_timer() 
-                    video_batch = load_videos(pool, args.data_root, video_nums_batch, args.video_width, args.video_height, args.video_length, args.prefetch_batch_size, mem_pool_index)
+                    video_batch = load_videos(pool, args.data_root, data_labels, video_nums_batch, args.video_width, args.video_height, args.video_length, args.prefetch_batch_size, mem_pool, mem_pool_index)
                     mem_pool_index = (mem_pool_index + 1) % args.mem_pool_size
                     t2 = timeit.default_timer()
                     print('batch creation time:', t2 - t1)
+                    #print(video_batch['video_rawframes'].shape)
                     
                     # train the model
                     # for i in range(0, batch['num_videos']-TRAINING_BATCH_SIZE+1, TRAINING_BATCH_SIZE):
@@ -133,7 +136,7 @@ def main(args):
                     #         y_label : keras.utils.to_categorical(batch['video_labelnums'][begin:end], len(args.labels)),
                     #         y_zeros : np.zeros((TRAINING_BATCH_SIZE,))})
 
-                    #     print('completed an iteration!'); #break
+                    #     print('completed an iteration!')
 
                 
                 #t1 = timeit.default_timer() 
@@ -186,8 +189,8 @@ if __name__ == '__main__':
                         default=1024)
 
     parser.add_argument('--mem_pool_size', type=int, nargs=None,
-                        help='number of batches to preallocate in memory pool (official run: 8 for 20bn)',
-                        default=2)
+                        help='number of batches to preallocate in memory pool (official run: 1 for 20bn)',
+                        default=1)
     
     args = parser.parse_args()
     main(args)
