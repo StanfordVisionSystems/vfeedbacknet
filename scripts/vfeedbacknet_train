@@ -16,7 +16,6 @@ from PIL import Image
 
 import vfeedbacknet as v
 
-PREFETCH_BATCH_SIZE = 2048 # num videos per prefetch batch
 logging.basicConfig(level=logging.DEBUG)
 
 def pool_init(mem_pool_):
@@ -34,7 +33,7 @@ def prepare_video(args):
 
     num_frames = min(len(frames), video_length)
 
-    video_mem[video_index,:,:,:,:] = 0
+    video_mem[video_index,:,:,:,:] = 0 # make grey
     for i in range(num_frames):
         image = Image.open(pathgen(frames[i])) # in RGB order by default
         image = np.asarray(image.resize((video_width, video_height), PIL.Image.BICUBIC), dtype=np.float32)
@@ -122,8 +121,13 @@ def main(args):
                     mem_pool_index = (mem_pool_index + 1) % args.mem_pool_size
                     t2 = timeit.default_timer()
                     print('batch creation time:', t2 - t1)
-                    #print(video_batch['video_rawframes'].shape)
-                    
+
+                    # for i in range(40):
+                    #     frame = (128*(video_batch['video_rawframes'][0,i,:,:,:] + 1)).astype(dtype=np.uint8)
+                    #     im = Image.fromarray(frame)
+                    #     im.save('/home/jemmons/frame{}.jpg'.format(i))
+                        
+
                     # train the model
                     # for i in range(0, batch['num_videos']-TRAINING_BATCH_SIZE+1, TRAINING_BATCH_SIZE):
                     #     begin = i
@@ -182,11 +186,11 @@ if __name__ == '__main__':
 
     parser.add_argument('--train_batch_size', type=int, nargs=None,
                         help='training batch size; num videos per batch (official run: XXX for 20bn)',
-                        default=1024)
+                        default=1)
 
     parser.add_argument('--prefetch_batch_size', type=int, nargs=None,
                         help='number of videos to prefetch (official run: 1024 for 20bn)',
-                        default=1024)
+                        default=1)
 
     parser.add_argument('--mem_pool_size', type=int, nargs=None,
                         help='number of batches to preallocate in memory pool (official run: 1 for 20bn)',
