@@ -230,7 +230,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--prefetch_batch_size', type=int, nargs=None,
                         help='number of videos to prefetch (official run: XXXX for 20bn)',
-                        default=64)
+                        default=1024)
 
     args = parser.parse_args()
     main(args)
