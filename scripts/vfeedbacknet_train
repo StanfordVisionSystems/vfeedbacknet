@@ -85,6 +85,8 @@ def main(args):
         data_labels = { int(item[0]) : labels_str2num[item[1].lower()] for item in reader }; 
         data_video_nums = np.asarray( list(data_labels.keys()) )
 
+        #data_video_nums = data_video_nums[:1024] # force overfitting
+        
     # local_device_protos = device_lib.list_local_devices()
     # available_gpus = [x.name for x in local_device_protos if x.device_type == 'GPU']
     # num_gpus = len(available_gpus)
@@ -115,7 +117,7 @@ def main(args):
     assert(num_batch_videos == args.prefetch_batch_size) # make `prefetch_batch_size` a multiple of `train_batch_size`
     
     # get batch of data and train
-    with mp.Pool(processes=mp.cpu_count()/2, initializer=pool_init, initargs=(mem_pool,)) as pool:
+    with mp.Pool(processes=mp.cpu_count()//2, initializer=pool_init, initargs=(mem_pool,)) as pool:
         with ThreadPoolExecutor(max_workers=2) as executor:
             mem_pool_index = 0
             video_batch = None
@@ -161,10 +163,15 @@ def main(args):
                                                                             y_label : keras.utils.to_categorical(video_batch['video_labelnums'][begin:end],
                                                                             len(labels_num2str)), y_zeros : zeros})                        
 
-                            predict_vals = predict_vals[args.video_length-1,:,:]
+                            #print(predict_vals[0,:,:].shape)
+                            #print(video_batch['video_numframes'][begin:end])
+                            predict_vals = np.vstack([predict_vals[n-1,m,:] for n,m in zip(video_batch['video_numframes'][begin:end],range(args.train_batch_size))])
+                            #print(predict_vals.shape)
                             #print('prediction:', predict_vals.shape)
                             #print(np.arrayvideo_batch['video_labelnums'][begin:end])
                             #print(np.argmax(predict_vals, axis=1))
+                            #sys.stdout.write('{}\n{}\n'.format(video_batch['video_labelnums'][begin:end], predict_vals))
+
                             sys.stdout.write('training accuracy: {}\n'.format(sum(video_batch['video_labelnums'][begin:end] == np.argmax(predict_vals, axis=1)) / args.train_batch_size))
                             sys.stdout.write('loss: {}\n'.format(loss_val))
                             sys.stdout.flush()                        
@@ -218,7 +225,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--num_epoch', type=int, nargs=None,
                         help='number of training epochs over the whole dataset (official run: 16 for 20bn)',
-                        default=16)
+                        default=1600)
 
     parser.add_argument('--learning_rate', type=float, nargs=None,
                         help='learning rate for the optimization (official run: XXXX for 20bn)',
