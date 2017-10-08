@@ -124,7 +124,7 @@ def main(args):
             next_video_batch = load_videos(pool, args.data_root, data_labels, data_video_nums[0:args.prefetch_batch_size], args.video_width, args.video_height, args.video_length, args.prefetch_batch_size, mem_pool, mem_pool_index)
             mem_pool_index = (mem_pool_index + 1) % 2
 
-            with tf.Session() as sess:
+            with tf.Session(config=tf.ConfigProto(log_device_placement=True)) as sess:
                 sess.run(tf.global_variables_initializer())
             
                 for epoch in range(args.num_epoch):
