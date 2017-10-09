@@ -1,3 +1,4 @@
-from vfeedbacknet.vfeedbacknet_model import nofeedback_model
-#from vfeedbacknet_model import vfeedback_model_basic
-#from vfeedbacknet_model import vfeedback_model_nofeedback
+from vfeedbacknet.simple_model import simple_model
+from vfeedbacknet.vfeedbacknet_resnet import vfeedbacknet_resnet
+#from vfeedbacknet.vfeedbacknet_vgg import vfeedbacknet_vgg
+

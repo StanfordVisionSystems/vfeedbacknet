@@ -110,8 +110,10 @@ def main(args):
     y_zeros = tf.placeholder(tf.float32, [None,],  name='y_zeros')
     zeros = np.zeros((args.train_batch_size,))
 
-    loss, predictions = v.nofeedback_model(args.video_length, args.video_width, args.video_height, len(labels_num2str), x_input, x_length, y_label, y_zeros)
-
+    loss, predictions = v.simple_model(args.video_length, args.video_width, args.video_height, len(labels_num2str), x_input, x_length, y_label, y_zeros)
+    #loss, predictions = v.vfeedbacknet_resnet(args.video_length, args.video_width, args.video_height, len(labels_num2str), x_input, x_length, y_label, y_zeros)
+    #loss, predictions = v.vfeedbacknet_vgg(args.video_length, args.video_width, args.video_height, len(labels_num2str), x_input, x_length, y_label, y_zeros)
+     
     #train_step = tf.train.AdamOptimizer(args.learning_rate).minimize(loss)
     train_step = tf.train.AdadeltaOptimizer(args.learning_rate).minimize(loss)
 
