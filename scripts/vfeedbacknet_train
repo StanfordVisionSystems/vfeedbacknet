@@ -196,7 +196,8 @@ def main(args):
                                                                             x_length : video_batch['video_numframes'][begin:end],
                                                                             y_label : keras.utils.to_categorical(video_batch['video_labelnums'][begin:end],len(labels_num2str)),
                                                                             y_zeros : zeros})
-
+                            assert(not np.isnan(loss_val))
+                            assert(not np.any(predict_vals)))
                             predict_vals = np.vstack([predict_vals[n-1,m,:] for n,m in zip(video_batch['video_numframes'][begin:end],range(args.train_batch_size))])
 
                             cum_data_correct_predictions += sum(video_batch['video_labelnums'][begin:end] == np.argmax(predict_vals, axis=1))
@@ -206,7 +207,6 @@ def main(args):
                             logging.info('TRAINING BATCH\tloss: {}'.format(loss_val))
                             logging.info('TRAINING BATCH\tnum examples: {}'.format(args.train_batch_size))
                             train_minibatch_count += 1
-
                         logfile.write('{}, {}, {}, , \n'.format(train_batch_count, cum_data_correct_predictions/args.prefetch_batch_size, cum_data_loss))
                         logfile.flush()
 
@@ -251,6 +251,8 @@ def main(args):
                                                                                  y_label : keras.utils.to_categorical(validation_batch['video_labelnums'][begin:end],len(labels_num2str)),
                                                                                  y_zeros : zeros})
 
+                                    assert(not np.isnan(loss_val))
+                                    assert(not np.any(predict_vals)))
                                     predict_vals = np.vstack([predict_vals[n-1,m,:] for n,m in zip(validation_batch['video_numframes'][begin:end],range(args.train_batch_size))])
 
                                     cum_validation_correct_predictions += sum(validation_batch['video_labelnums'][begin:end] == np.argmax(predict_vals, axis=1))
