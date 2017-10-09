@@ -105,7 +105,7 @@ def main(args):
     ############################################################################
     # build model
     ############################################################################
-    logging.info('building model')
+    logging.info('building model: {}'.format(args.model_name))
     x_input = tf.placeholder(tf.float32, [None, args.video_length, args.video_height, args.video_width, 3], name='x_input')
     x_length = tf.placeholder(tf.int32, [None,], name='x_length')
 
@@ -114,7 +114,8 @@ def main(args):
     y_zeros = tf.placeholder(tf.float32, [None,],  name='y_zeros')
     zeros = np.zeros((args.train_batch_size,))
 
-    loss, predictions = v.simple_model(args.video_length, args.video_width, args.video_height, len(labels_num2str), x_input, x_length, y_label, y_zeros)
+    loss, predictions = eval('v.{}(args.video_length, args.video_width, args.video_height, len(labels_num2str), x_input, x_length, y_label, y_zeros)'.format(args.model_name))
+    #loss, predictions = v.simple_model(args.video_length, args.video_width, args.video_height, len(labels_num2str), x_input, x_length, y_label, y_zeros)
     #loss, predictions = v.vfeedbacknet_resnet(args.video_length, args.video_width, args.video_height, len(labels_num2str), x_input, x_length, y_label, y_zeros)
     #loss, predictions = v.vfeedbacknet_vgg(args.video_length, args.video_width, args.video_height, len(labels_num2str), x_input, x_length, y_label, y_zeros)
      
@@ -301,6 +302,9 @@ if __name__ == '__main__':
 
     parser.add_argument('data_root', type=str, nargs=None,
                         help='root of 20bn dataset (e.g. ~/20bn-datasets/20bn-jester-v1)')
+
+    parser.add_argument('model_name', type=str, nargs=None,
+                        help='name of the model to train')
 
     parser.add_argument('checkpoint_dir', type=str, nargs=None,
                         help='location to store checkpoints during training')
