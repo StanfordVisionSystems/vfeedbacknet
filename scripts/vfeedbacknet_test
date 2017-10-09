@@ -81,7 +81,7 @@ def main(args):
         data_labels = { int(item[0]) : labels_str2num[item[1].lower()] for item in reader }; 
         data_video_nums = np.asarray( list(data_labels.keys()) )
 
-        data_video_nums = data_video_nums[:64] # force overfitting
+        data_video_nums = data_video_nums[:1536] # force overfitting
     
     # allocate shared memory up front
     logging.debug('begin allocate memory buffers')
@@ -200,11 +200,11 @@ if __name__ == '__main__':
 
     parser.add_argument('--eval_batch_size', type=int, nargs=None,
                         help='number of videos to eval at a time (official run: XXXX for 20bn)',
-                        default=64)
+                        default=96)
 
     parser.add_argument('--prefetch_batch_size', type=int, nargs=None,
                         help='number of videos to prefetch (official run: XXXX for 20bn)',
-                        default=64)
+                        default=1536)
 
     args = parser.parse_args()
     main(args)
