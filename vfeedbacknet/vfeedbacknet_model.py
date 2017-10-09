@@ -47,7 +47,7 @@ def nofeedback_model(video_length, video_width, video_height, num_labels, input_
     softmaxes = [ tf.nn.softmax(logits=fc_output) for fc_output in fc_outputs ]
     #print(softmaxes[0].shape)
     #print(len(softmaxes))
-    predictions = tf.stack(fc_outputs) #tf.stack(softmaxes)
+    predictions = tf.stack(fc_outputs, name='predictions') #tf.stack(softmaxes)
     
     cross_entropies = [ tf.nn.softmax_cross_entropy_with_logits(labels=output_placeholder, logits=fc_output) for fc_output in fc_outputs ]
     #cross_entropies = [-tf.reduce_sum(output_placeholder*tf.log(fc_output + 1e-10)) for fc_output in fc_outputs]
@@ -55,9 +55,9 @@ def nofeedback_model(video_length, video_width, video_height, num_labels, input_
     #print(cross_entropies.shape)
     
     cross_entropies_truncated = tf.stack([ tf.where(input_length > i, cross_entropies[i], zeros) for i in range(video_length) ], axis=1)
-    loss = tf.reduce_sum(tf.reduce_sum(cross_entropies, axis=0) / tf.to_float(input_length))
+    loss = tf.reduce_sum(tf.reduce_sum(cross_entropies, axis=0) / tf.to_float(input_length), name='loss')
 
-    return loss, predictions, None
+    return loss, predictions
     
 def conv2d(x, w, b):
     output = tf.nn.relu(tf.nn.conv2d(x, w, strides=[1,1,1,1], padding='SAME') + b)
