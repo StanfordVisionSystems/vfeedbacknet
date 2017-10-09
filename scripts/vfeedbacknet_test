@@ -166,7 +166,7 @@ def main(args):
 
             # print out the final accuracy and loss
             sys.stdout.write('final loss: {}\n'.format(cum_data_loss))
-            sys.stdout.write('final accuracy: {}\n'.format(cum_data_correct_predictions/args.prefetch_batch_size))
+            sys.stdout.write('final accuracy: {}\n'.format(cum_data_correct_predictions/num_data_videos))
             sys.stdout.flush()
 
 if __name__ == '__main__':

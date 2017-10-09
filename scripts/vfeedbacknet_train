@@ -261,7 +261,7 @@ def main(args):
                                     logging.debug('VALIDATION batch accuracy: {}'.format(sum(validation_batch['video_labelnums'][begin:end] == np.argmax(predict_vals, axis=1)) / args.train_batch_size))
                                     logging.debug('VALIDATION batch loss: {}'.format(loss_val))
 
-                            logfile.write('{}, , , {}, {}\n'.format(train_batch_count, cum_validation_correct_predictions/args.prefetch_batch_size, cum_validation_loss))
+                            logfile.write('{}, , , {}, {}\n'.format(train_batch_count, cum_validation_correct_predictions/num_validation_videos, cum_validation_loss))
                             logfile.flush()
 
                             logging.info('VALIDATION TOTAL\taccuracy (top-1): {}'.format(cum_validation_correct_predictions / num_validation_videos))
