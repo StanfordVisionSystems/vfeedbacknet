@@ -84,14 +84,14 @@ def main(args):
         validation_labels = { int(item[0]) : labels_str2num[item[1].lower()] for item in reader }; 
         validation_video_nums = np.asarray( list(validation_labels.keys()) )
 
-        validation_video_nums = validation_video_nums[:1024] # force overfitting
+        #validation_video_nums = validation_video_nums[:1024] # force overfitting
 
     with open(args.data_file, 'r') as csvfile:
         reader = csv.reader(csvfile, delimiter=';')
         data_labels = { int(item[0]) : labels_str2num[item[1].lower()] for item in reader }; 
         data_video_nums = np.asarray( list(data_labels.keys()) )
 
-        data_video_nums = data_video_nums[:1024] # force overfitting
+        #data_video_nums = data_video_nums[:1024] # force overfitting
 
     # local_device_protos = device_lib.list_local_devices()
     # available_gpus = [x.name for x in local_device_protos if x.device_type == 'GPU']
@@ -163,7 +163,6 @@ def main(args):
                     ############################################################
                     for batch_base_idx in range(0, num_data_videos, args.prefetch_batch_size):
                         video_nums_batch = video_nums[batch_base_idx:batch_base_idx+args.prefetch_batch_size]
-
 
                         logging.debug('begin load videos')
                         t1 = timeit.default_timer() 
@@ -331,7 +330,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--validation_interval', type=int, nargs=None,
                         help='number of training batches to process before printing validation error (official run: XXXX for 20bn)',
-                        default=2)
+                        default=1)
 
     args = parser.parse_args()
     main(args)

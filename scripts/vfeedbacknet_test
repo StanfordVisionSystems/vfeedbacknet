@@ -80,7 +80,7 @@ def main(args):
         data_labels = { int(item[0]) : labels_str2num[item[1].lower()] for item in reader }; 
         data_video_nums = np.asarray( list(data_labels.keys()) )
 
-        data_video_nums = data_video_nums[:1024] # force overfitting
+        #data_video_nums = data_video_nums[:1024] # force overfitting
 
     # allocate shared memory up front
     logging.info('allocating memory')
@@ -163,8 +163,8 @@ def main(args):
                     logging.debug('done! (train batch: {})'.format(t2-t1))
 
             # print out the final accuracy and loss
-            sys.stdout.write('final loss: {}'.format(cum_data_loss))
-            sys.stdout.write('final accuracy: {}'.format(cum_data_correct_predictions/args.prefetch_batch_size))
+            sys.stdout.write('final loss: {}\n'.format(cum_data_loss))
+            sys.stdout.write('final accuracy: {}\n'.format(cum_data_correct_predictions/args.prefetch_batch_size))
             sys.stdout.flush()
 
 if __name__ == '__main__':

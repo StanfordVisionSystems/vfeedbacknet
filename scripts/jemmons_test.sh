@@ -7,12 +7,12 @@ fi
 
 export CUDA_VISIBLE_DEVICES=$1
 
-# ./vfeedbacknet_test /dev/shm/20bn-datasets/jester-v1-labels.csv \
-#                     /dev/shm/20bn-datasets/jester-v1-validation.csv \
-#                     /dev/shm/20bn-datasets/20bn-jester-v1 \
-#                     $2
+./vfeedbacknet_test /dev/shm/20bn-datasets/jester-v1-labels.csv \
+                    /dev/shm/20bn-datasets/jester-v1-validation.csv \
+                    /dev/shm/20bn-datasets/20bn-jester-v1 \
+                    $2
 
-python3 -u vfeedbacknet_test /dev/shm/20bn-datasets/jester-v1-labels.csv \
-        /dev/shm/20bn-datasets/jester-v1-train.csv \
-        /dev/shm/20bn-datasets/20bn-jester-v1 \
-        $2
+# python3 -u vfeedbacknet_test /dev/shm/20bn-datasets/jester-v1-labels.csv \
+#         /dev/shm/20bn-datasets/jester-v1-train.csv \
+#         /dev/shm/20bn-datasets/20bn-jester-v1 \
+#         $2
