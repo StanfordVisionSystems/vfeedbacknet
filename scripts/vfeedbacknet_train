@@ -112,8 +112,8 @@ def main(args):
 
     loss, predictions = v.nofeedback_model(args.video_length, args.video_width, args.video_height, len(labels_num2str), x_input, x_length, y_label, y_zeros)
 
-    train_step = tf.train.AdamOptimizer(args.learning_rate).minimize(loss)
-    #train_step = tf.train.AdadeltaOptimizer(args.learning_rate).minimize(loss)
+    #train_step = tf.train.AdamOptimizer(args.learning_rate).minimize(loss)
+    train_step = tf.train.AdadeltaOptimizer(args.learning_rate).minimize(loss)
 
     # create saver
     saver = tf.train.Saver()
@@ -197,7 +197,7 @@ def main(args):
                                                                             y_label : keras.utils.to_categorical(video_batch['video_labelnums'][begin:end],len(labels_num2str)),
                                                                             y_zeros : zeros})
                             assert(not np.isnan(loss_val))
-                            assert(not np.any(predict_vals)))
+                            assert(not np.any(np.isnan(predict_vals)))
                             predict_vals = np.vstack([predict_vals[n-1,m,:] for n,m in zip(video_batch['video_numframes'][begin:end],range(args.train_batch_size))])
 
                             cum_data_correct_predictions += sum(video_batch['video_labelnums'][begin:end] == np.argmax(predict_vals, axis=1))
@@ -252,7 +252,7 @@ def main(args):
                                                                                  y_zeros : zeros})
 
                                     assert(not np.isnan(loss_val))
-                                    assert(not np.any(predict_vals)))
+                                    assert(not np.any(np.isnan(predict_vals)))
                                     predict_vals = np.vstack([predict_vals[n-1,m,:] for n,m in zip(validation_batch['video_numframes'][begin:end],range(args.train_batch_size))])
 
                                     cum_validation_correct_predictions += sum(validation_batch['video_labelnums'][begin:end] == np.argmax(predict_vals, axis=1))
