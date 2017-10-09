@@ -9,13 +9,17 @@ import os
 import sys
 import timeit
 import random
-import multiprocessing as mp
+
 import numpy as np
+import multiprocessing as mp
+import sharedmem as sm
+
+import PIL
+from PIL import Image
+
 import keras
 import tensorflow as tf
 from tensorflow.python.client import device_lib
-import PIL
-from PIL import Image
 
 import vfeedbacknet as v
 
@@ -126,7 +130,8 @@ def main(args):
     logging.info('allocating memory')
     logging.debug('begin allocate memory buffers')
     t1 = timeit.default_timer()
-    shared_mem = mp.RawArray(np.ctypeslib.ctypes.c_float, args.prefetch_batch_size*args.video_length*args.video_height*args.video_width*3)
+    #shared_mem = mp.RawArray(np.ctypeslib.ctypes.c_float, args.prefetch_batch_size*args.video_length*args.video_height*args.video_width*3)
+    shared_mem = sm.empty(args.prefetch_batch_size*args.video_length*args.video_height*args.video_width*3, dtype='f')
     t2 = timeit.default_timer()
     logging.debug('done! (allocate memory buffers: {})'.format(t2-t1))
 
@@ -330,7 +335,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--prefetch_batch_size', type=int, nargs=None,
                         help='number of videos to prefetch (official run: XXXX for 20bn)',
-                        default=1024)
+                        default=4096)
 
     parser.add_argument('--validation_interval', type=int, nargs=None,
                         help='number of training batches to process before printing validation error (official run: XXXX for 20bn)',
