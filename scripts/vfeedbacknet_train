@@ -330,7 +330,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--validation_interval', type=int, nargs=None,
                         help='number of training batches to process before printing validation error (official run: XXXX for 20bn)',
-                        default=1)
+                        default=32)
 
     args = parser.parse_args()
     main(args)
