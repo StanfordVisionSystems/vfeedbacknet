@@ -149,6 +149,8 @@ def main(args):
                                                                      'y_label:0' : keras.utils.to_categorical(video_batch['video_labelnums'][begin:end], len(labels_num2str)), 
                                                                      'y_zeros:0' : zeros})
 
+                        assert(not np.isnan(loss_val))
+                        assert(not np.any(predict_vals)))
                         predict_vals = np.vstack([predict_vals[n-1,m,:] for n,m in zip(video_batch['video_numframes'][begin:end],range(args.eval_batch_size))])
 
                         cum_data_correct_predictions += sum(video_batch['video_labelnums'][begin:end] == np.argmax(predict_vals, axis=1))
