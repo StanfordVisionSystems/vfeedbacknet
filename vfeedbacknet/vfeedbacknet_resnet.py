@@ -7,18 +7,16 @@ from vfeedbacknet.convLSTM import ConvLSTMCell # https://github.com/StanfordVisi
 
 def vfeedbacknet_resnet(video_length, video_width, video_height, num_labels, input_placeholder, input_length, output_placeholder, zeros):
     '''
+    A feedback model with resnet 
+    '''
+    
+    '''
     conv_b = new_bais()
     conv_w = new_conv2dweight(10, 10, 3, 32)
 
     input_frames = tf.unstack(input_placeholder, axis=1)
     conv_outputs = [ conv2d(input_frame, conv_w, conv_b) for input_frame in input_frames ]
-    '''
-    return None, None
-    
-def simple_model(video_length, video_width, video_height, num_labels, input_placeholder, input_length, output_placeholder, zeros):
-    '''
-    This model is just an ConvLSTM based RNN. (Let's get something working first before we add feedback...).
-    '''
+    '''    
     
     conv_b = new_bias()
     conv_w = new_conv2dweight(10, 10, 3, 1)
