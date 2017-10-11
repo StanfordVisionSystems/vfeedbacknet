@@ -88,14 +88,14 @@ def main(args):
         validation_labels = { int(item[0]) : labels_str2num[item[1].lower()] for item in reader }; 
         validation_video_nums = np.asarray( list(validation_labels.keys()) )
 
-        #validation_video_nums = validation_video_nums[:1024] # force overfitting
-
+        #validation_video_nums = validation_video_nums[:64] # force overfitting
+        
     with open(args.data_file, 'r') as csvfile:
         reader = csv.reader(csvfile, delimiter=';')
         data_labels = { int(item[0]) : labels_str2num[item[1].lower()] for item in reader }; 
         data_video_nums = np.asarray( list(data_labels.keys()) )
 
-        #data_video_nums = data_video_nums[:1024] # force overfitting
+        #data_video_nums = data_video_nums[:64] # force overfitting
 
     # local_device_protos = device_lib.list_local_devices()
     # available_gpus = [x.name for x in local_device_protos if x.device_type == 'GPU']
@@ -319,7 +319,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--video_height', type=int, nargs=None,
                         help='the height to rescale all videos (official run: 100 for 20bn)',
-                        default=176)
+                        default=100)
 
     parser.add_argument('--video_length', type=int, nargs=None,
                         help='the num frames to truncate all videos (official run: 40 for 20bn)',
@@ -327,19 +327,19 @@ if __name__ == '__main__':
 
     parser.add_argument('--num_epoch', type=int, nargs=None,
                         help='number of training epochs over the whole dataset (official run: 16 for 20bn)',
-                        default=256)
+                        default=256000)
 
     parser.add_argument('--learning_rate', type=float, nargs=None,
                         help='learning rate for the optimization (official run: XXXX for 20bn)',
-                        default=1e-4)
+                        default=1e-2)
 
     parser.add_argument('--train_batch_size', type=int, nargs=None,
                         help='training batch size; num videos per batch (official run: XXXX for 20bn)',
-                        default=64)
+                        default=3)
 
     parser.add_argument('--prefetch_batch_size', type=int, nargs=None,
                         help='number of videos to prefetch (official run: XXXX for 20bn)',
-                        default=4096)
+                        default=1200)
 
     parser.add_argument('--validation_interval', type=int, nargs=None,
                         help='number of training batches to process before printing validation error (official run: XXXX for 20bn)',
