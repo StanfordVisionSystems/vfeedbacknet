@@ -9,7 +9,7 @@ from vfeedbacknet.convLSTM import ConvLSTMCell # https://github.com/StanfordVisi
 #logging.basicConfig(level=logging.INFO)
 logging.basicConfig(level=logging.DEBUG)
 
-LEAKINESS = 0
+LEAKINESS = 0.1
 
 def vfeedbacknet_resnet(video_length, video_width, video_height, num_labels, input_placeholder, input_length, output_placeholder, zeros):
     '''
