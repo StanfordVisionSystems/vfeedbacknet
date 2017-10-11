@@ -197,7 +197,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--video_height', type=int, nargs=None,
                         help='the height to rescale all videos (official run: 100 for 20bn)',
-                        default=100)
+                        default=176)
 
     parser.add_argument('--video_length', type=int, nargs=None,
                         help='the num frames to truncate all videos (official run: 40 for 20bn)',
