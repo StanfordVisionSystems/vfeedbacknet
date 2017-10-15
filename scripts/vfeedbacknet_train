@@ -34,18 +34,20 @@ def prepare_video(args):
     data_root, video_num, video_width, video_height, video_length, video_index, batch_size = args
 
     video_mem = np.frombuffer(shared_mem, np.ctypeslib.ctypes.c_float)
-    video_mem = video_mem.reshape((batch_size, video_length, video_height, video_width, 3))
+    video_mem = video_mem.reshape((batch_size, video_length, video_height, video_width))
 
     pathgen = lambda x : os.path.join(data_root, str(video_num), x)
     frames = sorted( os.listdir(pathgen('')) )
 
-    num_frames = min(len(frames), video_length)
+    num_frames = min(len(frames)//2, video_length)
 
-    video_mem[video_index,:,:,:,:] = 0 # make grey
+    video_mem[video_index,:,:,:] = 0 # make grey
     for i in range(num_frames):
-        image = Image.open(pathgen(frames[i])) # in RGB order by default
+        image_idx = 2*i
+        image = Image.open(pathgen(frames[image_idx])) # in RGB order by default
+        image = image.convert('L') # convert to YUV and grab Y-component
         image = np.asarray(image.resize((video_width, video_height), PIL.Image.BICUBIC), dtype=np.float32)
-        video_mem[video_index,i,:,:,:] = (image / 128) - 1 # squash to interval (-1, 1)
+        video_mem[video_index,i,:,:] = (image / 128) - 1 # squash to interval (-1, 1)
 
     return { 'num_frames' : num_frames, 'video_num' : video_num }
 
@@ -62,7 +64,7 @@ def load_videos(pool, data_root, data_labels, video_nums, video_width, video_hei
         video_labelnums[i] = data_labels[ prepared_videos[i]['video_num'] ]
 
     video_mem = np.frombuffer(shared_mem, np.ctypeslib.ctypes.c_float)
-    video_mem = video_mem.reshape((batch_size, video_length, video_height, video_width, 3))
+    video_mem = video_mem.reshape((batch_size, video_length, video_height, video_width))
 
     batch = {
         'num_videos' : batch_size,
@@ -88,14 +90,14 @@ def main(args):
         validation_labels = { int(item[0]) : labels_str2num[item[1].lower()] for item in reader }; 
         validation_video_nums = np.asarray( list(validation_labels.keys()) )
 
-        #validation_video_nums = validation_video_nums[:64] # force overfitting
+        validation_video_nums = validation_video_nums[:64] # force overfitting
         
     with open(args.data_file, 'r') as csvfile:
         reader = csv.reader(csvfile, delimiter=';')
         data_labels = { int(item[0]) : labels_str2num[item[1].lower()] for item in reader }; 
         data_video_nums = np.asarray( list(data_labels.keys()) )
 
-        #data_video_nums = data_video_nums[:64] # force overfitting
+        data_video_nums = data_video_nums[:64] # force overfitting
 
     # local_device_protos = device_lib.list_local_devices()
     # available_gpus = [x.name for x in local_device_protos if x.device_type == 'GPU']
@@ -106,7 +108,7 @@ def main(args):
     # build model
     ############################################################################
     logging.info('building model: {}'.format(args.model_name))
-    x_input = tf.placeholder(tf.float32, [None, args.video_length, args.video_height, args.video_width, 3], name='x_input')
+    x_input = tf.placeholder(tf.float32, [None, args.video_length, args.video_height, args.video_width], name='x_input')
     x_length = tf.placeholder(tf.int32, [None,], name='x_length')
 
     assert(len(labels_num2str) == 27) # there should be 27 classes in the 20BN dataset
@@ -132,7 +134,7 @@ def main(args):
     logging.debug('begin allocate memory buffers')
     t1 = timeit.default_timer()
     #shared_mem = mp.RawArray(np.ctypeslib.ctypes.c_float, args.prefetch_batch_size*args.video_length*args.video_height*args.video_width*3)
-    shared_mem = sm.empty(args.prefetch_batch_size*args.video_length*args.video_height*args.video_width*3, dtype='f')
+    shared_mem = sm.empty(args.prefetch_batch_size*args.video_length*args.video_height*args.video_width, dtype='f')
     t2 = timeit.default_timer()
     logging.debug('done! (allocate memory buffers: {})'.format(t2-t1))
 
@@ -200,7 +202,7 @@ def main(args):
                             end = i + args.train_batch_size
 
                             _, loss_val, predict_vals = sess.run([train_step, loss, predictions],
-                                                                 feed_dict={x_input : video_batch['video_rawframes'][begin:end,:,:,:,:],
+                                                                 feed_dict={x_input : video_batch['video_rawframes'][begin:end,:,:],
                                                                             x_length : video_batch['video_numframes'][begin:end],
                                                                             y_label : keras.utils.to_categorical(video_batch['video_labelnums'][begin:end],len(labels_num2str)),
                                                                             y_zeros : zeros})
@@ -254,7 +256,7 @@ def main(args):
                                     end = i + args.train_batch_size
 
                                     loss_val, predict_vals = sess.run([loss, predictions],
-                                                                      feed_dict={x_input : validation_batch['video_rawframes'][begin:end,:,:,:,:],
+                                                                      feed_dict={x_input : validation_batch['video_rawframes'][begin:end,:,:,:],
                                                                                  x_length : validation_batch['video_numframes'][begin:end],
                                                                                  y_label : keras.utils.to_categorical(validation_batch['video_labelnums'][begin:end],len(labels_num2str)),
                                                                                  y_zeros : zeros})
@@ -322,8 +324,8 @@ if __name__ == '__main__':
                         default=100)
 
     parser.add_argument('--video_length', type=int, nargs=None,
-                        help='the num frames to truncate all videos (official run: 40 for 20bn)',
-                        default=40)
+                        help='the num frames to truncate all videos (official run: 20 subsampled by 2 for 20bn)',
+                        default=20)
 
     parser.add_argument('--num_epoch', type=int, nargs=None,
                         help='number of training epochs over the whole dataset (official run: 16 for 20bn)',
@@ -334,16 +336,16 @@ if __name__ == '__main__':
                         default=1e-2)
 
     parser.add_argument('--train_batch_size', type=int, nargs=None,
-                        help='training batch size; num videos per batch (official run: XXXX for 20bn)',
-                        default=3)
+                        help='training batch size; num videos per batch (official run: 32 for 20bn)',
+                        default=32)
 
     parser.add_argument('--prefetch_batch_size', type=int, nargs=None,
                         help='number of videos to prefetch (official run: XXXX for 20bn)',
-                        default=1200)
+                        default=64)
 
     parser.add_argument('--validation_interval', type=int, nargs=None,
-                        help='number of training batches to process before printing validation error (official run: XXXX for 20bn)',
-                        default=32)
+                        help='number of training batches to process before printing validation error (official run: 1024 for 20bn)',
+                        default=1024)
 
     args = parser.parse_args()
     main(args)

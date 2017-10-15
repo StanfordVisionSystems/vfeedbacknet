@@ -15,6 +15,8 @@ def nofeedbacknet_resnet(video_length, video_width, video_height, num_labels, in
     '''
     A feedback model with resnet style model
     '''
+
+    input_placeholder = tf.expand_dims(input_placeholder, axis=4)
     
     input_frames = tf.unstack(input_placeholder, axis=1)
     logging.debug('input: {}x{}'.format(len(input_frames), input_frames[0].shape))
@@ -24,7 +26,7 @@ def nofeedbacknet_resnet(video_length, video_width, video_height, num_labels, in
 
     # layer base (conv) ########################################################
     conv_b = new_bias(16)
-    conv_w = new_conv2dweight(15, 15, 3, 16)
+    conv_w = new_conv2dweight(15, 15, 1, 16)
     outputs = [ conv2d(input_frame, conv_w, conv_b) for input_frame in input_frames ]
     logging.debug('conv1_output: {}x{}'.format(len(outputs), outputs[0].shape))
     

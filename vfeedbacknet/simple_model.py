@@ -9,9 +9,11 @@ def simple_model(video_length, video_width, video_height, num_labels, input_plac
     '''
     This model is just an ConvLSTM based RNN. (Let's get something working first before we add feedback...).
     '''
+
+    input_placeholder = tf.expand_dims(input_placeholder, axis=4)
     
     conv_b = new_bias()
-    conv_w = new_conv2dweight(10, 10, 3, 1)
+    conv_w = new_conv2dweight(10, 10, 1, 1)
 
     input_frames = tf.unstack(input_placeholder, axis=1)
     conv_outputs = tf.stack([ conv2d(input_frame, conv_w, conv_b) for input_frame in input_frames ], axis=1)
