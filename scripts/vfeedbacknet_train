@@ -181,11 +181,12 @@ def main(args):
                         logging.debug('done! (load videos): {})'.format(t2-t1))
 
                         # print('out a video to make sure things are working')
-                        # for i in range(40):
-                        #     frame = (128*(video_batch['video_rawframes'][0,i,:,:,:] + 1)).astype(dtype=np.uint8)
+                        # for i in range(args.video_length):
+                        #     frame = (128*(video_batch['video_rawframes'][0,i,:,:] + 1)).astype(dtype=np.uint8)
                         #     im = Image.fromarray(frame)
                         #     im.save('/home/jemmons/frame{}.jpg'.format(i))
-
+                        # return 
+                            
                         assert(not np.any(np.isnan(video_batch['video_rawframes'])))
 
                         ########################################################
@@ -333,7 +334,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--learning_rate', type=float, nargs=None,
                         help='learning rate for the optimization (official run: XXXX for 20bn)',
-                        default=1e-2)
+                        default=1e-3)
 
     parser.add_argument('--train_batch_size', type=int, nargs=None,
                         help='training batch size; num videos per batch (official run: 32 for 20bn)',
