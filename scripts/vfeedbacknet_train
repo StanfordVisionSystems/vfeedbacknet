@@ -90,14 +90,14 @@ def main(args):
         validation_labels = { int(item[0]) : labels_str2num[item[1].lower()] for item in reader }; 
         validation_video_nums = np.asarray( list(validation_labels.keys()) )
 
-        validation_video_nums = validation_video_nums[:64] # force overfitting
+        #validation_video_nums = validation_video_nums[:64] # force overfitting
         
     with open(args.data_file, 'r') as csvfile:
         reader = csv.reader(csvfile, delimiter=';')
         data_labels = { int(item[0]) : labels_str2num[item[1].lower()] for item in reader }; 
         data_video_nums = np.asarray( list(data_labels.keys()) )
 
-        data_video_nums = data_video_nums[:64] # force overfitting
+        #data_video_nums = data_video_nums[:64] # force overfitting
 
     # local_device_protos = device_lib.list_local_devices()
     # available_gpus = [x.name for x in local_device_protos if x.device_type == 'GPU']
@@ -117,12 +117,11 @@ def main(args):
     zeros = np.zeros((args.train_batch_size,))
 
     loss, predictions = eval('v.{}(args.video_length, args.video_width, args.video_height, len(labels_num2str), x_input, x_length, y_label, y_zeros)'.format(args.model_name))
-    #loss, predictions = v.simple_model(args.video_length, args.video_width, args.video_height, len(labels_num2str), x_input, x_length, y_label, y_zeros)
-    #loss, predictions = v.vfeedbacknet_resnet(args.video_length, args.video_width, args.video_height, len(labels_num2str), x_input, x_length, y_label, y_zeros)
-    #loss, predictions = v.vfeedbacknet_vgg(args.video_length, args.video_width, args.video_height, len(labels_num2str), x_input, x_length, y_label, y_zeros)
      
+    step = tf.Variable(0, trainable=False)
+    learning_rate = tf.maximum(tf.train.exponential_decay(args.learning_rate, step, args.prefetch_batch_size//args.train_batch_size, 0.99), 1e-5) # 1% per prefetch_batch
     #train_step = tf.train.AdamOptimizer(args.learning_rate).minimize(loss)
-    train_step = tf.train.AdadeltaOptimizer(args.learning_rate).minimize(loss)
+    train_step = tf.train.AdadeltaOptimizer(learning_rate).minimize(loss, global_step=step)
 
     # create saver
     saver = tf.train.Saver()
@@ -151,8 +150,8 @@ def main(args):
     with open(args.train_progress_csv, 'w') as logfile:
         logfile.write('# {}\n'.format(args.checkpoint_dir))
         logfile.write('# {}\n'.format(datetime.datetime.now()))
-        logfile.write('# prefetch_batch_size:{} train_batch_size:{} learning_rate:{}\n'.format(args.prefetch_batch_size, args.train_batch_size, args.learning_rate))
-        logfile.write('batch_num, train_acc, train_loss, valid_acc, valid_loss\n')
+        logfile.write('# prefetch_batch_size:{} train_batch_size:{} initial_learning_rate:{}\n'.format(args.prefetch_batch_size, args.train_batch_size, args.learning_rate))
+        logfile.write('batch_num, learning_rate, train_acc, train_loss, valid_acc, valid_loss\n')
         logfile.flush()
 
         with mp.Pool(processes=mp.cpu_count(), initializer=pool_init, initargs=(shared_mem,)) as pool:
@@ -202,11 +201,11 @@ def main(args):
                             begin = i
                             end = i + args.train_batch_size
 
-                            _, loss_val, predict_vals = sess.run([train_step, loss, predictions],
-                                                                 feed_dict={x_input : video_batch['video_rawframes'][begin:end,:,:],
-                                                                            x_length : video_batch['video_numframes'][begin:end],
-                                                                            y_label : keras.utils.to_categorical(video_batch['video_labelnums'][begin:end],len(labels_num2str)),
-                                                                            y_zeros : zeros})
+                            _, learn_rate, loss_val, predict_vals = sess.run([train_step, learning_rate, loss, predictions],
+                                                                             feed_dict={x_input : video_batch['video_rawframes'][begin:end,:,:],
+                                                                                        x_length : video_batch['video_numframes'][begin:end],
+                                                                                        y_label : keras.utils.to_categorical(video_batch['video_labelnums'][begin:end],len(labels_num2str)),
+                                                                                        y_zeros : zeros})
                             assert(not np.isnan(loss_val))
                             assert(not np.any(np.isnan(predict_vals)))
                             predict_vals = np.vstack([predict_vals[n-1,m,:] for n,m in zip(video_batch['video_numframes'][begin:end],range(args.train_batch_size))])
@@ -216,9 +215,10 @@ def main(args):
 
                             logging.info('TRAINING BATCH\taccuracy (top-1): {}'.format(sum(video_batch['video_labelnums'][begin:end] == np.argmax(predict_vals, axis=1)) / args.train_batch_size))
                             logging.info('TRAINING BATCH\tloss: {}'.format(loss_val))
-                            logging.info('TRAINING BATCH\tnum examples: {}'.format(args.train_batch_size))
+                            logging.info('TRAINING BATCH\tlearning_rate: {}'.format(learn_rate))
+                            logging.info('TRAINING BATCH\tnum_examples: {}'.format(args.train_batch_size))
                             train_minibatch_count += 1
-                        logfile.write('{}, {}, {}, , \n'.format(train_batch_count, cum_data_correct_predictions/args.prefetch_batch_size, cum_data_loss))
+                        logfile.write('{}, {}, {}, {}, , \n'.format(train_batch_count, learn_rate, cum_data_correct_predictions/args.prefetch_batch_size, cum_data_loss))
                         logfile.flush()
 
                         t2 = timeit.default_timer()
@@ -256,7 +256,7 @@ def main(args):
                                     begin = i
                                     end = i + args.train_batch_size
 
-                                    loss_val, predict_vals = sess.run([loss, predictions],
+                                    learn_rate, loss_val, predict_vals = sess.run([learning_rate, loss, predictions],
                                                                       feed_dict={x_input : validation_batch['video_rawframes'][begin:end,:,:,:],
                                                                                  x_length : validation_batch['video_numframes'][begin:end],
                                                                                  y_label : keras.utils.to_categorical(validation_batch['video_labelnums'][begin:end],len(labels_num2str)),
@@ -272,12 +272,12 @@ def main(args):
                                     logging.debug('VALIDATION batch accuracy: {}'.format(sum(validation_batch['video_labelnums'][begin:end] == np.argmax(predict_vals, axis=1)) / args.train_batch_size))
                                     logging.debug('VALIDATION batch loss: {}'.format(loss_val))
 
-                            logfile.write('{}, , , {}, {}\n'.format(train_batch_count, cum_validation_correct_predictions/num_validation_videos, cum_validation_loss))
+                            logfile.write('{}, {}, , , {}, {}\n'.format(train_batch_count, learn_rate, cum_validation_correct_predictions/num_validation_videos, cum_validation_loss))
                             logfile.flush()
 
                             logging.info('VALIDATION TOTAL\taccuracy (top-1): {}'.format(cum_validation_correct_predictions / num_validation_videos))
                             logging.info('VALIDATION TOTAL\tloss: {}'.format(cum_validation_loss))
-                            logging.info('VALIDATION TOTAL\tnum examples: {}'.format(num_validation_videos))
+                            logging.info('VALIDATION TOTAL\tnum_examples: {}'.format(num_validation_videos))
 
                             t2 = timeit.default_timer()
                             logging.debug('done! (validation accuracy computation): {})'.format(t2 - t1))
@@ -334,7 +334,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--learning_rate', type=float, nargs=None,
                         help='learning rate for the optimization (official run: XXXX for 20bn)',
-                        default=1e-3)
+                        default=1e-1)
 
     parser.add_argument('--train_batch_size', type=int, nargs=None,
                         help='training batch size; num videos per batch (official run: 32 for 20bn)',
@@ -342,11 +342,11 @@ if __name__ == '__main__':
 
     parser.add_argument('--prefetch_batch_size', type=int, nargs=None,
                         help='number of videos to prefetch (official run: XXXX for 20bn)',
-                        default=64)
+                        default=1024)
 
     parser.add_argument('--validation_interval', type=int, nargs=None,
                         help='number of training batches to process before printing validation error (official run: 1024 for 20bn)',
-                        default=1024)
+                        default=256)
 
     args = parser.parse_args()
     main(args)
