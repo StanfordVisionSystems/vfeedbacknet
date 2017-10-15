@@ -1,0 +1,160 @@
+#!/usr/bin/env python3
+
+import asyncio
+import argparse
+import datetime
+import logging
+import csv
+import os
+import sys
+import timeit
+import random
+
+import numpy as np
+import multiprocessing as mp
+import sharedmem as sm
+
+import PIL
+from PIL import Image
+
+#logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
+
+def pool_init(shared_mem_):
+    global shared_mem
+    shared_mem = shared_mem_
+
+def prepare_video(args):
+    data_root, video_num, video_width, video_height, video_length, video_index, batch_size = args
+
+    video_mem = np.frombuffer(shared_mem, np.ctypeslib.ctypes.c_float)
+    video_mem = video_mem.reshape((batch_size, video_height, video_width))
+
+    pathgen = lambda x : os.path.join(data_root, str(video_num), x)
+    frames = sorted( os.listdir(pathgen('')) )
+
+    num_frames = min(len(frames), video_length)
+
+    video_mem = np.frombuffer(shared_mem, np.ctypeslib.ctypes.c_float)
+    video_mem = video_mem.reshape((batch_size, video_height, video_width))
+
+    video_mem[video_index,:,:] = 0
+    for i in range(num_frames):
+        image = Image.open(pathgen(frames[i])).convert('L') # convert to grayscale (YUV)
+        image = image.resize((video_width, video_height), PIL.Image.BICUBIC)
+        video_mem[video_index,:,:] += image
+
+    return { 'num_frames' : num_frames, 'video_num' : video_num }
+
+def load_videos(pool, data_root, data_labels, video_nums, video_width, video_height, video_length, batch_size, shared_mem):
+
+    prepare_video_jobs = [ (data_root, video_nums[i], video_width, video_height, video_length, i, batch_size) for i in range(batch_size) ]
+    prepared_videos = pool.map(prepare_video, prepare_video_jobs)
+
+    video_numframes = np.zeros((batch_size,), dtype=np.int32)
+    video_labelnums = np.zeros((batch_size,), dtype=np.int32)
+
+    for i in range(batch_size):
+        video_numframes[i] = prepared_videos[i]['num_frames']
+        video_labelnums[i] = data_labels[ prepared_videos[i]['video_num'] ]
+
+    video_mem = np.frombuffer(shared_mem, np.ctypeslib.ctypes.c_float)
+    video_mem = video_mem.reshape((batch_size, video_height, video_width))
+
+    batch = {
+        'num_videos' : batch_size,
+        'video_summed_pixels' : video_mem,
+        'video_numframes' : video_numframes,
+        'video_labelnums' : video_labelnums,
+    }
+
+    return batch
+
+def main(args):
+    ############################################################################
+    # open and parse the data and label files
+    ############################################################################
+    logging.info('loading input files')
+    with open(args.label_file, 'r') as csvfile:
+        reader = csv.reader(csvfile, delimiter=';')
+        labels_num2str = [ item[0].lower() for item in reader ]
+        labels_str2num =  { label : idx  for idx,label in zip(range(len(labels_num2str)), labels_num2str) }
+
+    with open(args.data_file, 'r') as csvfile:
+        reader = csv.reader(csvfile, delimiter=';')
+        data_labels = { int(item[0]) : labels_str2num[item[1].lower()] for item in reader }; 
+        data_video_nums = np.asarray( list(data_labels.keys()) )
+
+    ############################################################################
+    # allocate shared memory up front 
+    ############################################################################
+    logging.info('allocating memory')
+    logging.debug('begin allocate memory buffers')
+    t1 = timeit.default_timer()
+    shared_mem = sm.empty(args.batch_size*args.video_height*args.video_width, dtype='f')
+    t2 = timeit.default_timer()
+    logging.debug('done! (allocate memory buffers: {})'.format(t2-t1))
+
+    num_data_videos = len(data_video_nums)
+
+    ############################################################################
+    # loop over all the videos
+    ############################################################################
+    logging.info('begin proprocessing')
+    with mp.Pool(processes=mp.cpu_count(), initializer=pool_init, initargs=(shared_mem,)) as pool:
+        for batch_base_idx in range(0, num_data_videos, args.batch_size):
+            video_nums_batch = data_video_nums[batch_base_idx:min(batch_base_idx+args.batch_size, num_data_videos)]
+            logging.info('proprocessing: {}-{}'.format(batch_base_idx, min(batch_base_idx+args.batch_size, num_data_videos)))
+            
+            logging.debug('begin load videos')
+            t1 = timeit.default_timer() 
+            video_batch = load_videos(pool, args.data_root, data_labels, video_nums_batch, args.video_width, args.video_height, args.video_length, args.batch_size, shared_mem)
+            t2 = timeit.default_timer()
+            logging.debug('done! (load videos): {})'.format(t2-t1))
+            
+            assert(not np.any(np.isnan(video_batch['video_summed_pixels'])))
+
+            num_frames = sum(video_batch['video_numframes'])
+            mean_frame = np.sum(video_batch['video_summed_pixels'], axis=0) / num_frames
+
+            assert(not np.any(mean_frame > 255))
+            assert(not np.any(mean_frame < 0))
+
+            logging.debug('mean pixel value of batch: {} {}'.format(mean_frame.shape, np.mean(mean_frame)) )
+            # todo: record the mean pixel value
+            # todo: record the mean frame
+            # todo: record the 
+                
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='train the feedbacknet for the 20BN data set')
+
+    # dataset parameters
+    parser.add_argument('label_file', type=str, nargs=None,
+                        help='20bn labels file (e.g. jester-v1-labels.csv)')
+
+    parser.add_argument('data_file', type=str, nargs=None,
+                        help='20bn data label file (e.g. jester-v1-train.csv)')
+
+    parser.add_argument('data_root', type=str, nargs=None,
+                        help='root of 20bn dataset (e.g. ~/20bn-datasets/20bn-jester-v1)')
+
+    # tuning parameters
+    parser.add_argument('--video_width', type=int, nargs=None,
+                        help='the width to rescale all videos (official run: 176 for 20bn)',
+                        default=176)
+
+    parser.add_argument('--video_height', type=int, nargs=None,
+                        help='the height to rescale all videos (official run: 100 for 20bn)',
+                        default=100)
+
+    parser.add_argument('--video_length', type=int, nargs=None,
+                        help='the num frames to truncate all videos (official run: 40 for 20bn)',
+                        default=10)
+
+    parser.add_argument('--batch_size', type=int, nargs=None,
+                        help='number of videos to prefetch (official run: XXXX for 20bn)',
+                        default=2048)
+
+    args = parser.parse_args()
+    main(args)
+
