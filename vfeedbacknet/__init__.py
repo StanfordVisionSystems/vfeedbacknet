@@ -1,5 +1,5 @@
 from vfeedbacknet.simple_model import simple_model
 from vfeedbacknet.nofeedbacknet_resnet import nofeedbacknet_resnet
-#from vfeedbacknet.vfeedbacknet_resnet import vfeedbacknet_resnet
+from vfeedbacknet.vfeedbacknet_resnet import vfeedbacknet_resnet
 #from vfeedbacknet.vfeedbacknet_vgg import vfeedbacknet_vgg
 
