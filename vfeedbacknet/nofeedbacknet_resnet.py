@@ -1,179 +1,212 @@
 #!/usr/bin/env python3
 
 import logging
+
 import keras
 import numpy as np
 import tensorflow as tf
 from vfeedbacknet.convLSTM import ConvLSTMCell # https://github.com/StanfordVisionSystems/tensorflow-convlstm-cell
-
+    
 #logging.basicConfig(level=logging.INFO)
 logging.basicConfig(level=logging.DEBUG)
 
 LEAKINESS = 0.1
 
+class logger:
+    count = {}
+
+    @staticmethod
+    def log(var_name, var):
+        if var_name in logger.count.keys():
+            logger.count[var_name] += 1
+            logger._log(var_name, var)
+        else:
+            logger.count[var_name] = 0
+            logger._log(var_name, var)
+
+    @staticmethod        
+    def _log(var_name, var):
+        maxwidth = 15
+        padding = 4
+        
+        n = var_name[0:maxwidth]
+        c = str(logger.count[var_name])
+        p = ' ' * (maxwidth + padding - len(n) - len(c))
+        logging.debug('{}-{}:{}{}x{}'.format(n, c, p, len(var), var[0].shape))
+            
 def nofeedbacknet_resnet(video_length, video_width, video_height, num_labels, input_placeholder, input_length, output_placeholder, zeros):
     '''
-    A feedback model with resnet style model
+    This model is just an ConvLSTM based RNN. (Let's get something working first before we add feedback...).
     '''
 
     input_placeholder = tf.expand_dims(input_placeholder, axis=4)
-    
     input_frames = tf.unstack(input_placeholder, axis=1)
     logging.debug('input: {}x{}'.format(len(input_frames), input_frames[0].shape))
-    logging.debug('output: {}x{}'.format(0, output_placeholder.shape))
 
-    logging.debug('---BEGIN MODEL DEFINTION---')
+    logging.debug('input_length: {}'.format(input_length.shape))
+    logging.debug('zeros_placeholder: {}'.format(input_length.shape))
+    
+    # BEGIN CNN ################################################################
+    logging.debug('---------- BEGIN CNN DEFINITION ----------')
+    with tf.device("/device:GPU:0"):
+        outputs = input_frames
+    
+        # layer 0 ##############################################################
+        conv_b = new_bias(16)
+        conv_w = new_conv2dweight(10, 10, 1, 16)
+        outputs = [ conv2d(output, conv_w, conv_b) for output in outputs ]
+        logger.log('conv_output', outputs)
+        
+        outputs = [ batch_norm(output) for output in outputs ]
+        logger.log('batchnorm_output', outputs)
+        
+        outputs = [ max_pool(output) for output in outputs ]
+        logger.log('maxpool_output', outputs)
+    
+        # layer 1 ##############################################################
+        prev_outputs = outputs
+        
+        conv_b = new_bias(16)
+        conv_w = new_conv2dweight(5, 5, 16, 16)
+        outputs = [ conv2d(output, conv_w, conv_b) for output in outputs ]
+        logger.log('conv_output', outputs)
+        
+        outputs = [ batch_norm(output) for output in outputs ]
+        logger.log('batchnorm_output', outputs)
 
-    # layer base (conv) ########################################################
-    conv_b = new_bias(16)
-    conv_w = new_conv2dweight(15, 15, 1, 16)
-    outputs = [ conv2d(input_frame, conv_w, conv_b) for input_frame in input_frames ]
-    logging.debug('conv1_output: {}x{}'.format(len(outputs), outputs[0].shape))
-    
-    outputs = [ batch_norm(output) for output in outputs ]
-    logging.debug('batchNorm1_output: {}x{}'.format(len(outputs), outputs[0].shape))
+        conv_b = new_bias(16)
+        conv_w = new_conv2dweight(5, 5, 16, 16)
+        outputs = [ conv2d(output, conv_w, conv_b) for output in outputs ]
+        logger.log('conv_output', outputs)
+        
+        outputs = [ batch_norm(output) for output in outputs ]
+        logger.log('batchnorm_output', outputs)
 
-    outputs = [ max_pool(output) for output in outputs ]
-    logging.debug('maxPool1_output: {}x{}'.format(len(outputs), outputs[0].shape))
+        outputs = [ outputs[i] + prev_outputs[i] for i in range(len(outputs))]
+        logger.log('residual_output', outputs)
 
-    # layer1 (conv) ############################################################
-    outputs_res = outputs
-    
-    conv_b = new_bias(16)
-    conv_w = new_conv2dweight(3, 3, 16, 16)
-    outputs = [ conv2d(output, conv_w, conv_b) for output in outputs ]
-    logging.debug('conv2_output: {}x{}'.format(len(outputs), outputs[0].shape))
-    
-    conv_b = new_bias(16)
-    conv_w = new_conv2dweight(3, 3, 16, 16)
-    outputs = [ conv2d(output, conv_w, conv_b) for output in outputs ]
-    logging.debug('conv3_output: {}x{}'.format(len(outputs), outputs[0].shape))
+        outputs = [ max_pool(output) for output in outputs ]
+        logger.log('maxpool_output', outputs)
+        
+        # layer 2 ##############################################################
+        prev_outputs = outputs
+        
+        conv_b = new_bias(32)
+        conv_w = new_conv2dweight(3, 3, 16, 32)
+        outputs = [ conv2d(output, conv_w, conv_b) for output in outputs ]
+        logger.log('conv_output', outputs)
+        
+        outputs = [ batch_norm(output) for output in outputs ]
+        logger.log('batchnorm_output', outputs)
 
-    outputs = [outputs[i] + outputs_res[i] for i in range(len(outputs))]
-    logging.debug('residual1_output: {}x{}'.format(len(outputs), outputs[0].shape))
-    
-    outputs = [ batch_norm(output) for output in outputs ]
-    logging.debug('batchNorm2_output: {}x{}'.format(len(outputs), outputs[0].shape))
+        conv_b = new_bias(32)
+        conv_w = new_conv2dweight(3, 3, 32, 32)
+        outputs = [ conv2d(output, conv_w, conv_b) for output in outputs ]
+        logger.log('conv_output', outputs)
+        
+        outputs = [ batch_norm(output) for output in outputs ]
+        logger.log('batchnorm_output', outputs)
 
-    # layer2 (conv) ############################################################
-    outputs_res = outputs
-    
-    conv_b = new_bias(16)
-    conv_w = new_conv2dweight(3, 3, 16, 16)
-    outputs = [ conv2d(output, conv_w, conv_b) for output in outputs ]
-    logging.debug('conv4_output: {}x{}'.format(len(outputs), outputs[0].shape))
-    
-    conv_b = new_bias(16)
-    conv_w = new_conv2dweight(3, 3, 16, 16)
-    outputs = [ conv2d(output, conv_w, conv_b) for output in outputs ]
-    logging.debug('conv5_output: {}x{}'.format(len(outputs), outputs[0].shape))
+        outputs = [ outputs[i] + tf.contrib.keras.backend.repeat_elements(prev_outputs[i], 2, 3) for i in range(len(outputs))]
+        logger.log('residual_output', outputs)
 
-    outputs = [outputs[i] + outputs_res[i] for i in range(len(outputs))]
-    logging.debug('residual2_output: {}x{}'.format(len(outputs), outputs[0].shape))
-    
-    outputs = [ batch_norm(output) for output in outputs ]
-    logging.debug('batchNorm3_output: {}x{}'.format(len(outputs), outputs[0].shape))
+        outputs = [ max_pool(output) for output in outputs ]
+        logger.log('maxpool_output', outputs)
 
-    # # layer3 (conv) ############################################################
-    # outputs_res = outputs
-    
-    # conv_b = new_bias(16)
-    # conv_w = new_conv2dweight(3, 3, 16, 16)
-    # outputs = [ conv2d(output, conv_w, conv_b) for output in outputs ]
-    # logging.debug('conv6_output: {}x{}'.format(len(outputs), outputs[0].shape))
-    
-    # conv_b = new_bias(16)
-    # conv_w = new_conv2dweight(3, 3, 16, 16)
-    # outputs = [ conv2d(output, conv_w, conv_b) for output in outputs ]
-    # logging.debug('conv7_output: {}x{}'.format(len(outputs), outputs[0].shape))
+        # layer 3 ##############################################################
+        prev_outputs = outputs
+        
+        conv_b = new_bias(64)
+        conv_w = new_conv2dweight(3, 3, 32, 64)
+        outputs = [ conv2d(output, conv_w, conv_b) for output in outputs ]
+        logger.log('conv_output', outputs)
+        
+        outputs = [ batch_norm(output) for output in outputs ]
+        logger.log('batchnorm_output', outputs)
 
-    # outputs = [outputs[i] + outputs_res[i] for i in range(len(outputs))]
-    # logging.debug('residual3_output: {}x{}'.format(len(outputs), outputs[0].shape))
-    
-    # outputs = [ batch_norm(output) for output in outputs ]
-    # logging.debug('batchNorm4_output: {}x{}'.format(len(outputs), outputs[0].shape))
+        conv_b = new_bias(64)
+        conv_w = new_conv2dweight(3, 3, 64, 64)
+        outputs = [ conv2d(output, conv_w, conv_b) for output in outputs ]
+        logger.log('conv_output', outputs)
+        
+        outputs = [ batch_norm(output) for output in outputs ]
+        logger.log('batchnorm_output', outputs)
 
-    # # layer4 (conv) ############################################################
-    # outputs_res = outputs
-    
-    # conv_b = new_bias(16)
-    # conv_w = new_conv2dweight(3, 3, 16, 16)
-    # outputs = [ conv2d(output, conv_w, conv_b) for output in outputs ]
-    # logging.debug('conv8_output: {}x{}'.format(len(outputs), outputs[0].shape))
-    
-    # conv_b = new_bias(16)
-    # conv_w = new_conv2dweight(3, 3, 16, 16)
-    # outputs = [ conv2d(output, conv_w, conv_b) for output in outputs ]
-    # logging.debug('conv9_output: {}x{}'.format(len(outputs), outputs[0].shape))
+        outputs = [ outputs[i] + tf.contrib.keras.backend.repeat_elements(prev_outputs[i], 2, 3) for i in range(len(outputs))]
+        logger.log('residual_output', outputs)
 
-    # outputs = [outputs[i] + outputs_res[i] for i in range(len(outputs))]
-    # logging.debug('residual4_output: {}x{}'.format(len(outputs), outputs[0].shape))
-    
-    # outputs = [ batch_norm(output) for output in outputs ]
-    # logging.debug('batchNorm5_output: {}x{}'.format(len(outputs), outputs[0].shape))
+        # layer 4 ##############################################################
+        prev_outputs = outputs
+        
+        conv_b = new_bias(128)
+        conv_w = new_conv2dweight(3, 3, 64, 128)
+        outputs = [ conv2d(output, conv_w, conv_b) for output in outputs ]
+        logger.log('conv_output', outputs)
+        
+        outputs = [ batch_norm(output) for output in outputs ]
+        logger.log('batchnorm_output', outputs)
 
-    # layer (convLSTM) #########################################################
-    #logging.debug('input_length: {}'.format(input_length.shape))
-    num_filters = 16 # convLSTM internal fitlers
-    outputs, state = tf.nn.dynamic_rnn(
-        ConvLSTMCell([outputs[0].shape[1], outputs[0].shape[2]], num_filters, [3, 3]),
-        tf.stack(outputs, axis=0),
+        conv_b = new_bias(128)
+        conv_w = new_conv2dweight(3, 3, 128, 128)
+        outputs = [ conv2d(output, conv_w, conv_b) for output in outputs ]
+        logger.log('conv_output', outputs)
+        
+        outputs = [ batch_norm(output) for output in outputs ]
+        logger.log('batchnorm_output', outputs)
+
+        outputs = [ outputs[i] + tf.contrib.keras.backend.repeat_elements(prev_outputs[i], 2, 3) for i in range(len(outputs))]
+        logger.log('residual_output', outputs)
+
+    # convLSTM 1 (parts need to run on CPU) ####################################
+    num_filters = 128 # convLSTM internal fitlers
+    h, w = int(outputs[0].shape[1]), int(outputs[0].shape[2])
+    output, state = tf.nn.dynamic_rnn(
+        ConvLSTMCell([h, w], num_filters, [3, 3]),
+        tf.stack(outputs, axis=1),
         dtype=tf.float32,
         sequence_length=input_length,
-        time_major=True,
     )
-    outputs = tf.unstack(outputs, axis=0)
-    logging.debug('convLSTM1_output: {}x{}'.format(len(outputs), outputs[0].shape))
 
+    outputs = [ batch_norm(output) for output in outputs ]
+    logger.log('batchnorm_output', outputs)
+    
     outputs = [tf.reduce_mean(output, axis=[1,2]) for output in outputs]
-    logging.debug('avePool1_output: {}x{}'.format(len(outputs), outputs[0].shape))
+    logger.log('avepool_output', outputs)
+
+    with tf.device("/device:CPU:0"):
+        outputs = tf.unstack(output, axis=1)
+        logger.log('convLSTM_output', outputs)
+        
+        outputs = [ tf.reshape(output, [-1, h*w*num_filters]) for output in outputs ]
+        logger.log('flatten_output', outputs)
+        
+        b_fc = new_bias(num_labels)
+        w_fc = tf.Variable( tf.truncated_normal([h*w*num_filters, num_labels], stddev=0.1, ) )
+        outputs = [ tf.matmul(output, w_fc) + b_fc for output in outputs ]
+
+        logger.log('fc_output', outputs)
     
-    # fc layer #################################################################
-    outputs = [ tf.reshape(output, [-1, num_filters]) for output in outputs ]
-    logging.debug('flatten1_output: {}x{}'.format(len(outputs), outputs[0].shape))
+        final_outputs = outputs
 
-    b_fc = new_bias(num_labels)
-    w_fc = tf.truncated_normal([num_filters, num_labels], stddev=0.1)
-    #logging.debug('fc1: {}'.format(w_fc.shape))
-    
-    outputs = [ tf.matmul(output, w_fc) + b_fc for output in outputs ]
-    logging.debug('fc1_output: {}x{}'.format(len(outputs), outputs[0].shape))
+    # END CNN ##################################################################
+    logging.debug('---------- END CNN DEFINITION ----------')
 
-    logging.debug('---END MODEL DEFINTION---')
-
-    # loss and precitions (softmax) ############################################
-    network_outputs = outputs
-    
-    cross_entropies = [ tf.nn.softmax_cross_entropy_with_logits(labels=output_placeholder, logits=network_output) for network_output in network_outputs ]
-    logging.debug('cross_entropies: {}x{}'.format(len(cross_entropies), cross_entropies[0].shape))
-    
-    cross_entropies_truncated = [ tf.where(input_length > i, cross_entropies[i], zeros) for i in range(video_length) ]
-    logging.debug('cross_entropies_truncated: {}x{}'.format(len(cross_entropies_truncated), cross_entropies_truncated[0].shape))
-
-    per_video_losses = tf.reduce_sum(tf.stack(cross_entropies_truncated, axis=0), axis=0) / tf.to_float(input_length)
-    logging.debug('per_video_losses: {}'.format(per_video_losses.shape))
-    
-    loss = tf.reduce_sum(per_video_losses, name='loss')
-    logging.debug('loss: {}'.format(loss.shape))
-
-    predictions = tf.stack([tf.nn.softmax(network_output) for network_output in network_outputs], name='predictions')
-    logging.debug('predictions: {}'.format(predictions.shape))
-
+    # ACCURACY AND LOSS ########################################################
+    with tf.device("/device:CPU:0"):
+        softmaxes = [ tf.nn.softmax(logits=output) for output in final_outputs ]
+        predictions = tf.stack(final_outputs, name='predictions') #tf.stack(softmaxes)
+        
+        cross_entropies = [ tf.nn.softmax_cross_entropy_with_logits(labels=output_placeholder, logits=output) for output in final_outputs ]
+        
+        cross_entropies_truncated = tf.stack([ tf.where(input_length > i, cross_entropies[i], zeros) for i in range(video_length) ], axis=1)
+        loss = tf.reduce_sum(tf.reduce_sum(cross_entropies, axis=0) / tf.to_float(input_length), name='loss')
+        logging.debug('loss: {}'.format(loss.shape))
+        
     return loss, predictions
     
 def conv2d(x, w, b):
-    """Conv2d
-    tf.nn.conv2d(
-    input,
-    filter,
-    strides,
-    padding,
-    use_cudnn_on_gpu=None,
-    data_format=None,
-    name=None
-    )
-    """
-    return leaky_relu(tf.nn.conv2d(x, w, strides=[1,1,1,1], padding='SAME') + b, LEAKINESS)
+    output = leaky_relu(tf.nn.conv2d(x, w, strides=[1,1,1,1], padding='SAME') + b, LEAKINESS)
+    return output
 
 def leaky_relu(x, leakiness=0.0):
     """Relu, with optional leaky support."""
@@ -219,9 +252,8 @@ def batch_norm(x):
     """
     return tf.layers.batch_normalization(x)
 
-
-def new_bias(output_depth):
-    return tf.Variable( tf.truncated_normal([output_depth], stddev=0.1) )
+def new_bias(length):
+    return tf.Variable( tf.truncated_normal([length], stddev=0.1) )
 
 def new_conv2dweight(xdim, ydim, input_depth, output_depth):
     return tf.Variable( tf.truncated_normal([xdim, ydim, input_depth, output_depth], stddev=0.1) )
