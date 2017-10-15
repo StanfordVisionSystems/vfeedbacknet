@@ -14,5 +14,4 @@ python3 -u vfeedbacknet_train /dev/shm/20bn-datasets/jester-v1-labels.csv \
         /dev/shm/20bn-datasets/20bn-jester-v1 \
         $2 \
         $3 \
-        $3/training_log.csv
-
+        $3/training_log.csv "${*:4}"
