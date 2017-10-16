@@ -135,7 +135,7 @@ def main(args):
     loss, predictions = eval('v.{}(args.video_length, args.video_width, args.video_height, len(labels_num2str), x_input, x_length, y_label, y_zeros)'.format(args.model_name))
      
     step = tf.Variable(0, trainable=False)
-    learning_rate = tf.maximum(tf.train.exponential_decay(args.learning_rate, step, args.prefetch_batch_size//args.train_batch_size, 0.9999), 1e-4) # 1% per prefetch_batch
+    learning_rate = tf.maximum(tf.train.exponential_decay(args.learning_rate, step, args.prefetch_batch_size//args.train_batch_size, 0.9999), 1e-4)
     train_step = tf.train.AdadeltaOptimizer(learning_rate).minimize(loss, global_step=step)
     #train_step = tf.train.AdamOptimizer(args.learning_rate).minimize(loss)
 
