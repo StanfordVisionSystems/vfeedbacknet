@@ -126,7 +126,7 @@ def main(args):
     loss, predictions = eval('v.{}(args.video_length, args.video_width, args.video_height, len(labels_num2str), x_input, x_length, y_label, y_zeros)'.format(args.model_name))
      
     step = tf.Variable(0, trainable=False)
-    learning_rate = tf.maximum(tf.train.exponential_decay(args.learning_rate, step, args.prefetch_batch_size//args.train_batch_size, 0.99), 1e-5) # 1% per prefetch_batch
+    learning_rate = tf.maximum(tf.train.exponential_decay(args.learning_rate, step, args.prefetch_batch_size//args.train_batch_size, 0.9999), 1e-4) # 1% per prefetch_batch
     train_step = tf.train.AdadeltaOptimizer(learning_rate).minimize(loss, global_step=step)
     #train_step = tf.train.AdamOptimizer(args.learning_rate).minimize(loss)
 
@@ -172,6 +172,9 @@ def main(args):
             with tf.Session() as sess:
                 sess.run(tf.global_variables_initializer())
 
+                if args.continue_training:
+                    saver.restore(sess, tf.train.latest_checkpoint(args.checkpoint_dir))
+                
                 for epoch in range(args.num_epoch):
                     video_nums = data_video_nums.copy()
                     random.shuffle(video_nums)
@@ -327,6 +330,11 @@ if __name__ == '__main__':
     # tuning parameters (optional)
     parser.add_argument('--overfit',
                         help='overfit on a small chunk of data (official run: False for 20bn)',
+                        action='store_true',
+                        default=False)
+
+    parser.add_argument('--continue_training',
+                        help='load the most recent set of weights and continue training (official run: False for 20bn)',
                         action='store_true',
                         default=False)
 
