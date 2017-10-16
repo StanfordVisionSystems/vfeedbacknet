@@ -348,7 +348,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--learning_rate', type=float, nargs=None,
                         help='learning rate for the optimization (official run: XXXX for 20bn)',
-                        default=1e-1)
+                        default=1e-2)
 
     parser.add_argument('--train_batch_size', type=int, nargs=None,
                         help='training batch size; num videos per batch (official run: 32 for 20bn)',
