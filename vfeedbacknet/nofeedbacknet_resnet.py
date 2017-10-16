@@ -133,23 +133,24 @@ def nofeedbacknet_resnet(video_length, video_width, video_height, num_labels, in
     # convLSTM 1 (parts need to run on CPU) ####################################
     num_filters = 128 # convLSTM internal fitlers
     h, w = int(outputs[0].shape[1]), int(outputs[0].shape[2])
-    output, state = tf.nn.dynamic_rnn(
+    outputs, state = tf.nn.dynamic_rnn(
         ConvLSTMCell([h, w], num_filters, [3, 3]),
         tf.stack(outputs, axis=1),
         dtype=tf.float32,
         sequence_length=input_length,
     )
 
+    outputs = tf.unstack(outputs, axis=1)
+    logger.log('convLSTM_output', outputs)
+        
     outputs = [ batch_norm(output) for output in outputs ]
     logger.log('batchnorm_output', outputs)
     
-    outputs = [tf.reduce_mean(output, axis=[1,2]) for output in outputs]
-    logger.log('avepool_output', outputs)
+    # outputs = [tf.reduce_mean(output, axis=[1,2]) for output in outputs]
+    # logger.log('avepool_output', outputs)
 
     with tf.device("/device:CPU:0"):
-        outputs = tf.unstack(output, axis=1)
-        logger.log('convLSTM_output', outputs)
-        
+        h, w = int(outputs[0].shape[1]), int(outputs[0].shape[2])
         outputs = [ tf.reshape(output, [-1, h*w*num_filters]) for output in outputs ]
         logger.log('flatten_output', outputs)
         

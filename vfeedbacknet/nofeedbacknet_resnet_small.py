@@ -34,7 +34,7 @@ class logger:
         p = ' ' * (maxwidth + padding - len(n) - len(c))
         logging.debug('{}-{}:{}{}x{}'.format(n, c, p, len(var), var[0].shape))
             
-def nofeedbacknet_resnet_uniform(video_length, video_width, video_height, num_labels, input_placeholder, input_length, output_placeholder, zeros):
+def nofeedbacknet_resnet_small(video_length, video_width, video_height, num_labels, input_placeholder, input_length, output_placeholder, zeros):
     '''
     This model is just an ConvLSTM based RNN. (Let's get something working first before we add feedback...).
     '''
@@ -52,25 +52,24 @@ def nofeedbacknet_resnet_uniform(video_length, video_width, video_height, num_la
         outputs = input_frames
     
         # layer 0 ##############################################################
-        conv_b = new_bias(32)
-        conv_w = new_conv2dweight(10, 10, 1, 32)
+        conv_b = new_bias(16)
+        conv_w = new_conv2dweight(10, 10, 1, 16)
         outputs = [ conv2d(output, conv_w, conv_b) for output in outputs ]
         logger.log('conv_output', outputs)
         
         outputs = [ max_pool(output) for output in outputs ]
         logger.log('maxpool_output', outputs)
-
-        
+    
         # layer 1 ##############################################################
         prev_outputs = outputs
         
-        conv_b = new_bias(32)
-        conv_w = new_conv2dweight(3, 3, 32, 32)
+        conv_b = new_bias(16)
+        conv_w = new_conv2dweight(5, 5, 16, 16)
         outputs = [ conv2d(output, conv_w, conv_b) for output in outputs ]
         logger.log('conv_output', outputs)
         
-        conv_b = new_bias(32)
-        conv_w = new_conv2dweight(3, 3, 32, 32)
+        conv_b = new_bias(16)
+        conv_w = new_conv2dweight(5, 5, 16, 16)
         outputs = [ conv2d(output, conv_w, conv_b) for output in outputs ]
         logger.log('conv_output', outputs)
         
@@ -79,73 +78,60 @@ def nofeedbacknet_resnet_uniform(video_length, video_width, video_height, num_la
 
         outputs = [ max_pool(output) for output in outputs ]
         logger.log('maxpool_output', outputs)
+         
+        # # layer 2 ##############################################################
+        # prev_outputs = outputs
+        
+        # conv_b = new_bias(32)
+        # conv_w = new_conv2dweight(3, 3, 16, 32)
+        # outputs = [ conv2d(output, conv_w, conv_b) for output in outputs ]
+        # logger.log('conv_output', outputs)
 
+        # conv_b = new_bias(32)
+        # conv_w = new_conv2dweight(3, 3, 32, 32)
+        # outputs = [ conv2d(output, conv_w, conv_b) for output in outputs ]
+        # logger.log('conv_output', outputs)
         
-        # layer 2 ##############################################################
-        prev_outputs = outputs
-        
-        conv_b = new_bias(32)
-        conv_w = new_conv2dweight(3, 3, 32, 32)
-        outputs = [ conv2d(output, conv_w, conv_b) for output in outputs ]
-        logger.log('conv_output', outputs)
-        
-        conv_b = new_bias(32)
-        conv_w = new_conv2dweight(3, 3, 32, 32)
-        outputs = [ conv2d(output, conv_w, conv_b) for output in outputs ]
-        logger.log('conv_output', outputs)
-        
-        #outputs = [ outputs[i] + tf.contrib.keras.backend.repeat_elements(prev_outputs[i], 2, 3) for i in range(len(outputs))]
-        outputs = [ outputs[i] + prev_outputs[i] for i in range(len(outputs))]
-        logger.log('residual_output', outputs)
+        # outputs = [ outputs[i] + tf.contrib.keras.backend.repeat_elements(prev_outputs[i], 2, 3) for i in range(len(outputs))]
+        # logger.log('residual_output', outputs)
 
-        outputs = [ max_pool(output) for output in outputs ]
-        logger.log('maxpool_output', outputs)
+        # outputs = [ max_pool(output) for output in outputs ]
+        # logger.log('maxpool_output', outputs)
 
+        # # layer 3 ##############################################################
+        # prev_outputs = outputs
+        
+        # conv_b = new_bias(64)
+        # conv_w = new_conv2dweight(3, 3, 32, 64)
+        # outputs = [ conv2d(output, conv_w, conv_b) for output in outputs ]
+        # logger.log('conv_output', outputs)
 
-        # layer 3 ##############################################################
-        prev_outputs = outputs
+        # conv_b = new_bias(64)
+        # conv_w = new_conv2dweight(3, 3, 64, 64)
+        # outputs = [ conv2d(output, conv_w, conv_b) for output in outputs ]
+        # logger.log('conv_output', outputs)
         
-        conv_b = new_bias(32)
-        conv_w = new_conv2dweight(3, 3, 32, 32)
-        outputs = [ conv2d(output, conv_w, conv_b) for output in outputs ]
-        logger.log('conv_output', outputs)
-        
-        conv_b = new_bias(32)
-        conv_w = new_conv2dweight(3, 3, 32, 32)
-        outputs = [ conv2d(output, conv_w, conv_b) for output in outputs ]
-        logger.log('conv_output', outputs)
-        
-        #outputs = [ outputs[i] + tf.contrib.keras.backend.repeat_elements(prev_outputs[i], 2, 3) for i in range(len(outputs))]
-        outputs = [ outputs[i] + prev_outputs[i] for i in range(len(outputs))]
-        logger.log('residual_output', outputs)
+        # outputs = [ outputs[i] + tf.contrib.keras.backend.repeat_elements(prev_outputs[i], 2, 3) for i in range(len(outputs))]
+        # logger.log('residual_output', outputs)
 
-        outputs = [ max_pool(output) for output in outputs ]
-        logger.log('maxpool_output', outputs)
+        # # layer 4 ##############################################################
+        # prev_outputs = outputs
+        
+        # conv_b = new_bias(128)
+        # conv_w = new_conv2dweight(3, 3, 64, 128)
+        # outputs = [ conv2d(output, conv_w, conv_b) for output in outputs ]
+        # logger.log('conv_output', outputs)
+        
+        # conv_b = new_bias(128)
+        # conv_w = new_conv2dweight(3, 3, 128, 128)
+        # outputs = [ conv2d(output, conv_w, conv_b) for output in outputs ]
+        # logger.log('conv_output', outputs)
 
-        
-        # layer 4 ##############################################################
-        prev_outputs = outputs
-        
-        conv_b = new_bias(32)
-        conv_w = new_conv2dweight(3, 3, 32, 32)
-        outputs = [ conv2d(output, conv_w, conv_b) for output in outputs ]
-        logger.log('conv_output', outputs)
-        
-        conv_b = new_bias(32)
-        conv_w = new_conv2dweight(3, 3, 32, 32)
-        outputs = [ conv2d(output, conv_w, conv_b) for output in outputs ]
-        logger.log('conv_output', outputs)
-        
-        #outputs = [ outputs[i] + tf.contrib.keras.backend.repeat_elements(prev_outputs[i], 2, 3) for i in range(len(outputs))]
-        outputs = [ outputs[i] + prev_outputs[i] for i in range(len(outputs))]
-        logger.log('residual_output', outputs)
+        # outputs = [ outputs[i] + tf.contrib.keras.backend.repeat_elements(prev_outputs[i], 2, 3) for i in range(len(outputs))]
+        # logger.log('residual_output', outputs)
 
-        outputs = [ max_pool(output) for output in outputs ]
-        logger.log('maxpool_output', outputs)
-
-        
     # convLSTM 1 (parts need to run on CPU) ####################################
-    num_filters = 64 # convLSTM internal fitlers
+    num_filters = 128 # convLSTM internal fitlers
     h, w = int(outputs[0].shape[1]), int(outputs[0].shape[2])
     outputs, state = tf.nn.dynamic_rnn(
         ConvLSTMCell([h, w], num_filters, [3, 3]),
@@ -153,38 +139,40 @@ def nofeedbacknet_resnet_uniform(video_length, video_width, video_height, num_la
         dtype=tf.float32,
         sequence_length=input_length,
     )
-
+    
     outputs = tf.unstack(outputs, axis=1)
-    logger.log('unstack_output', outputs)
+    logger.log('convLSTM_output', outputs)
     
     outputs = [ batch_norm(output) for output in outputs ]
     logger.log('batchnorm_output', outputs)
-
-    # outputs = [tf.reduce_mean(output, axis=[1,2]) for output in outputs]
-    # logger.log('avepool_output', outputs)
+    
+    outputs = [tf.reduce_mean(output, axis=[1,2]) for output in outputs]
+    logger.log('avepool_output', outputs)
 
     with tf.device("/device:CPU:0"):
-        h, w = int(outputs[0].shape[1]), int(outputs[0].shape[2])
-        outputs = [ tf.reshape(output, [-1, h*w*num_filters]) for output in outputs ]
+        outputs = [ tf.reshape(output, [-1, num_filters]) for output in outputs ]
         logger.log('flatten_output', outputs)
         
         b_fc = new_bias(num_labels)
-        w_fc = tf.Variable( tf.truncated_normal([h*w*num_filters, num_labels], stddev=0.1) )
+        w_fc = tf.Variable( tf.truncated_normal([num_filters, num_labels], stddev=0.1, ) )
         outputs = [ tf.matmul(output, w_fc) + b_fc for output in outputs ]
-
         logger.log('fc_output', outputs)
     
-        final_outputs = outputs
-
     # END CNN ##################################################################
     logging.debug('---------- END CNN DEFINITION ----------')
+
+    final_outputs = outputs
+    logger.log('final_output', final_outputs)
 
     # ACCURACY AND LOSS ########################################################
     with tf.device("/device:CPU:0"):
         softmaxes = [ tf.nn.softmax(logits=output) for output in final_outputs ]
+        logger.log('softmaxes', softmaxes)
+
         predictions = tf.stack(final_outputs, name='predictions') #tf.stack(softmaxes)
         
         cross_entropies = [ tf.nn.softmax_cross_entropy_with_logits(labels=output_placeholder, logits=output) for output in final_outputs ]
+        logger.log('cross_entropies', cross_entropies)
         
         cross_entropies_truncated = tf.stack([ tf.where(input_length > i, cross_entropies[i], zeros) for i in range(video_length) ], axis=1)
         loss = tf.reduce_sum(tf.reduce_sum(cross_entropies, axis=0) / tf.to_float(input_length), name='loss')
@@ -211,7 +199,7 @@ def max_pool(x):
     name=None
     )
     """
-    return tf.nn.max_pool(x, [1,3,3,1], [1,2,2,1], 'SAME', data_format='NHWC')
+    return tf.nn.max_pool(x, [1,2,2,1], [1,2,2,1], 'SAME', data_format='NHWC')
 
 def batch_norm(x):
     """BatchNorm
