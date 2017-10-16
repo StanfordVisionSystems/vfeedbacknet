@@ -57,9 +57,6 @@ def nofeedbacknet_resnet(video_length, video_width, video_height, num_labels, in
         outputs = [ conv2d(output, conv_w, conv_b) for output in outputs ]
         logger.log('conv_output', outputs)
         
-        outputs = [ batch_norm(output) for output in outputs ]
-        logger.log('batchnorm_output', outputs)
-        
         outputs = [ max_pool(output) for output in outputs ]
         logger.log('maxpool_output', outputs)
     
@@ -71,23 +68,17 @@ def nofeedbacknet_resnet(video_length, video_width, video_height, num_labels, in
         outputs = [ conv2d(output, conv_w, conv_b) for output in outputs ]
         logger.log('conv_output', outputs)
         
-        outputs = [ batch_norm(output) for output in outputs ]
-        logger.log('batchnorm_output', outputs)
-
         conv_b = new_bias(16)
         conv_w = new_conv2dweight(5, 5, 16, 16)
         outputs = [ conv2d(output, conv_w, conv_b) for output in outputs ]
         logger.log('conv_output', outputs)
         
-        outputs = [ batch_norm(output) for output in outputs ]
-        logger.log('batchnorm_output', outputs)
-
         outputs = [ outputs[i] + prev_outputs[i] for i in range(len(outputs))]
         logger.log('residual_output', outputs)
 
         outputs = [ max_pool(output) for output in outputs ]
         logger.log('maxpool_output', outputs)
-        
+         
         # layer 2 ##############################################################
         prev_outputs = outputs
         
@@ -95,18 +86,12 @@ def nofeedbacknet_resnet(video_length, video_width, video_height, num_labels, in
         conv_w = new_conv2dweight(3, 3, 16, 32)
         outputs = [ conv2d(output, conv_w, conv_b) for output in outputs ]
         logger.log('conv_output', outputs)
-        
-        outputs = [ batch_norm(output) for output in outputs ]
-        logger.log('batchnorm_output', outputs)
 
         conv_b = new_bias(32)
         conv_w = new_conv2dweight(3, 3, 32, 32)
         outputs = [ conv2d(output, conv_w, conv_b) for output in outputs ]
         logger.log('conv_output', outputs)
         
-        outputs = [ batch_norm(output) for output in outputs ]
-        logger.log('batchnorm_output', outputs)
-
         outputs = [ outputs[i] + tf.contrib.keras.backend.repeat_elements(prev_outputs[i], 2, 3) for i in range(len(outputs))]
         logger.log('residual_output', outputs)
 
@@ -120,18 +105,12 @@ def nofeedbacknet_resnet(video_length, video_width, video_height, num_labels, in
         conv_w = new_conv2dweight(3, 3, 32, 64)
         outputs = [ conv2d(output, conv_w, conv_b) for output in outputs ]
         logger.log('conv_output', outputs)
-        
-        outputs = [ batch_norm(output) for output in outputs ]
-        logger.log('batchnorm_output', outputs)
 
         conv_b = new_bias(64)
         conv_w = new_conv2dweight(3, 3, 64, 64)
         outputs = [ conv2d(output, conv_w, conv_b) for output in outputs ]
         logger.log('conv_output', outputs)
         
-        outputs = [ batch_norm(output) for output in outputs ]
-        logger.log('batchnorm_output', outputs)
-
         outputs = [ outputs[i] + tf.contrib.keras.backend.repeat_elements(prev_outputs[i], 2, 3) for i in range(len(outputs))]
         logger.log('residual_output', outputs)
 
@@ -143,16 +122,10 @@ def nofeedbacknet_resnet(video_length, video_width, video_height, num_labels, in
         outputs = [ conv2d(output, conv_w, conv_b) for output in outputs ]
         logger.log('conv_output', outputs)
         
-        outputs = [ batch_norm(output) for output in outputs ]
-        logger.log('batchnorm_output', outputs)
-
         conv_b = new_bias(128)
         conv_w = new_conv2dweight(3, 3, 128, 128)
         outputs = [ conv2d(output, conv_w, conv_b) for output in outputs ]
         logger.log('conv_output', outputs)
-        
-        outputs = [ batch_norm(output) for output in outputs ]
-        logger.log('batchnorm_output', outputs)
 
         outputs = [ outputs[i] + tf.contrib.keras.backend.repeat_elements(prev_outputs[i], 2, 3) for i in range(len(outputs))]
         logger.log('residual_output', outputs)
@@ -205,7 +178,7 @@ def nofeedbacknet_resnet(video_length, video_width, video_height, num_labels, in
     return loss, predictions
     
 def conv2d(x, w, b):
-    output = leaky_relu(tf.nn.conv2d(x, w, strides=[1,1,1,1], padding='SAME') + b, LEAKINESS)
+    output = leaky_relu( batch_norm(tf.nn.conv2d(x, w, strides=[1,1,1,1], padding='SAME') + b) , LEAKINESS)
     return output
 
 def leaky_relu(x, leakiness=0.0):
