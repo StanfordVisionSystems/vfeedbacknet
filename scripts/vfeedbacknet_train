@@ -339,12 +339,12 @@ if __name__ == '__main__':
 
     # tuning parameters (optional)
     parser.add_argument('--overfit',
-                        help='overfit on a small chunk of data (official run: False for 20bn)',
+                        help='overfit on a small chunk [64 data points] of data (official run: False for 20bn)',
                         action='store_true',
                         default=False)
 
     parser.add_argument('--overfitt',
-                        help='overfit on a larger chunk of data (official run: False for 20bn)',
+                        help='overfit on a larger chunk [8192 data points] of data (official run: False for 20bn)',
                         action='store_true',
                         default=False)
 
