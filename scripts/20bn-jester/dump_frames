@@ -1,0 +1,28 @@
+#!/usr/bin/env python3
+
+import os
+import sys
+import multiprocessing as mp
+import subprocess as sub
+
+def dump_frames(cmd):
+    sub.run(cmd.split(' '))
+
+BASE_DIR = sys.argv[1]
+os.chdir(BASE_DIR)
+print('base_dir: ' + BASE_DIR)
+
+job_base = 'ffmpeg -i {video_path} -q:v 1 {output_dir}/%05d.jpg'
+jobs = []
+for d in os.listdir():
+    for v in os.listdir(d):
+        dv = os.path.join(d,v)
+        os.rename(dv, dv+'.tmp')
+        os.mkdir(dv)
+        os.rename(dv+'.tmp', dv+'/'+v)       
+        j = job_base.format(video_path=os.path.join(dv,v), output_dir=dv)
+
+        jobs.append(j)
+
+with mp.Pool(processes=mp.cpu_count()) as pool:
+    pool.map(dump_frames, jobs)
