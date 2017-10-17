@@ -15,7 +15,7 @@ args['model_name'] = sys.argv[1]
 
 labels_num2str = list(range(27))
 
-x_input = tf.placeholder(tf.float32, [None, args['video_length'], args['video_height'], args['video_width'], 3], name='x_input')
+x_input = tf.placeholder(tf.float32, [None, args['video_length'], args['video_height'], args['video_width']], name='x_input')
 x_length = tf.placeholder(tf.int32, [None,], name='x_length')
 
 assert(len(labels_num2str) == 27) # there should be 27 classes in the 20BN dataset
