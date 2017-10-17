@@ -93,8 +93,8 @@ def main(args):
         if args.overfit:
             logging.info('OVERFITTING!')
             validation_video_nums = validation_video_nums[:64] # force overfitting
-
-        if args.overfitt:
+            args.prefetch_batch_size = 64
+        elif args.overfitt:
             logging.info('OVERFITTING!')
             validation_video_nums = validation_video_nums[:128] # force overfitting
 
@@ -106,13 +106,10 @@ def main(args):
         if args.overfit:
             logging.info('OVERFITTING!')
             data_video_nums = data_video_nums[:64] # force overfitting
-
-        if args.overfit:
+            args.prefetch_batch_size = 64
+        elif args.overfitt:
             logging.info('OVERFITTING!')
             data_video_nums = validation_video_nums[:128] # force overfitting
-            
-    if args.overfit or args.overfitt:
-        args.prefetch_batch_size = 64
             
     # local_device_protos = device_lib.list_local_devices()
     # available_gpus = [x.name for x in local_device_protos if x.device_type == 'GPU']
@@ -236,7 +233,7 @@ def main(args):
                             
                             predict_analysis = []
                             for video_idx in range(args.train_batch_size):
-                                video_labelnum = video_batch['video_labelnums'][video_idx]
+                                video_labelnum = video_batch['video_labelnums'][begin:end][video_idx]
                                 video_labelstr = labels_num2str[video_labelnum]
                                 video_length = video_batch['video_numframes'][video_idx]
                                 
@@ -268,7 +265,7 @@ def main(args):
 
                                 fmax_str = list(map(lambda x: str(x).zfill(2), analysis['frame_labelmax']))
                                 tl = str(analysis['video_labelnum']).zfill(2)
-                                logging.debug('correct: {} true_label,prediction: {},{} {}'.format('T' if tl==fmax_str[-1] else 'F', tl, fmax_str[-1], fmax_str))
+                                logging.debug('{} true_label,prediction: {},{} {}'.format('T' if tl==fmax_str[-1] else 'F', tl, fmax_str[-1], fmax_str))
 
                             predicted_vals = np.asarray([ p['frame_labelmax'][-1] for p in predict_analysis ])
                             correct_predictions = sum(video_batch['video_labelnums'][begin:end] == predicted_vals)
