@@ -6,7 +6,7 @@ import numpy as np
 import sys
 
 args = {
-    'video_length' : 40,
+    'video_length' : 20,
     'video_height' : 176,
     'video_width' : 176,
     'train_batch_size' : 64

@@ -92,11 +92,12 @@ def main(args):
 
         if args.overfit:
             logging.info('OVERFITTING!')
-            validation_video_nums = validation_video_nums[:64] # force overfitting
             args.prefetch_batch_size = 64
+            validation_video_nums = validation_video_nums[:args.prefetch_batch_size] # force overfitting
         elif args.overfitt:
             logging.info('OVERFITTING!')
-            validation_video_nums = validation_video_nums[:128] # force overfitting
+            args.prefetch_batch_size = 1024
+            validation_video_nums = validation_video_nums[:args.prefetch_batch_size] # force overfitting
 
     with open(args.data_file, 'r') as csvfile:
         reader = csv.reader(csvfile, delimiter=';')
@@ -105,11 +106,10 @@ def main(args):
 
         if args.overfit:
             logging.info('OVERFITTING!')
-            data_video_nums = data_video_nums[:64] # force overfitting
-            args.prefetch_batch_size = 64
+            data_video_nums = data_video_nums[:args.prefetch_batch_size] # force overfitting
         elif args.overfitt:
             logging.info('OVERFITTING!')
-            data_video_nums = validation_video_nums[:128] # force overfitting
+            data_video_nums = data_video_nums[:args.prefetch_batch_size] # force overfitting
             
     # local_device_protos = device_lib.list_local_devices()
     # available_gpus = [x.name for x in local_device_protos if x.device_type == 'GPU']
@@ -326,7 +326,7 @@ def main(args):
                                     assert(not np.isnan(total_loss_val))
                                     assert(not np.any(np.isnan(predict_vals)))
 
-                                    predict_vals = np.vstack([predict_vals[n-1,m,:] for n,m in zip(validation_batch['video_numframes'][begin:end],range(args.train_batch_size))])
+                                    predict_vals = np.vstack([predict_vals[n,m-1,:] for n,m in zip(range(args.train_batch_size),validation_batch['video_numframes'][begin:end])])
 
                                     cum_validation_correct_predictions += sum(validation_batch['video_labelnums'][begin:end] == np.argmax(predict_vals, axis=1))
                                     cum_validation_loss += total_loss_val

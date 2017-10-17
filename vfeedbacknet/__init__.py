@@ -1,6 +1,7 @@
 from vfeedbacknet.simple_model import simple_model
 #from vfeedbacknet.nofeedbacknet_resnet import nofeedbacknet_resnet
 from vfeedbacknet.nofeedbacknet_resnet_loss_at_end import nofeedbacknet_resnet_loss_at_end
+from vfeedbacknet.simple_multilayer_convLSTM import simple_multilayer_convLSTM
 
 #from vfeedbacknet.nofeedbacknet_resnet_uniform import nofeedbacknet_resnet_uniform
 #from vfeedbacknet.vfeedbacknet_resnet import vfeedbacknet_resnet
