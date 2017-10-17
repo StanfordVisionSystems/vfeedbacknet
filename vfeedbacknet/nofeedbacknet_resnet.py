@@ -167,16 +167,22 @@ def nofeedbacknet_resnet(video_length, video_width, video_height, num_labels, in
 
     # ACCURACY AND LOSS ########################################################
     with tf.device("/device:CPU:0"):
-        softmaxes = [ tf.nn.softmax(logits=output) for output in final_outputs ]
-        predictions = tf.stack(final_outputs, name='predictions') #tf.stack(softmaxes)
+        predictions = tf.stack([ tf.nn.softmax(logits=output) for output in final_outputs ], axis=1)
+        logging.debug('predictions: {}'.format(predictions.shape))
         
         cross_entropies = [ tf.nn.softmax_cross_entropy_with_logits(labels=output_placeholder, logits=output) for output in final_outputs ]
+        cross_entropies_truncated = [ tf.where(input_length > i, cross_entropies[i], zeros) for i in range(video_length) ]
         
-        cross_entropies_truncated = tf.stack([ tf.where(input_length > i, cross_entropies[i], zeros) for i in range(video_length) ], axis=1)
-        loss = tf.reduce_sum(tf.reduce_sum(cross_entropies, axis=0) / tf.to_float(input_length), name='loss')
-        logging.debug('loss: {}'.format(loss.shape))
+        losses = tf.stack(cross_entropies_truncated, axis=1, name='loss')
+        logging.debug('losses: {}'.format(losses.shape))
+
+        # logging.debug('intermediate_loss: {}'.format(tf.stack(cross_entropies_truncated).shape))
+        # logging.debug('divide length: {}'.format((tf.stack(cross_entropies_truncated)/tf.to_float(input_length)).shape))
         
-    return loss, predictions
+        total_loss = tf.reduce_sum(tf.reduce_sum(tf.stack(cross_entropies_truncated)) / tf.to_float(input_length), name='total_loss')
+        logging.debug('total_loss: {}'.format(total_loss.shape))
+        
+    return losses, total_loss, predictions
     
 def conv2d(x, w, b):
     output = leaky_relu( batch_norm(tf.nn.conv2d(x, w, strides=[1,1,1,1], padding='SAME') + b) , LEAKINESS)
