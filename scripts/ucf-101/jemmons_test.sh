@@ -7,12 +7,12 @@ fi
 
 export CUDA_VISIBLE_DEVICES=$1
 
-# ./vfeedbacknet_test /dev/shm/UCF-101-dumpjpg/classInd.txt \
-#                     /dev/shm/UCF-101-dumpjpg/testlist01.txt \
-#                     /dev/shm/UCF-101-dumpjpg \
-#                     $2
-
 ./vfeedbacknet_test /dev/shm/UCF-101-dumpjpg/classInd.txt \
-                    /dev/shm/UCF-101-dumpjpg/trainlist01.txt \
+                    /dev/shm/UCF-101-dumpjpg/testlist01.txt \
                     /dev/shm/UCF-101-dumpjpg \
                     $2
+
+# ./vfeedbacknet_test /dev/shm/UCF-101-dumpjpg/classInd.txt \
+#                     /dev/shm/UCF-101-dumpjpg/trainlist01.txt \
+#                     /dev/shm/UCF-101-dumpjpg \
+#                     $2
