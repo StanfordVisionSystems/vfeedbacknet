@@ -90,6 +90,8 @@ def main(args):
         reader = csv.reader(csvfile, delimiter=' ')
         validation_video_paths = [ item[0].split('.')[0] for item in reader ] 
         validation_labels = { item : labels_str2num[item.split('/')[0]] for item in validation_video_paths } 
+        random.seed(123) # shuffle with this particular seed to help with debugging
+        random.shuffle(validation_video_paths)
 
         if args.overfit:
             logging.info('OVERFITTING!')
