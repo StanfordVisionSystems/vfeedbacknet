@@ -7,8 +7,12 @@ fi
 
 export CUDA_VISIBLE_DEVICES=$1
 
-echo "NOT YET IMPLEMENTED"
-# ./vfeedbacknet_test /dev/shm/20bn-datasets/jester-v1-labels.csv \
-#                     /dev/shm/20bn-datasets/jester-v1-validation.csv \
-#                     /dev/shm/20bn-datasets/20bn-jester-v1 \
+# ./vfeedbacknet_test /dev/shm/UCF-101-dumpjpg/classInd.txt \
+#                     /dev/shm/UCF-101-dumpjpg/testlist01.txt \
+#                     /dev/shm/UCF-101-dumpjpg \
 #                     $2
+
+./vfeedbacknet_test /dev/shm/UCF-101-dumpjpg/classInd.txt \
+                    /dev/shm/UCF-101-dumpjpg/trainlist01.txt \
+                    /dev/shm/UCF-101-dumpjpg \
+                    $2

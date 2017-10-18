@@ -88,8 +88,8 @@ def main(args):
         
     with open(args.validation_file, 'r') as csvfile:
         reader = csv.reader(csvfile, delimiter=' ')
-        validation_labels = { item[0].split('.')[0] : labels_str2num[item[0].split('/')[0]] for item in reader }; 
-        validation_video_paths = list(validation_labels.keys())
+        validation_video_paths = [ item[0].split('.')[0] for item in reader ] 
+        validation_labels = { item : labels_str2num[item.split('/')[0]] for item in validation_video_paths } 
 
         if args.overfit:
             logging.info('OVERFITTING!')
@@ -101,9 +101,11 @@ def main(args):
             validation_video_paths = validation_video_paths[:args.prefetch_batch_size] # force overfitting
             
     with open(args.data_file, 'r') as csvfile:
-        reader = csv.reader(csvfile, delimiter=';')
-        data_labels = { item[0].split('.')[0] : labels_str2num[item[0].split('/')[0]] for item in reader }; 
-        data_video_paths = list(data_labels.keys())
+        reader = csv.reader(csvfile, delimiter=' ')
+        data_video_paths = [ item[0].split('.')[0] for item in reader ] 
+        data_labels = { item : labels_str2num[item.split('/')[0]] for item in data_video_paths } 
+        random.seed(123) # shuffle with this particular seed to help with debugging
+        random.shuffle(data_video_paths)
 
         if args.overfit:
             logging.info('OVERFITTING!')
@@ -123,20 +125,18 @@ def main(args):
     logging.info('building model: {}'.format(args.model_name))
     x_input = tf.placeholder(tf.float32, [None, args.video_length, args.video_height, args.video_width], name='x_input')
     x_length = tf.placeholder(tf.int32, [None,], name='x_length')
-
+    
     assert(len(labels_num2str) == 101) # there should be 101 classes in the 20BN dataset
     y_label = tf.placeholder(tf.float32, [None, len(labels_num2str)], name='y_label')
-
+    
     y_zeros = tf.placeholder(tf.float32, [None,],  name='y_zeros')
     zeros = np.zeros((args.train_batch_size,))
-
+    
     losses, total_loss, predictions = eval('v.{}(args.video_length, args.video_width, args.video_height, len(labels_num2str), x_input, x_length, y_label, y_zeros)'.format(args.model_name))
-
+    
     step = tf.Variable(0, trainable=False)
     learning_rate = tf.maximum(tf.train.exponential_decay(args.learning_rate_init, step, args.prefetch_batch_size//args.train_batch_size, args.learning_rate_decay), args.learning_rate_min)
     train_step = tf.train.AdadeltaOptimizer(learning_rate).minimize(total_loss, global_step=step)
-
-    # create saver
     saver = tf.train.Saver()
 
     ############################################################################
@@ -178,11 +178,12 @@ def main(args):
 
             #with tf.Session(config=tf.ConfigProto(log_device_placement=True)) as sess:
             with tf.Session() as sess:
-                sess.run(tf.global_variables_initializer())
 
-                if args.continue_training:
+                if args.continue_training:                    
                     saver.restore(sess, tf.train.latest_checkpoint(args.checkpoint_dir))
-                
+                else:
+                    sess.run(tf.global_variables_initializer())
+
                 for epoch in range(args.num_epoch):
                     video_paths = data_video_paths.copy()
                     random.shuffle(video_paths)
@@ -224,7 +225,7 @@ def main(args):
                             batch_labels = keras.utils.to_categorical(video_batch['video_labelnums'][begin:end], len(labels_num2str))
                                                                       
                             _, _learn_rate, _total_loss_val, _loss_vals, _predict_vals = sess.run([train_step, learning_rate, total_loss, losses, predictions],
-                                                                                             feed_dict={x_input : video_batch['video_rawframes'][begin:end,:,:],
+                                                                                             feed_dict={x_input : video_batch['video_rawframes'][begin:end,:,:,:],
                                                                                                         x_length : video_batch['video_numframes'][begin:end],
                                                                                                         y_label : batch_labels,
                                                                                                         y_zeros : zeros})

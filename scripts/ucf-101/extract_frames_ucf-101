@@ -2,14 +2,15 @@
 
 #############################################
 # modify the UCF-101 data directory:
+UCF101DIR=/mnt/scratch/jemmons/vfeedbacknet/UCF-101
 #UCF101DIR=/mnt/data/jemmons/ucf-101/UCF-101-dumpjpg
-UCF101DIR=/dev/shm/UCF-101-dumpjpg
+#UCF101DIR=/dev/shm/UCF-101-dumpjpg
 
 # and, make sure ffmpeg is installed
 FFMPEGBIN=ffmpeg
 #############################################
 
-N=24
+N=48
 for f in ${UCF101DIR}/*/*.avi; do
   dir=${f::-4}
   echo -----
