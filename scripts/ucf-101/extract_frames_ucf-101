@@ -2,7 +2,7 @@
 
 #############################################
 # modify the UCF-101 data directory:
-UCF101DIR=/mnt/data/jemmons/ucf-101/UCF-101
+UCF101DIR=/mnt/data/jemmons/ucf-101/UCF-101-dumpjpg
 
 # and, make sure ffmpeg is installed
 FFMPEGBIN=ffmpeg
@@ -18,8 +18,9 @@ for f in ${UCF101DIR}/*/*.avi; do
   fi
 
   ${FFMPEGBIN} \
-    -i ${f} \
-    ${dir}/image_%4d.jpg
+      -i ${f} \
+      -q:v 1 \
+      ${dir}/image_%4d.jpg &
 done
 
 wait
