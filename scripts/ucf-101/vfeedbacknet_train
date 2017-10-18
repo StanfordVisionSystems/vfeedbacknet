@@ -31,16 +31,17 @@ def pool_init(shared_mem_):
     shared_mem = shared_mem_
 
 def prepare_video(args):
-    data_root, video_num, video_width, video_height, video_length, video_downsample_ratio, video_index, batch_size = args
+    data_root, video_path, video_width, video_height, video_length, video_downsample_ratio, video_index, batch_size = args
 
     video_mem = np.frombuffer(shared_mem, np.ctypeslib.ctypes.c_float)
     video_mem = video_mem.reshape((batch_size, video_length, video_height, video_width))
 
-    pathgen = lambda x : os.path.join(data_root, str(video_num), x)
+    pathgen = lambda x : os.path.join(data_root, str(video_path), x)
     frames = sorted( os.listdir(pathgen('')) )
 
     num_frames = min(len(frames)//video_downsample_ratio, video_length)
-
+    assert(num_frames != 0)
+    
     video_mem[video_index,:,:,:] = 0 # make grey
     for i in range(num_frames):
         image_idx = video_downsample_ratio*i
@@ -49,11 +50,11 @@ def prepare_video(args):
         image = np.asarray(image.resize((video_width, video_height), PIL.Image.BICUBIC), dtype=np.float32)
         video_mem[video_index,i,:,:] = (image / 128) - 1 # squash to interval (-1, 1)
 
-    return { 'num_frames' : num_frames, 'video_num' : video_num }
+    return { 'num_frames' : num_frames, 'video_path' : video_path }
 
-def load_videos(pool, data_root, data_labels, video_nums, video_width, video_height, video_length, video_downsample_ratio, batch_size, shared_mem):
+def load_videos(pool, data_root, data_labels, video_paths, video_width, video_height, video_length, video_downsample_ratio, batch_size, shared_mem):
 
-    prepare_video_jobs = [ (data_root, video_nums[i], video_width, video_height, video_length, video_downsample_ratio, i, batch_size) for i in range(batch_size) ]
+    prepare_video_jobs = [ (data_root, video_paths[i], video_width, video_height, video_length, video_downsample_ratio, i, batch_size) for i in range(batch_size) ]
     prepared_videos = pool.map(prepare_video, prepare_video_jobs)
 
     video_numframes = np.zeros((batch_size,), dtype=np.int32)
@@ -61,7 +62,7 @@ def load_videos(pool, data_root, data_labels, video_nums, video_width, video_hei
 
     for i in range(batch_size):
         video_numframes[i] = prepared_videos[i]['num_frames']
-        video_labelnums[i] = data_labels[ prepared_videos[i]['video_num'] ]
+        video_labelnums[i] = data_labels[ prepared_videos[i]['video_path'] ]
 
     video_mem = np.frombuffer(shared_mem, np.ctypeslib.ctypes.c_float)
     video_mem = video_mem.reshape((batch_size, video_length, video_height, video_width))
@@ -183,18 +184,18 @@ def main(args):
                     saver.restore(sess, tf.train.latest_checkpoint(args.checkpoint_dir))
                 
                 for epoch in range(args.num_epoch):
-                    video_nums = data_video_paths.copy()
-                    random.shuffle(video_nums)
+                    video_paths = data_video_paths.copy()
+                    random.shuffle(video_paths)
 
                     ############################################################
                     # loop over all the videos in a random order
                     ############################################################
                     for batch_base_idx in range(0, num_data_videos, args.prefetch_batch_size):
-                        video_nums_batch = video_nums[batch_base_idx:batch_base_idx+args.prefetch_batch_size]
+                        video_paths_batch = video_paths[batch_base_idx:batch_base_idx+args.prefetch_batch_size]
 
                         logging.debug('begin load videos')
                         t1 = timeit.default_timer() 
-                        video_batch = load_videos(pool, args.data_root, data_labels, video_nums_batch, args.video_width, args.video_height, args.video_length, args.video_downsample_ratio, args.prefetch_batch_size, shared_mem)
+                        video_batch = load_videos(pool, args.data_root, data_labels, video_paths_batch, args.video_width, args.video_height, args.video_length, args.video_downsample_ratio, args.prefetch_batch_size, shared_mem)
                         t2 = timeit.default_timer()
                         logging.debug('done! (load videos): {})'.format(t2-t1))
 
@@ -227,9 +228,6 @@ def main(args):
                                                                                                         x_length : video_batch['video_numframes'][begin:end],
                                                                                                         y_label : batch_labels,
                                                                                                         y_zeros : zeros})
-                            assert(not np.isnan(_total_loss_val))
-                            assert(not np.any(np.isnan(_predict_vals)))
-                            
                             predict_analysis = []
                             for video_idx in range(args.train_batch_size):
                                 video_labelnum = video_batch['video_labelnums'][begin:end][video_idx]
@@ -265,6 +263,10 @@ def main(args):
                                 fmax_str = list(map(lambda x: str(x).zfill(2), analysis['frame_labelmax']))
                                 tl = str(analysis['video_labelnum']).zfill(2)
                                 logging.debug('{} true_label,prediction: {},{} {}'.format('T' if tl==fmax_str[-1] else 'F', tl, fmax_str[-1], fmax_str))
+                                #logging.debug('{}'.format(analysis['frame_loss']))
+
+                            assert(not np.isnan(_total_loss_val))
+                            assert(not np.any(np.isnan(_predict_vals)))
 
                             predicted_vals = np.asarray([ p['frame_labelmax'][-1] for p in predict_analysis ])
                             correct_predictions = sum(video_batch['video_labelnums'][begin:end] == predicted_vals)
