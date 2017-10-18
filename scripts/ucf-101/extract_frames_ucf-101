@@ -8,6 +8,7 @@ UCF101DIR=/mnt/data/jemmons/ucf-101/UCF-101-dumpjpg
 FFMPEGBIN=ffmpeg
 #############################################
 
+N=48
 for f in ${UCF101DIR}/*/*.avi; do
   dir=${f::-4}
   echo -----
@@ -17,6 +18,7 @@ for f in ${UCF101DIR}/*/*.avi; do
     mkdir -p ${dir}
   fi
 
+  ((i=i%N)); ((i++==0)) && wait
   ${FFMPEGBIN} \
       -i ${f} \
       -q:v 1 \
