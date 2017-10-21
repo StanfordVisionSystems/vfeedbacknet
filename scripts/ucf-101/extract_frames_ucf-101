@@ -2,7 +2,7 @@
 
 #############################################
 # modify the UCF-101 data directory:
-UCF101DIR=/mnt/scratch/jemmons/vfeedbacknet/UCF-101
+UCF101DIR=/mnt/scratch/jemmons/UCF-101-dumpjpg
 #UCF101DIR=/mnt/data/jemmons/ucf-101/UCF-101-dumpjpg
 #UCF101DIR=/dev/shm/UCF-101-dumpjpg
 
@@ -10,7 +10,7 @@ UCF101DIR=/mnt/scratch/jemmons/vfeedbacknet/UCF-101
 FFMPEGBIN=ffmpeg
 #############################################
 
-N=48
+N=24
 for f in ${UCF101DIR}/*/*.avi; do
   dir=${f::-4}
   echo -----
@@ -21,7 +21,7 @@ for f in ${UCF101DIR}/*/*.avi; do
   fi
 
   ((i=i%N)); ((i++==0)) && wait
-  ${FFMPEGBIN} \
+  ${FFMPEGBIN} -y \
       -i ${f} \
       -q:v 1 \
       ${dir}/image_%4d.jpg &

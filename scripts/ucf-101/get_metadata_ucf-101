@@ -15,6 +15,7 @@ def get_video_stats(inp):
     pathgen = lambda x : os.path.join(args.data_root, video_path, x)
     frames = sorted( os.listdir(pathgen('')) )
 
+    assert len(frames) > 0, video_path
     image = Image.open(pathgen(frames[0]))
         
     metadata = {
@@ -34,7 +35,7 @@ def main(args):
         labels_str2num =  { label : idx  for idx,label in zip(range(len(labels_num2str)), labels_num2str) }
         
     with open(args.data_file, 'r') as csvfile:
-        reader = csv.reader(csvfile, delimiter=';')
+        reader = csv.reader(csvfile, delimiter=' ')
         data_labels = { item[0].split('.')[0] : labels_str2num[item[0].split('/')[0]] for item in reader }; 
         data_video_paths = list(data_labels.keys())
 
