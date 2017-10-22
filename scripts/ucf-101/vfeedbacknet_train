@@ -409,11 +409,11 @@ if __name__ == '__main__':
 
     parser.add_argument('--video_width', type=int, nargs=None,
                         help='the width to rescale all videos (official run: 176 for UCF-101)',
-                        default=96)
+                        default=112)
 
     parser.add_argument('--video_height', type=int, nargs=None,
                         help='the height to rescale all videos (official run: XXXX for UCF-101)',
-                        default=96)
+                        default=112)
 
     parser.add_argument('--video_length', type=int, nargs=None,
                         help='the num frames to truncate all videos (official run: XXXX for UCF-101)',

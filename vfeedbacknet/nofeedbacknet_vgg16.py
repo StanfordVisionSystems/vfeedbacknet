@@ -33,7 +33,7 @@ class NoFeedbackNetVgg16:
                                                 trainable=self.fine_tune_vgg16)
 
             with tf.variable_scope('fc'):
-                kernel = tf.get_variable('weights', shape=[3*3*512, self.num_classes], dtype=tf.float32, initializer=tf.contrib.layers.xavier_initializer(), trainable=self.is_training)
+                kernel = tf.get_variable('weights', shape=[512, self.num_classes], dtype=tf.float32, initializer=tf.contrib.layers.xavier_initializer(), trainable=self.is_training)
                 biases = tf.get_variable('biases', shape=[self.num_classes], dtype=tf.float32, initializer=tf.contrib.layers.xavier_initializer(), trainable=self.is_training)
             
     def initialize_variables(self):
@@ -56,9 +56,9 @@ class NoFeedbackNetVgg16:
         with tf.variable_scope('NoFeedBackNetVgg16', reuse=True):
             ModelLogger.log('input', inputs)
             
-            assert(inputs.shape[1:] == (40, 96, 96)) # specific model shape for now        
+            #assert(inputs.shape[1:] == (40, 96, 96)) # specific model shape for now        
             inputs = tf.expand_dims(inputs, axis=4)
-            assert(inputs.shape[1:] == (40, 96, 96, 1)) # specific model shape for now
+            #assert(inputs.shape[1:] == (40, 96, 96, 1)) # specific model shape for now
             
             inputs = tf.unstack(inputs, axis=1)
             ModelLogger.log('input-unstack', inputs)
@@ -75,7 +75,7 @@ class NoFeedbackNetVgg16:
             with tf.variable_scope('convlstm1'):
                 num_filters = 512 # convLSTM internal fitlers
                 h, w = int(inputs[0].shape[1]), int(inputs[0].shape[2])
-                cell = convLSTM.ConvLSTMCell([h, w], num_filters, [1, 1])
+                cell = convLSTM.ConvLSTMCell([h, w], num_filters, [3, 3])
                 inputs, state = tf.nn.dynamic_rnn(
                     cell,
                     tf.stack(inputs, axis=1),
@@ -85,11 +85,18 @@ class NoFeedbackNetVgg16:
 
                 inputs = tf.unstack(inputs, axis=1)
                 ModelLogger.log('convLSTM_output', inputs)
-        
+                
+                inputs = [ tf.nn.max_pool(inp,
+                                        ksize=[1, 2, 2, 1],
+                                        strides=[1, 2, 2, 1],
+                                        padding='SAME',
+                                        name='pool1') for inp in inputs ]
+                ModelLogger.log('pool_output', inputs)
+                
             with tf.variable_scope('convlstm2', reuse=False):
                 num_filters = 512 # convLSTM internal fitlers
                 h, w = int(inputs[0].shape[1]), int(inputs[0].shape[2])
-                cell = convLSTM.ConvLSTMCell([h, w], num_filters, [1, 1], reuse=False)
+                cell = convLSTM.ConvLSTMCell([h, w], num_filters, [3, 3], reuse=False)
                 inputs, state = tf.nn.dynamic_rnn(
                     cell,
                     tf.stack(inputs, axis=1),
@@ -100,12 +107,26 @@ class NoFeedbackNetVgg16:
                 inputs = tf.unstack(inputs, axis=1)
                 ModelLogger.log('convLSTM_output', inputs)
 
+                inputs = [ tf.nn.max_pool(inp,
+                                          ksize=[1, 2, 2, 1],
+                                          strides=[1, 2, 2, 1],
+                                          padding='SAME',
+                                          name='pool1') for inp in inputs ]
+                ModelLogger.log('pool_output', inputs)
+
         with tf.variable_scope('NoFeedBackNetVgg16', reuse=True):
+
             with tf.variable_scope('fc', reuse=True):
+
+                inputs = [ tf.layers.average_pooling2d(
+                    inputs=inp, pool_size=4, strides=1, padding='VALID',
+                    data_format='channels_last', name='ave_pool') for inp in inputs ]
+                ModelLogger.log('ave_pool_output', inputs)
+
                 weights = tf.get_variable('weights')
                 biases = tf.get_variable('biases')
 
-                inputs = [ tf.reshape(inp, [-1, 3*3*512]) for inp in inputs ]
+                inputs = [ tf.reshape(inp, [-1, 512]) for inp in inputs ]
                 ModelLogger.log('flatten_output', inputs)
                 
                 inputs = [ tf.matmul(inp, weights) + biases for inp in inputs ]
