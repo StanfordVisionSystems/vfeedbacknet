@@ -38,9 +38,9 @@ class ModelLogger:
         else:
             logging.debug('{}-{}:{}{}'.format(n, c, p, var.shape))
 
-def nofeedbacknet_vgg16(hparams):
+def nofeedbacknet_vgg16(sess, vgg16_weights, num_classes=101, fine_tune_vgg16=False, is_training=True):
     
-    def model_generator(inputs, num_classes, vgg16_weights, fine_tune_vgg16=False, is_training=True):
+    def model_generator(inputs):
         '''
         inputs: A tensor fo size [batch, video_length, video_height, video_width, channels]
         '''
@@ -57,7 +57,8 @@ def nofeedbacknet_vgg16(hparams):
             logging.debug('--- begin model definition ---')
             
             # use VGG16 pretrained on imagenet as an initialization        
-            vgg_layers = vgg16_model.VGG16(weights=vgg16_weights, sess=sess, trainable=fine_tune_vgg16)
+            vgg_layers = vgg16_model.VGG16(sess=sess, weights=vgg16_weights, trainable=fine_tune_vgg16)
+            vgg_layers.load_weights()
             inputs = [ vgg_layers(inp) for inp in inputs ]
             ModelLogger.log('vgg16_conv', inputs)
             
@@ -110,12 +111,12 @@ def new_conv2dweight(xdim, ydim, input_depth, output_depth, reuse):
 if __name__ == '__main__':
     sess = tf.Session()
     
-    model_generator = nofeedbacknet_vgg16(None)
+    model_generator = nofeedbacknet_vgg16(sess, '/home/jemmons/vgg16_weights.npz')
 
     x = tf.placeholder(tf.float32, [None, 40, 96, 96], name='inputs')
-    logits = model_generator(x, 101, 'vgg16_weights.npz', sess)
+    logits = model_generator(x)
 
     graph = tf.get_default_graph()
     
-    for op in graph.get_operations():
-        print((op.name))
+    # for op in graph.get_operations():
+    #     print((op.name))
