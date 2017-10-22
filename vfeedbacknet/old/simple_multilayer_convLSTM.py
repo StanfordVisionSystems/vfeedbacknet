@@ -45,8 +45,7 @@ def simple_multilayer_convLSTM(video_length, video_width, video_height, num_labe
 
     logging.debug('input_length: {}'.format(input_length.shape))
     logging.debug('zeros_placeholder: {}'.format(input_length.shape))
-    
-    # BEGIN CNN ################################################################
+        # BEGIN CNN ################################################################
     logging.debug('---------- BEGIN CNN DEFINITION ----------')
     outputs = input_frames
     

@@ -1,4 +1,4 @@
-from vfeedbacknet.nofeedbacknet_vgg16 import nofeedbacknet_vgg16
+from vfeedbacknet.nofeedbacknet_vgg16 import NoFeedbackNetVgg16
 
 #from vfeedbacknet.simple_singlelayer_convLSTM import simple_singlelayer_convLSTM
 #from vfeedbacknet.simple_multilayer_convLSTM import simple_multilayer_convLSTM

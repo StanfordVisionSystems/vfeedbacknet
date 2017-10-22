@@ -4,47 +4,56 @@ import vfeedbacknet.convLSTM as convLSTM
 import tensorflow as tf
 import logging
 
-logging.basicConfig(level=logging.DEBUG)
+from vfeedbacknet.vfeedbacknet_utilities import ModelLogger
+from vfeedbacknet.vfeedbacknet_lossfunctions import loss_pred
 
 _BATCH_NORM_DECAY = 0.997
 _BATCH_NORM_EPSILON = 1e-5
 
-class ModelLogger:
-    '''
-    logging utility for debugging the construction of the CNN
-    '''
-
-    count = {}
-    @staticmethod
-    def log(var_name, var):
-        if var_name in ModelLogger.count.keys():
-            ModelLogger.count[var_name] += 1
-            ModelLogger._log(var_name, var)
-        else:
-            ModelLogger.count[var_name] = 0
-            ModelLogger._log(var_name, var)
-
-    @staticmethod        
-    def _log(var_name, var):
-        maxwidth = 15
-        padding = 4
-        
-        n = var_name[0:maxwidth]
-        c = str(ModelLogger.count[var_name])
-        p = ' ' * (maxwidth + padding - len(n) - len(c))
-
-        if type(var) == list:
-            logging.debug('{}-{}:{}{}x{}'.format(n, c, p, len(var), var[0].shape))
-        else:
-            logging.debug('{}-{}:{}{}'.format(n, c, p, var.shape))
-
-def nofeedbacknet_vgg16(sess, vgg16_weights, num_classes=101, fine_tune_vgg16=False, is_training=True):
+class NoFeedbackNetVgg16:
     
-    def model_generator(inputs):
+    def __init__(self, sess, vgg16_weights, num_classes=101, fine_tune_vgg16=False, is_training=True):
+        self.sess = sess
+        self.vgg16_weights = vgg16_weights
+        self.num_classes = num_classes
+        self.fine_tune_vgg16 = fine_tune_vgg16
+        self.is_training = is_training
+
+        self.declare_variables()
+        
+    def declare_variables(self):
+        '''
+        Declare all the necessary variables so they can be referenced and reused
+        during the model contruction
+        '''
+        with tf.variable_scope('NoFeedBackNetVgg16'):
+
+            self.vgg_layers = vgg16_model.VGG16(sess=self.sess,
+                                                weights=self.vgg16_weights,
+                                                trainable=self.fine_tune_vgg16)
+
+            with tf.variable_scope('fc'):
+                kernel = tf.get_variable('weights', shape=[3*3*512, self.num_classes], dtype=tf.float32, initializer=tf.contrib.layers.xavier_initializer(), trainable=self.is_training)
+                biases = tf.get_variable('biases', shape=[self.num_classes], dtype=tf.float32, initializer=tf.contrib.layers.xavier_initializer(), trainable=self.is_training)
+            
+    def initialize_variables(self):
+        '''
+        Load the VGG16 pretrained parameters and initialize the other variables
+        '''
+        with tf.variable_scope('NoFeedBackNetVgg16', reuse=True):
+
+            logging.debug('--- begin initialize variables ---')
+
+            sess.run(tf.global_variables_initializer())
+            self.vgg_layers.load_weights()
+
+            logging.debug('--- end initialize variables ---')
+        
+    def __call__(self, inputs, inputs_sequence_length):
         '''
         inputs: A tensor fo size [batch, video_length, video_height, video_width, channels]
         '''
-        with tf.variable_scope('nofeedbacknet_vgg16'):
+        with tf.variable_scope('NoFeedBackNetVgg16', reuse=True):
             ModelLogger.log('input', inputs)
             
             assert(inputs.shape[1:] == (40, 96, 96)) # specific model shape for now        
@@ -57,66 +66,76 @@ def nofeedbacknet_vgg16(sess, vgg16_weights, num_classes=101, fine_tune_vgg16=Fa
             logging.debug('--- begin model definition ---')
             
             # use VGG16 pretrained on imagenet as an initialization        
-            vgg_layers = vgg16_model.VGG16(sess=sess, weights=vgg16_weights, trainable=fine_tune_vgg16)
-            vgg_layers.load_weights()
-            inputs = [ vgg_layers(inp) for inp in inputs ]
+            inputs = [ self.vgg_layers(inp) for inp in inputs ]
             ModelLogger.log('vgg16_conv', inputs)
             
-            # use feedback network architecture below
-            # ...
-            
+        # use feedback network architecture below
+        with tf.variable_scope('NoFeedBackNetVgg16'):
+
+            with tf.variable_scope('convlstm1'):
+                num_filters = 512 # convLSTM internal fitlers
+                h, w = int(inputs[0].shape[1]), int(inputs[0].shape[2])
+                cell = convLSTM.ConvLSTMCell([h, w], num_filters, [1, 1])
+                inputs, state = tf.nn.dynamic_rnn(
+                    cell,
+                    tf.stack(inputs, axis=1),
+                    dtype=tf.float32,
+                    sequence_length=inputs_sequence_length,
+                )
+
+                inputs = tf.unstack(inputs, axis=1)
+                ModelLogger.log('convLSTM_output', inputs)
+        
+            with tf.variable_scope('convlstm2', reuse=False):
+                num_filters = 512 # convLSTM internal fitlers
+                h, w = int(inputs[0].shape[1]), int(inputs[0].shape[2])
+                cell = convLSTM.ConvLSTMCell([h, w], num_filters, [1, 1], reuse=False)
+                inputs, state = tf.nn.dynamic_rnn(
+                    cell,
+                    tf.stack(inputs, axis=1),
+                    dtype=tf.float32,
+                    sequence_length=inputs_sequence_length,
+                )
+
+                inputs = tf.unstack(inputs, axis=1)
+                ModelLogger.log('convLSTM_output', inputs)
+
+        with tf.variable_scope('NoFeedBackNetVgg16', reuse=True):
+            with tf.variable_scope('fc', reuse=True):
+                weights = tf.get_variable('weights')
+                biases = tf.get_variable('biases')
+
+                inputs = [ tf.reshape(inp, [-1, 3*3*512]) for inp in inputs ]
+                ModelLogger.log('flatten_output', inputs)
+                
+                inputs = [ tf.matmul(inp, weights) + biases for inp in inputs ]
+                ModelLogger.log('fc_output', inputs)
+
             logging.debug('--- end model definition ---')
             
             logits = inputs
             ModelLogger.log('logits', logits)
-            
+
             return logits
         
-    return model_generator
-
-def basic_conv2d_generator(kernel_size, num_in_filters, num_out_filters, is_training):
-
-    def generator(inputs, reuse, name):
-        with tf.variable_scope(name, reuse=reuse):
-        
-            with tf.variable_scope("conv0"):
-                bn = batch_norm_generator(is_training)
-                w = new_conv2dweight(kernel_size, kernel_size, num_in_filters, num_out_filters, reuse)
-                
-                inputs = tf.nn.conv2d(inputs, w, strides=[1,1,1,1], padding='SAME')
-                inputs = bn(inputs, reuse, 'batch_norm')
-                inputs = tf.nn.relu(inputs)
-            
-                return inputs
-
-    return generator
-
-def max_pool(x):
-    """MaxPool
-    tf.nn.max_pool(
-    value,
-    ksize,
-    strides,
-    padding,
-    data_format='NHWC',
-    name=None
-    )
-    """
-    return tf.nn.max_pool(x, [1,2,2,1], [1,2,2,1], 'SAME', data_format='NHWC')
-
-def new_conv2dweight(xdim, ydim, input_depth, output_depth, reuse):
-    weights = tf.get_variable('conv_v', shape=[xdim, ydim, input_depth, output_depth], dtype=tf.float32, initializer=tf.contrib.layers.xavier_initializer(), regularizer=None)
-    return weights
-
 if __name__ == '__main__':
     sess = tf.Session()
     
-    model_generator = nofeedbacknet_vgg16(sess, '/home/jemmons/vgg16_weights.npz')
+    model = NoFeedbackNetVgg16(sess, '/home/jemmons/vgg16_weights.npz')
 
     x = tf.placeholder(tf.float32, [None, 40, 96, 96], name='inputs')
-    logits = model_generator(x)
+    x_len = tf.placeholder(tf.float32, [None], name='inputs_len')
+    zeros = tf.placeholder(tf.float32, [40], name='inputs_len')
+    labels = tf.placeholder(tf.float32, [None], name='inputs_len')
+    logits = model(x, x_len)
 
-    graph = tf.get_default_graph()
+    losses, total_loss, predictions = loss_pred(logits, x_len, len(logits), labels, zeros)
     
+    model.initialize_variables()
+
+    # use the model
+
+    
+    # graph = tf.get_default_graph()    
     # for op in graph.get_operations():
     #     print((op.name))

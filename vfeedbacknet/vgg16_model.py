@@ -20,7 +20,7 @@ class VGG16:
         self.trainable = trainable
         
         self.parameters = []
-        with tf.variable_scope('vgg'):
+        with tf.variable_scope('vgg16'):
             with tf.variable_scope('conv1_1'):
                 kernel = tf.get_variable('weights', shape=[3, 3, 3, 64], dtype=tf.float32, trainable=trainable)
                 biases = tf.get_variable('biases', shape=[64], dtype=tf.float32, trainable=trainable)
@@ -93,7 +93,7 @@ class VGG16:
     def __call__(self, frame):
 
         # for black and white input (Y-component of YUV) 
-        with tf.variable_scope('vgg', reuse=True):
+        with tf.variable_scope('vgg16', reuse=True):
             with tf.name_scope('preprocess'):
                 frame = tf.tile(frame, [1, 1, 1, 3]) # expand the channels to 3
                 img_mean = [123.68, 123.68, 123.68]
