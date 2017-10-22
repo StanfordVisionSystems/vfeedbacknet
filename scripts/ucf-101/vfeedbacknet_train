@@ -125,7 +125,12 @@ def main(args):
     # build model
     ############################################################################
     logging.info('building model: {}'.format(args.model_name))
-    x_input = tf.placeholder(tf.float32, [None, args.video_length, args.video_height, args.video_width], name='x_input')
+    sess = tf.Session()
+
+    x_input = tf.placeholder(tf.float32,
+                             [None, args.video_length,
+                              args.video_height, args.video_width],
+                             name='x_input')
     x_length = tf.placeholder(tf.int32, [None,], name='x_length')
     
     assert(len(labels_num2str) == 101) # there should be 101 classes in the 20BN dataset
@@ -133,9 +138,13 @@ def main(args):
     
     y_zeros = tf.placeholder(tf.float32, [None,],  name='y_zeros')
     zeros = np.zeros((args.train_batch_size,))
-    
-    losses, total_loss, predictions = eval('v.{}(args.video_length, args.video_width, args.video_height, len(labels_num2str), x_input, x_length, y_label, y_zeros)'.format(args.model_name))
-    
+
+    model = v.nofeedbacknet_vgg16.NoFeedbackNetVgg16(sess, '/home/jemmons/vgg16_weights.npz', num_classes=len(labels_num2str), fine_tune_vgg16=False)
+    logits = model(x_input, x_length)
+
+    losses, total_loss, predictions = v.vfeedbacknet_lossfunctions.basic_loss_pred(logits, x_length, args.video_length, y_label, y_zeros)
+    #losses, total_loss, predictions = eval('v.{}(args.video_length, args.video_width, args.video_height, len(labels_num2str), x_input, x_length, y_label, y_zeros)'.format(args.model_name))
+
     step = tf.Variable(args.global_step_init if (args.global_step_init is not None) else 0, trainable=False, name='step')
     learning_rate = tf.maximum(tf.train.exponential_decay(args.learning_rate_init, step, args.prefetch_batch_size//args.train_batch_size, args.learning_rate_decay), args.learning_rate_min, name='learning_rate')
     optimizer = tf.train.AdadeltaOptimizer(learning_rate=learning_rate, name='optimizer')
@@ -178,186 +187,184 @@ def main(args):
             validation_count = 0
             train_batch_count = 0
             train_minibatch_count = 0
+            
+            if args.continue_training:                    
+                saver.restore(sess, tf.train.latest_checkpoint(args.checkpoint_dir))
+                if args.global_step_init is not None:
+                    sess.run([learning_rate], feed_dict={step : args.global_step_init})
 
-            #with tf.Session(config=tf.ConfigProto(log_device_placement=True)) as sess:
-            with tf.Session() as sess:
+            else:
+                model.initialize_variables()
+        
+            for epoch in range(args.num_epoch):
+                video_paths = data_video_paths.copy()
+                random.shuffle(video_paths)
 
-                if args.continue_training:                    
-                    saver.restore(sess, tf.train.latest_checkpoint(args.checkpoint_dir))
-                    if args.global_step_init is not None:
-                        sess.run([learning_rate], feed_dict={step : args.global_step_init})
-                else:
-                    sess.run(tf.global_variables_initializer())
+                ############################################################
+                # loop over all the videos in a random order
+                ############################################################
+                for batch_base_idx in range(0, num_data_videos, args.prefetch_batch_size):
+                    video_paths_batch = video_paths[batch_base_idx:batch_base_idx+args.prefetch_batch_size]
 
-                for epoch in range(args.num_epoch):
-                    video_paths = data_video_paths.copy()
-                    random.shuffle(video_paths)
+                    logging.debug('begin load videos')
+                    t1 = timeit.default_timer() 
+                    video_batch = load_videos(pool, args.data_root, data_labels, video_paths_batch, args.video_width, args.video_height, args.video_length, args.video_downsample_ratio, args.prefetch_batch_size, shared_mem)
+                    t2 = timeit.default_timer()
+                    logging.debug('done! (load videos): {})'.format(t2-t1))
 
-                    ############################################################
-                    # loop over all the videos in a random order
-                    ############################################################
-                    for batch_base_idx in range(0, num_data_videos, args.prefetch_batch_size):
-                        video_paths_batch = video_paths[batch_base_idx:batch_base_idx+args.prefetch_batch_size]
+                    # print('out a video to make sure things are working')
+                    # print(video_batch['video_labelnums'][0], labels_num2str[video_batch['video_labelnums'][0]])
+                    # for i in range(args.video_length):
+                    #     frame = (128*(video_batch['video_rawframes'][0,i,:,:] + 1)).astype(dtype=np.uint8)
+                    #     im = Image.fromarray(frame)
+                    #     im.save('/home/jemmons/frame{}.jpg'.format(i))
+                    # return 
 
-                        logging.debug('begin load videos')
+                    assert(not np.any(np.isnan(video_batch['video_rawframes'])))
+
+                    ########################################################
+                    # train model
+                    ########################################################
+                    logging.debug('begin train batch')
+                    t1 = timeit.default_timer()
+
+                    cum_data_loss = 0
+                    cum_data_correct_predictions = 0
+
+                    for i in range(0, num_batch_videos, args.train_batch_size):
+                        begin = i
+                        end = i + args.train_batch_size
+                        batch_labels = keras.utils.to_categorical(video_batch['video_labelnums'][begin:end], len(labels_num2str))
+
+                        _, _learn_rate, _total_loss_val, _loss_vals, _predict_vals = sess.run([train_step, learning_rate, total_loss, losses, predictions],
+                                                                                         feed_dict={x_input : video_batch['video_rawframes'][begin:end,:,:,:],
+                                                                                                    x_length : video_batch['video_numframes'][begin:end],
+                                                                                                    y_label : batch_labels,
+                                                                                                    y_zeros : zeros})
+                        predict_analysis = []
+                        for video_idx in range(args.train_batch_size):
+                            video_labelnum = video_batch['video_labelnums'][begin:end][video_idx]
+                            video_labelstr = labels_num2str[video_labelnum]
+                            video_length = video_batch['video_numframes'][video_idx]
+
+                            fvec = []
+                            fmax = []
+                            fsum = []
+                            floss = []
+                            for frame_idx in range(video_batch['video_numframes'][video_idx]):
+                                predict = _predict_vals[video_idx, frame_idx, :]
+                                fvec.append(predict)
+                                fsum.append(sum(predict))
+                                fmax.append(np.argmax(predict))
+
+                                floss.append(_loss_vals[video_idx, :])
+
+                            predict_analysis.append({
+                                'frame_labelvec' : fvec,
+                                'frame_labelmax' : fmax,
+                                'frame_probsum' : fsum,
+                                'frame_loss' : floss,
+                                'video_length' : video_length,
+                                'video_labelnum' : video_labelnum,
+                                'video_labelstr' : video_labelstr
+                            })
+
+                        for analysis in predict_analysis:
+                            for a in analysis['frame_probsum']:
+                                assert( abs(a - 1) < 0.00001 )
+
+                            fmax_str = list(map(lambda x: str(x).zfill(2), analysis['frame_labelmax']))
+                            tl = str(analysis['video_labelnum']).zfill(2)
+                            logging.debug('{} true_label,prediction: {},{} {}'.format('T' if tl==fmax_str[-1] else 'F', tl, fmax_str[-1], fmax_str))
+                            #logging.debug('{}'.format(analysis['frame_loss']))
+
+                        assert(not np.isnan(_total_loss_val))
+                        assert(not np.any(np.isnan(_predict_vals)))
+
+                        predicted_vals = np.asarray([ p['frame_labelmax'][-1] for p in predict_analysis ])
+                        correct_predictions = sum(video_batch['video_labelnums'][begin:end] == predicted_vals)
+
+                        cum_data_correct_predictions += correct_predictions
+                        cum_data_loss += _total_loss_val
+
+                        logging.info('TRAINING BATCH\taccuracy (top-1): {}'.format(correct_predictions / args.train_batch_size))
+                        logging.info('TRAINING BATCH\tloss: {}'.format(_total_loss_val))
+                        logging.info('TRAINING BATCH\tlearning_rate: {}'.format(_learn_rate))
+                        logging.info('TRAINING BATCH\tnum_examples: {}'.format(args.train_batch_size))
+                        train_minibatch_count += 1
+
+                    logfile.write('{}, {}, {}, {}, , \n'.format(train_batch_count, _learn_rate, cum_data_correct_predictions/args.prefetch_batch_size, cum_data_loss))
+                    logfile.flush()
+
+                    t2 = timeit.default_timer()
+                    logging.debug('done! (train batch: {})'.format(t2-t1))
+
+                    ########################################################
+                    # save the model and compute validation accuracy/loss
+                    ########################################################
+                    if validation_count == args.validation_interval:
+                        validation_count = 0
+
+                        ####################################################
+                        # save the model
+                        ####################################################
+                        logging.info('SAVING MODEL to disk')
                         t1 = timeit.default_timer() 
-                        video_batch = load_videos(pool, args.data_root, data_labels, video_paths_batch, args.video_width, args.video_height, args.video_length, args.video_downsample_ratio, args.prefetch_batch_size, shared_mem)
+                        checkpoint_path = os.path.join(args.checkpoint_dir, 'vfeedbacknet-epoch{}-batch{}'.format(epoch,train_minibatch_count))
+                        saver.save(sess, checkpoint_path)
                         t2 = timeit.default_timer()
-                        logging.debug('done! (load videos): {})'.format(t2-t1))
+                        logging.info('SAVING MODEL done! (save model to disk): {})'.format(t2 - t1))
 
-                        # print('out a video to make sure things are working')
-                        # print(video_batch['video_labelnums'][0], labels_num2str[video_batch['video_labelnums'][0]])
-                        # for i in range(args.video_length):
-                        #     frame = (128*(video_batch['video_rawframes'][0,i,:,:] + 1)).astype(dtype=np.uint8)
-                        #     im = Image.fromarray(frame)
-                        #     im.save('/home/jemmons/frame{}.jpg'.format(i))
-                        # return 
-                            
-                        assert(not np.any(np.isnan(video_batch['video_rawframes'])))
+                        ####################################################
+                        # compute validation accuracy/loss
+                        ####################################################
+                        logging.debug('begin validation accuracy computation')
+                        t1 = timeit.default_timer() 
 
-                        ########################################################
-                        # train model
-                        ########################################################
-                        logging.debug('begin train batch')
-                        t1 = timeit.default_timer()
+                        cum_validation_loss = 0
+                        cum_validation_correct_predictions = 0
 
-                        cum_data_loss = 0
-                        cum_data_correct_predictions = 0
+                        for valid_base_idx in range(0, num_validation_videos, args.prefetch_batch_size):
+                            validation_batch = load_videos(pool, args.data_root, validation_labels, validation_video_paths[valid_base_idx:valid_base_idx+args.prefetch_batch_size], args.video_width, args.video_height, args.video_length, args.video_downsample_ratio, args.prefetch_batch_size, shared_mem)
 
-                        for i in range(0, num_batch_videos, args.train_batch_size):
-                            begin = i
-                            end = i + args.train_batch_size
-                            batch_labels = keras.utils.to_categorical(video_batch['video_labelnums'][begin:end], len(labels_num2str))
-                                                                      
-                            _, _learn_rate, _total_loss_val, _loss_vals, _predict_vals = sess.run([train_step, learning_rate, total_loss, losses, predictions],
-                                                                                             feed_dict={x_input : video_batch['video_rawframes'][begin:end,:,:,:],
-                                                                                                        x_length : video_batch['video_numframes'][begin:end],
-                                                                                                        y_label : batch_labels,
-                                                                                                        y_zeros : zeros})
-                            predict_analysis = []
-                            for video_idx in range(args.train_batch_size):
-                                video_labelnum = video_batch['video_labelnums'][begin:end][video_idx]
-                                video_labelstr = labels_num2str[video_labelnum]
-                                video_length = video_batch['video_numframes'][video_idx]
-                                
-                                fvec = []
-                                fmax = []
-                                fsum = []
-                                floss = []
-                                for frame_idx in range(video_batch['video_numframes'][video_idx]):
-                                    predict = _predict_vals[video_idx, frame_idx, :]
-                                    fvec.append(predict)
-                                    fsum.append(sum(predict))
-                                    fmax.append(np.argmax(predict))
+                            for i in range(0, num_batch_videos, args.train_batch_size):
+                                begin = i
+                                end = i + args.train_batch_size
 
-                                    floss.append(_loss_vals[video_idx, :])
-                                    
-                                predict_analysis.append({
-                                    'frame_labelvec' : fvec,
-                                    'frame_labelmax' : fmax,
-                                    'frame_probsum' : fsum,
-                                    'frame_loss' : floss,
-                                    'video_length' : video_length,
-                                    'video_labelnum' : video_labelnum,
-                                    'video_labelstr' : video_labelstr
-                                })
+                                learn_rate, total_loss_val, predict_vals = sess.run([learning_rate, total_loss, predictions],
+                                                                  feed_dict={x_input : validation_batch['video_rawframes'][begin:end,:,:,:],
+                                                                             x_length : validation_batch['video_numframes'][begin:end],
+                                                                             y_label : keras.utils.to_categorical(validation_batch['video_labelnums'][begin:end],len(labels_num2str)),
+                                                                             y_zeros : zeros})
 
-                            for analysis in predict_analysis:
-                                for a in analysis['frame_probsum']:
-                                    assert( abs(a - 1) < 0.00001 )
+                                assert(not np.isnan(total_loss_val))
+                                assert(not np.any(np.isnan(predict_vals)))
 
-                                fmax_str = list(map(lambda x: str(x).zfill(2), analysis['frame_labelmax']))
-                                tl = str(analysis['video_labelnum']).zfill(2)
-                                logging.debug('{} true_label,prediction: {},{} {}'.format('T' if tl==fmax_str[-1] else 'F', tl, fmax_str[-1], fmax_str))
-                                #logging.debug('{}'.format(analysis['frame_loss']))
+                                predict_vals = np.vstack([predict_vals[n,m-1,:] for n,m in zip(range(args.train_batch_size),validation_batch['video_numframes'][begin:end])])
 
-                            assert(not np.isnan(_total_loss_val))
-                            assert(not np.any(np.isnan(_predict_vals)))
+                                cum_validation_correct_predictions += sum(validation_batch['video_labelnums'][begin:end] == np.argmax(predict_vals, axis=1))
+                                cum_validation_loss += total_loss_val
 
-                            predicted_vals = np.asarray([ p['frame_labelmax'][-1] for p in predict_analysis ])
-                            correct_predictions = sum(video_batch['video_labelnums'][begin:end] == predicted_vals)
-                            
-                            cum_data_correct_predictions += correct_predictions
-                            cum_data_loss += _total_loss_val
+                                logging.debug('VALIDATION batch accuracy: {}'.format(sum(validation_batch['video_labelnums'][begin:end] == np.argmax(predict_vals, axis=1)) / args.train_batch_size))
+                                logging.debug('VALIDATION batch loss: {}'.format(total_loss_val))
 
-                            logging.info('TRAINING BATCH\taccuracy (top-1): {}'.format(correct_predictions / args.train_batch_size))
-                            logging.info('TRAINING BATCH\tloss: {}'.format(_total_loss_val))
-                            logging.info('TRAINING BATCH\tlearning_rate: {}'.format(_learn_rate))
-                            logging.info('TRAINING BATCH\tnum_examples: {}'.format(args.train_batch_size))
-                            train_minibatch_count += 1
-
-                        logfile.write('{}, {}, {}, {}, , \n'.format(train_batch_count, _learn_rate, cum_data_correct_predictions/args.prefetch_batch_size, cum_data_loss))
+                        logfile.write('{}, {}, , , {}, {}\n'.format(train_batch_count, learn_rate, cum_validation_correct_predictions/num_validation_videos, cum_validation_loss))
                         logfile.flush()
 
+                        logging.info('VALIDATION TOTAL\taccuracy (top-1): {}'.format(cum_validation_correct_predictions / num_validation_videos))
+                        logging.info('VALIDATION TOTAL\tloss: {}'.format(cum_validation_loss))
+                        logging.info('VALIDATION TOTAL\tnum_examples: {}'.format(num_validation_videos))
+
                         t2 = timeit.default_timer()
-                        logging.debug('done! (train batch: {})'.format(t2-t1))
+                        logging.debug('done! (validation accuracy computation): {})'.format(t2 - t1))
 
-                        ########################################################
-                        # save the model and compute validation accuracy/loss
-                        ########################################################
-                        if validation_count == args.validation_interval:
-                            validation_count = 0
+                        ####################################################
+                        # restore model to the state prior to computing validation accuracy/loss
+                        ####################################################
+                        saver.restore(sess, checkpoint_path)
 
-                            ####################################################
-                            # save the model
-                            ####################################################
-                            logging.info('SAVING MODEL to disk')
-                            t1 = timeit.default_timer() 
-                            checkpoint_path = os.path.join(args.checkpoint_dir, 'vfeedbacknet-epoch{}-batch{}'.format(epoch,train_minibatch_count))
-                            saver.save(sess, checkpoint_path)
-                            t2 = timeit.default_timer()
-                            logging.info('SAVING MODEL done! (save model to disk): {})'.format(t2 - t1))
-
-                            ####################################################
-                            # compute validation accuracy/loss
-                            ####################################################
-                            logging.debug('begin validation accuracy computation')
-                            t1 = timeit.default_timer() 
-
-                            cum_validation_loss = 0
-                            cum_validation_correct_predictions = 0
-
-                            for valid_base_idx in range(0, num_validation_videos, args.prefetch_batch_size):
-                                validation_batch = load_videos(pool, args.data_root, validation_labels, validation_video_paths[valid_base_idx:valid_base_idx+args.prefetch_batch_size], args.video_width, args.video_height, args.video_length, args.video_downsample_ratio, args.prefetch_batch_size, shared_mem)
-
-                                for i in range(0, num_batch_videos, args.train_batch_size):
-                                    begin = i
-                                    end = i + args.train_batch_size
-
-                                    learn_rate, total_loss_val, predict_vals = sess.run([learning_rate, total_loss, predictions],
-                                                                      feed_dict={x_input : validation_batch['video_rawframes'][begin:end,:,:,:],
-                                                                                 x_length : validation_batch['video_numframes'][begin:end],
-                                                                                 y_label : keras.utils.to_categorical(validation_batch['video_labelnums'][begin:end],len(labels_num2str)),
-                                                                                 y_zeros : zeros})
-
-                                    assert(not np.isnan(total_loss_val))
-                                    assert(not np.any(np.isnan(predict_vals)))
-
-                                    predict_vals = np.vstack([predict_vals[n,m-1,:] for n,m in zip(range(args.train_batch_size),validation_batch['video_numframes'][begin:end])])
-
-                                    cum_validation_correct_predictions += sum(validation_batch['video_labelnums'][begin:end] == np.argmax(predict_vals, axis=1))
-                                    cum_validation_loss += total_loss_val
-
-                                    logging.debug('VALIDATION batch accuracy: {}'.format(sum(validation_batch['video_labelnums'][begin:end] == np.argmax(predict_vals, axis=1)) / args.train_batch_size))
-                                    logging.debug('VALIDATION batch loss: {}'.format(total_loss_val))
-
-                            logfile.write('{}, {}, , , {}, {}\n'.format(train_batch_count, learn_rate, cum_validation_correct_predictions/num_validation_videos, cum_validation_loss))
-                            logfile.flush()
-
-                            logging.info('VALIDATION TOTAL\taccuracy (top-1): {}'.format(cum_validation_correct_predictions / num_validation_videos))
-                            logging.info('VALIDATION TOTAL\tloss: {}'.format(cum_validation_loss))
-                            logging.info('VALIDATION TOTAL\tnum_examples: {}'.format(num_validation_videos))
-
-                            t2 = timeit.default_timer()
-                            logging.debug('done! (validation accuracy computation): {})'.format(t2 - t1))
-
-                            ####################################################
-                            # restore model to the state prior to computing validation accuracy/loss
-                            ####################################################
-                            saver.restore(sess, checkpoint_path)
-
-                        validation_count += 1
-                        train_batch_count += 1
+                    validation_count += 1
+                    train_batch_count += 1
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='train the feedbacknet for the 20BN data set')
@@ -422,7 +429,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--learning_rate_init', type=float, nargs=None,
                         help='initial vlaue for learning rate for the optimization (official run: XXXX for UCF-101)',
-                        default=1e-2)
+                        default=1e-1)
 
     parser.add_argument('--learning_rate_decay', type=float, nargs=None,
                         help='learning rate decay (per prefetch_batch) for the optimization (official run: XXXX for UCF-101)',

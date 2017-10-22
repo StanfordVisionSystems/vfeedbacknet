@@ -2,7 +2,7 @@ import tensorflow as tf
 
 from vfeedbacknet.vfeedbacknet_utilities import ModelLogger
 
-def loss_pred(inputs, inputs_sequence_length, inputs_sequence_maxlength, labels, zeros, last_loss_multiple=1):
+def basic_loss_pred(inputs, inputs_sequence_length, inputs_sequence_maxlength, labels, zeros, last_loss_multiple=1):
     assert len(inputs) == inputs_sequence_maxlength, 'inputs must be the max sequence length'
 
     predictions = tf.stack([ tf.nn.softmax(logits=inp) for inp in inputs ], axis=1)

@@ -5,7 +5,7 @@ import tensorflow as tf
 import logging
 
 from vfeedbacknet.vfeedbacknet_utilities import ModelLogger
-from vfeedbacknet.vfeedbacknet_lossfunctions import loss_pred
+from vfeedbacknet.vfeedbacknet_lossfunctions import basic_loss_pred
 
 _BATCH_NORM_DECAY = 0.997
 _BATCH_NORM_EPSILON = 1e-5
@@ -44,7 +44,7 @@ class NoFeedbackNetVgg16:
 
             logging.debug('--- begin initialize variables ---')
 
-            sess.run(tf.global_variables_initializer())
+            self.sess.run(tf.global_variables_initializer())
             self.vgg_layers.load_weights()
 
             logging.debug('--- end initialize variables ---')
@@ -129,7 +129,7 @@ if __name__ == '__main__':
     labels = tf.placeholder(tf.float32, [None], name='inputs_len')
     logits = model(x, x_len)
 
-    losses, total_loss, predictions = loss_pred(logits, x_len, len(logits), labels, zeros)
+    losses, total_loss, predictions = basic_loss_pred(logits, x_len, len(logits), labels, zeros)
     
     model.initialize_variables()
 
