@@ -2,6 +2,7 @@
 #scripts/jemmons_setup.sh
 #scripts/jemmons_train.sh
 .venv
+vfeedbacknet/vgg16_weights.npz
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
