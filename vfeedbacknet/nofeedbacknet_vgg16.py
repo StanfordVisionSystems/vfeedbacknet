@@ -31,11 +31,10 @@ class NoFeedbackNetVgg16:
             self.vgg_layers = vgg16_model.VGG16(sess=self.sess,
                                                 weights=self.vgg16_weights,
                                                 trainable=self.fine_tune_vgg16)
-
             with tf.variable_scope('fc'):
                 kernel = tf.get_variable('weights', shape=[512, self.num_classes], dtype=tf.float32, initializer=tf.contrib.layers.xavier_initializer(), trainable=self.is_training)
                 biases = tf.get_variable('biases', shape=[self.num_classes], dtype=tf.float32, initializer=tf.contrib.layers.xavier_initializer(), trainable=self.is_training)
-            
+                
     def initialize_variables(self):
         '''
         Load the VGG16 pretrained parameters and initialize the other variables
@@ -53,7 +52,9 @@ class NoFeedbackNetVgg16:
         '''
         inputs: A tensor fo size [batch, video_length, video_height, video_width, channels]
         '''
+
         with tf.variable_scope('NoFeedBackNetVgg16', reuse=True):
+            
             ModelLogger.log('input', inputs)
             
             #assert(inputs.shape[1:] == (40, 96, 96)) # specific model shape for now        
@@ -71,8 +72,8 @@ class NoFeedbackNetVgg16:
             
         # use feedback network architecture below
         with tf.variable_scope('NoFeedBackNetVgg16'):
-
             with tf.variable_scope('convlstm1'):
+                
                 num_filters = 512 # convLSTM internal fitlers
                 h, w = int(inputs[0].shape[1]), int(inputs[0].shape[2])
                 cell = convLSTM.ConvLSTMCell([h, w], num_filters, [3, 3])
@@ -82,40 +83,39 @@ class NoFeedbackNetVgg16:
                     dtype=tf.float32,
                     sequence_length=inputs_sequence_length,
                 )
-
+                
                 inputs = tf.unstack(inputs, axis=1)
                 ModelLogger.log('convLSTM_output', inputs)
                 
-                inputs = [ tf.nn.max_pool(inp,
-                                        ksize=[1, 2, 2, 1],
-                                        strides=[1, 2, 2, 1],
-                                        padding='SAME',
-                                        name='pool1') for inp in inputs ]
-                ModelLogger.log('pool_output', inputs)
-                
-            with tf.variable_scope('convlstm2', reuse=False):
-                num_filters = 512 # convLSTM internal fitlers
-                h, w = int(inputs[0].shape[1]), int(inputs[0].shape[2])
-                cell = convLSTM.ConvLSTMCell([h, w], num_filters, [3, 3], reuse=False)
-                inputs, state = tf.nn.dynamic_rnn(
-                    cell,
-                    tf.stack(inputs, axis=1),
-                    dtype=tf.float32,
-                    sequence_length=inputs_sequence_length,
-                )
-
-                inputs = tf.unstack(inputs, axis=1)
-                ModelLogger.log('convLSTM_output', inputs)
-
                 inputs = [ tf.nn.max_pool(inp,
                                           ksize=[1, 2, 2, 1],
                                           strides=[1, 2, 2, 1],
                                           padding='SAME',
                                           name='pool1') for inp in inputs ]
                 ModelLogger.log('pool_output', inputs)
+                    
+            with tf.variable_scope('convlstm2', reuse=False):
+                    num_filters = 512 # convLSTM internal fitlers
+                    h, w = int(inputs[0].shape[1]), int(inputs[0].shape[2])
+                    cell = convLSTM.ConvLSTMCell([h, w], num_filters, [3, 3], reuse=False)
+                    inputs, state = tf.nn.dynamic_rnn(
+                        cell,
+                        tf.stack(inputs, axis=1),
+                        dtype=tf.float32,
+                        sequence_length=inputs_sequence_length,
+                    )
 
+                    inputs = tf.unstack(inputs, axis=1)
+                    ModelLogger.log('convLSTM_output', inputs)
+
+                    inputs = [ tf.nn.max_pool(inp,
+                                              ksize=[1, 2, 2, 1],
+                                              strides=[1, 2, 2, 1],
+                                              padding='SAME',
+                                              name='pool1') for inp in inputs ]
+                    ModelLogger.log('pool_output', inputs)
+                    
         with tf.variable_scope('NoFeedBackNetVgg16', reuse=True):
-
             with tf.variable_scope('fc', reuse=True):
 
                 inputs = [ tf.layers.average_pooling2d(
@@ -128,16 +128,16 @@ class NoFeedbackNetVgg16:
 
                 inputs = [ tf.reshape(inp, [-1, 512]) for inp in inputs ]
                 ModelLogger.log('flatten_output', inputs)
-                
+
                 inputs = [ tf.matmul(inp, weights) + biases for inp in inputs ]
                 ModelLogger.log('fc_output', inputs)
 
-            logging.debug('--- end model definition ---')
-            
-            logits = inputs
-            ModelLogger.log('logits', logits)
+                logging.debug('--- end model definition ---')
 
-            return logits
+                logits = inputs
+                ModelLogger.log('logits', logits)
+
+        return logits
         
 if __name__ == '__main__':
     sess = tf.Session()

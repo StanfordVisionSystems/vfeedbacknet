@@ -139,11 +139,16 @@ def main(args):
     y_zeros = tf.placeholder(tf.float32, [None,],  name='y_zeros')
     zeros = np.zeros((args.train_batch_size,))
 
-    model = v.nofeedbacknet_vgg16.NoFeedbackNetVgg16(sess, '/home/jemmons/vgg16_weights.npz', num_classes=len(labels_num2str), fine_tune_vgg16=False)
+    model = v.nofeedbacknet_vgg16.NoFeedbackNetVgg16(sess, '/home/jemmons/vgg16_weights.npz',
+                                                     num_classes=len(labels_num2str), fine_tune_vgg16=True)
     logits = model(x_input, x_length)
 
-    losses, total_loss, predictions = v.vfeedbacknet_lossfunctions.basic_loss_pred(logits, x_length, args.video_length, y_label, y_zeros)
-    #losses, total_loss, predictions = eval('v.{}(args.video_length, args.video_width, args.video_height, len(labels_num2str), x_input, x_length, y_label, y_zeros)'.format(args.model_name))
+    losses, total_loss, predictions = v.vfeedbacknet_lossfunctions.basic_loss_pred(logits,
+                                                                                   x_length,
+                                                                                   args.video_length,
+                                                                                   y_label,
+                                                                                   y_zeros,
+                                                                                   last_loss_multiple=10)
 
     step = tf.Variable(args.global_step_init if (args.global_step_init is not None) else 0, trainable=False, name='step')
     learning_rate = tf.maximum(tf.train.exponential_decay(args.learning_rate_init, step, args.prefetch_batch_size//args.train_batch_size, args.learning_rate_decay), args.learning_rate_min, name='learning_rate')
@@ -417,7 +422,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--video_length', type=int, nargs=None,
                         help='the num frames to truncate all videos (official run: XXXX for UCF-101)',
-                        default=40)
+                        default=20)
     
     parser.add_argument('--video_downsample_ratio', type=int, nargs=None,
                         help='the temporal downsampling ratio to use for all the videos (official run: XXXX for UCF-101)',
@@ -429,7 +434,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--learning_rate_init', type=float, nargs=None,
                         help='initial vlaue for learning rate for the optimization (official run: XXXX for UCF-101)',
-                        default=1e-1)
+                        default=1e-2)
 
     parser.add_argument('--learning_rate_decay', type=float, nargs=None,
                         help='learning rate decay (per prefetch_batch) for the optimization (official run: XXXX for UCF-101)',
