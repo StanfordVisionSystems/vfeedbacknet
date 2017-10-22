@@ -1,5 +1,7 @@
-from vfeedbacknet.simple_singlelayer_convLSTM import simple_singlelayer_convLSTM
-from vfeedbacknet.simple_multilayer_convLSTM import simple_multilayer_convLSTM
+from vfeedbacknet.nofeedbacknet_vgg16 import nofeedbacknet_vgg16
+
+#from vfeedbacknet.simple_singlelayer_convLSTM import simple_singlelayer_convLSTM
+#from vfeedbacknet.simple_multilayer_convLSTM import simple_multilayer_convLSTM
 
 #from vfeedbacknet.nofeedbacknet_resnet import nofeedbacknet_resnet
 #from vfeedbacknet.nofeedbacknet_resnet_loss_at_end import nofeedbacknet_resnet_loss_at_end
