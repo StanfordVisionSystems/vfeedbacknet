@@ -32,7 +32,7 @@ def pool_init(shared_mem_):
     shared_mem = shared_mem_
 
 def prepare_video(args):
-    data_root, video_path, video_width, video_height, video_length, video_downsample_ratio, video_index, batch_size = args
+    data_root, video_path, video_width, video_height, video_length, video_downsample_ratio, video_index, batch_size, is_training = args
 
     video_mem = np.frombuffer(shared_mem, np.ctypeslib.ctypes.c_float)
     video_mem = video_mem.reshape((batch_size, video_length, video_height, video_width))
@@ -43,9 +43,9 @@ def prepare_video(args):
     num_frames = min(len(frames)//video_downsample_ratio, video_length)
     assert(num_frames != 0)
 
-    flip_frames = bool(random.getrandbits(1))
-    crop_frames = bool(random.getrandbits(1))
-    add_noise = bool(random.getrandbits(1))
+    flip_frames = bool(random.getrandbits(1)) and is_training
+    crop_frames = bool(random.getrandbits(1)) and is_training
+    add_noise = bool(random.getrandbits(1)) and is_training
 
     x1 = random.choice(list(range(20)))
     y1 = random.choice(list(range(20)))
@@ -79,9 +79,9 @@ def prepare_video(args):
         
     return { 'num_frames' : num_frames, 'video_path' : video_path }
 
-def load_videos(pool, data_root, data_labels, video_paths, video_width, video_height, video_length, video_downsample_ratio, batch_size, shared_mem):
+def load_videos(pool, data_root, data_labels, video_paths, video_width, video_height, video_length, video_downsample_ratio, is_training, batch_size, shared_mem):
 
-    prepare_video_jobs = [ (data_root, video_paths[i], video_width, video_height, video_length, video_downsample_ratio, i, batch_size) for i in range(batch_size) ]
+    prepare_video_jobs = [ (data_root, video_paths[i], video_width, video_height, video_length, video_downsample_ratio, i, batch_size, is_training) for i in range(batch_size) ]
     prepared_videos = pool.map(prepare_video, prepare_video_jobs)
 
     video_numframes = np.zeros((batch_size,), dtype=np.int32)
@@ -241,7 +241,7 @@ def main(args):
 
                     logging.debug('begin load videos')
                     t1 = timeit.default_timer() 
-                    video_batch = load_videos(pool, args.data_root, data_labels, video_paths_batch, args.video_width, args.video_height, args.video_length, args.video_downsample_ratio, args.prefetch_batch_size, shared_mem)
+                    video_batch = load_videos(pool, args.data_root, data_labels, video_paths_batch, args.video_width, args.video_height, args.video_length, args.video_downsample_ratio, True, args.prefetch_batch_size, shared_mem)
                     t2 = timeit.default_timer()
                     logging.debug('done! (load videos): {})'.format(t2-t1))
 
@@ -358,7 +358,7 @@ def main(args):
                         cum_validation_correct_predictions = 0
 
                         for valid_base_idx in range(0, num_validation_videos, args.prefetch_batch_size):
-                            validation_batch = load_videos(pool, args.data_root, validation_labels, validation_video_paths[valid_base_idx:valid_base_idx+args.prefetch_batch_size], args.video_width, args.video_height, args.video_length, args.video_downsample_ratio, args.prefetch_batch_size, shared_mem)
+                            validation_batch = load_videos(pool, args.data_root, validation_labels, validation_video_paths[valid_base_idx:valid_base_idx+args.prefetch_batch_size], args.video_width, args.video_height, args.video_length, args.video_downsample_ratio, False, args.prefetch_batch_size, shared_mem)
 
                             for i in range(0, num_batch_videos, args.train_batch_size):
                                 begin = i

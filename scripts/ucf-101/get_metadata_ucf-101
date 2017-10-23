@@ -16,7 +16,9 @@ def get_video_stats(inp):
     frames = sorted( os.listdir(pathgen('')) )
 
     assert len(frames) > 0, video_path
-    image = Image.open(pathgen(frames[0]))
+    image = None
+    for frame in frames:
+        image = Image.open(pathgen(frame))
         
     metadata = {
         'num_frames' : len(frames),
