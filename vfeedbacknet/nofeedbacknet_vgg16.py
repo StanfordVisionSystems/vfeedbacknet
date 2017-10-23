@@ -32,7 +32,7 @@ class NoFeedbackNetVgg16:
                                                 weights=self.vgg16_weights,
                                                 trainable=self.fine_tune_vgg16)
             with tf.variable_scope('fc'):
-                regularizer = tf.contrib.layers.l2_regularizer(scale=0.1)
+                regularizer = tf.contrib.layers.l2_regularizer(scale=0.5)
                 kernel = tf.get_variable('weights', shape=[512, self.num_classes], dtype=tf.float32, initializer=tf.contrib.layers.xavier_initializer(), regularizer=regularizer, trainable=self.is_training)
                 biases = tf.get_variable('biases', shape=[self.num_classes], dtype=tf.float32, initializer=tf.contrib.layers.xavier_initializer(), regularizer=regularizer, trainable=self.is_training)
                 
