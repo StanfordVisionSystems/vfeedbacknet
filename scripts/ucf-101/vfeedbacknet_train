@@ -67,8 +67,10 @@ def prepare_video(args):
             image = image.crop(box=(x1,y1,x2,y2))
             image = image.resize((video_width, video_height), PIL.Image.BICUBIC)
 
+        image = np.asarray(image, dtype=np.int32)
+        image = np.clip(image + 12, 0, 255) # mean pixel value is 116; center data
         image = np.asarray(image, dtype=np.float32)
-        image = (image / 128) - 1 # squash to interval (-1, 1)
+        image = (image / 128) - 1 # squash between -1 and 1
 
         if add_noise:
             noise = np.random.normal(scale=0.03125, size=(video_height, video_width))
@@ -245,13 +247,13 @@ def main(args):
                     t2 = timeit.default_timer()
                     logging.debug('done! (load videos): {})'.format(t2-t1))
 
-                    # print('out a video to make sure things are working')
-                    # print(video_batch['video_labelnums'][0], labels_num2str[video_batch['video_labelnums'][0]])
-                    # for i in range(args.video_length):
-                    #     frame = (128*(video_batch['video_rawframes'][0,i,:,:] + 1)).astype(dtype=np.uint8)
-                    #     im = Image.fromarray(frame)
-                    #     im.save('/home/jemmons/frame{}.jpg'.format(i))
-                    # return 
+                    print('out a video to make sure things are working')
+                    print(video_batch['video_labelnums'][0], labels_num2str[video_batch['video_labelnums'][0]])
+                    for i in range(args.video_length):
+                        frame = (128*(video_batch['video_rawframes'][0,i,:,:] + 1)).astype(dtype=np.uint8)
+                        im = Image.fromarray(frame)
+                        im.save('/home/jemmons/frame{}.jpg'.format(i))
+                    return 
 
                     assert(not np.any(np.isnan(video_batch['video_rawframes'])))
 
