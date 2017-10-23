@@ -247,13 +247,13 @@ def main(args):
                     t2 = timeit.default_timer()
                     logging.debug('done! (load videos): {})'.format(t2-t1))
 
-                    print('out a video to make sure things are working')
-                    print(video_batch['video_labelnums'][0], labels_num2str[video_batch['video_labelnums'][0]])
-                    for i in range(args.video_length):
-                        frame = (128*(video_batch['video_rawframes'][0,i,:,:] + 1)).astype(dtype=np.uint8)
-                        im = Image.fromarray(frame)
-                        im.save('/home/jemmons/frame{}.jpg'.format(i))
-                    return 
+                    # print('out a video to make sure things are working')
+                    # print(video_batch['video_labelnums'][0], labels_num2str[video_batch['video_labelnums'][0]])
+                    # for i in range(args.video_length):
+                    #     frame = (128*(video_batch['video_rawframes'][0,i,:,:] + 1)).astype(dtype=np.uint8)
+                    #     im = Image.fromarray(frame)
+                    #     im.save('/home/jemmons/frame{}.jpg'.format(i))
+                    # return 
 
                     assert(not np.any(np.isnan(video_batch['video_rawframes'])))
 
