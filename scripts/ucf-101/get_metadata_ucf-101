@@ -17,11 +17,19 @@ def get_video_stats(inp):
 
     assert len(frames) > 0, video_path
     image = None
+    mean_pixel_values = []
     for frame in frames:
         image = Image.open(pathgen(frame))
+        image = image.convert('YCbCr')
+        
+        img = np.asarray(image)
+        mean_pixel_values.append( np.average(img, axis=(0,1)) )
+        
+    mean_pixel_value = np.average( np.asarray(mean_pixel_values) ) 
         
     metadata = {
         'num_frames' : len(frames),
+        'mean_pixel_value' : mean_pixel_value, 
         'frame_width' : image.size[0],
         'frame_height' : image.size[1],
         'label_num' : data_labels[video_path],

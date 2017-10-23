@@ -4,6 +4,8 @@ import argparse
 import json
 import os
 
+import numpy as np
+
 def increment(d, key):
     if key not in d.keys():
         d[key] = 1
@@ -21,9 +23,13 @@ def main(args):
     classes_lens = [ { -2 : metadata['label_num2str'][i] } for i in range(num_classes) ]
     classes_widths = [ { -2 : metadata['label_num2str'][i] } for i in range(num_classes) ]
     classes_heights = [ { -2 : metadata['label_num2str'][i] } for i in range(num_classes) ]
+    per_class_mean_pixel_values = { i : [] for i in range(num_classes) }
+    
     global_lens = {} 
     global_widths = {}
     global_heights = {}
+
+    mean_pixel_values = []
     
     for video in metadata['videos']:
         video_class = video['label_num']
@@ -34,18 +40,30 @@ def main(args):
         increment( classes_widths[video_class], video['frame_width'] )
         increment( classes_heights[video_class], video['frame_height'] )
 
+        per_class_mean_pixel_values[video['label_num']].append(video['mean_pixel_value'])
+        
         increment( global_lens, video['num_frames'] )
         increment( global_widths, video['frame_width'] )
         increment( global_heights, video['frame_height'] )
 
+        mean_pixel_values.append(video['mean_pixel_value'])
+
+    tmp = {}
+    for k in per_class_mean_pixel_values.keys():
+        tmp[metadata['label_num2str'][k]] = np.average(np.asarray(per_class_mean_pixel_values[k]))
+
+    per_class_mean_pixel_values = tmp
+        
     data = {}
     data['classes_count'] = classes_count
     data['classes_num_frames'] = classes_lens
     data['classes_widths'] = classes_widths
     data['classes_heights'] = classes_heights
+    data['classes_mean_pixel_value'] = per_class_mean_pixel_values
     data['global_num_frames'] = global_lens
     data['global_widths'] = global_widths
     data['global_heights'] = global_heights
+    data['global_mean_pixel_value'] = np.average(np.asarray(mean_pixel_values))
 
     print( json.dumps(data, indent=4, sort_keys=True).replace('-2', 'class').replace('-1', 'count') )
     
