@@ -97,7 +97,7 @@ class VGG16:
             print('VGG16:', (i, k, np.shape(raw_weights[k])))
             self.sess.run(self.parameters[i].assign(raw_weights[k]))
 
-            if k == 'conv3_3_b':
+            if k == 'conv5_3_b':
                 # only load the conv layers
                 break
 
