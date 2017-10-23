@@ -11,6 +11,7 @@ import timeit
 import random
 
 import numpy as np
+import scipy.stats as stats
 import multiprocessing as mp
 import sharedmem as sm
 
@@ -41,15 +42,41 @@ def prepare_video(args):
 
     num_frames = min(len(frames)//video_downsample_ratio, video_length)
     assert(num_frames != 0)
-    
-    video_mem[video_index,:,:,:] = 0 # make grey
+
+    flip_frames = bool(random.getrandbits(1))
+    crop_frames = bool(random.getrandbits(1))
+    add_noise = bool(random.getrandbits(1))
+
+    x1 = random.choice(list(range(20)))
+    y1 = random.choice(list(range(20)))
+    x2 = video_width - random.choice(list(range(20)))
+    y2 = video_height - random.choice(list(range(20)))
+
+    video_mem[video_index,:,:,:] = 0
     for i in range(num_frames):
         image_idx = video_downsample_ratio*i
         image = Image.open(pathgen(frames[image_idx])) # in RGB order by default
         image = image.convert('L') # convert to YUV and grab Y-component
-        image = np.asarray(image.resize((video_width, video_height), PIL.Image.BICUBIC), dtype=np.float32)
-        video_mem[video_index,i,:,:] = (image / 128) - 1 # squash to interval (-1, 1)
 
+        image = image.resize((video_width, video_height), PIL.Image.BICUBIC)
+
+        if flip_frames:
+            image = image.transpose(PIL.Image.FLIP_LEFT_RIGHT)
+            
+        if crop_frames:
+            image = image.crop(box=(x1,y1,x2,y2))
+            image = image.resize((video_width, video_height), PIL.Image.BICUBIC)
+
+        image = np.asarray(image, dtype=np.float32)
+        image = (image / 128) - 1 # squash to interval (-1, 1)
+
+        if add_noise:
+            noise = np.random.normal(scale=0.03125, size=(video_height, video_width))
+            image = image + noise
+            image = image / max(abs(np.max(image)), abs(np.min(image)) ) 
+
+        video_mem[video_index,i,:,:] = image
+        
     return { 'num_frames' : num_frames, 'video_path' : video_path }
 
 def load_videos(pool, data_root, data_labels, video_paths, video_width, video_height, video_length, video_downsample_ratio, batch_size, shared_mem):
@@ -140,7 +167,7 @@ def main(args):
     zeros = np.zeros((args.train_batch_size,))
 
     model = v.nofeedbacknet_vgg16.NoFeedbackNetVgg16(sess, '/home/jemmons/vgg16_weights.npz',
-                                                     num_classes=len(labels_num2str), fine_tune_vgg16=True)
+                                                     num_classes=len(labels_num2str), fine_tune_vgg16=args.fine_tune_vgg)
     logits = model(x_input, x_length)
 
     losses, total_loss, predictions = v.vfeedbacknet_lossfunctions.basic_loss_pred(logits,
@@ -405,6 +432,11 @@ if __name__ == '__main__':
 
     parser.add_argument('--overfitt',
                         help='overfit on a larger chunk of data (official run: False for UCF-101)',
+                        action='store_true',
+                        default=False)
+
+    parser.add_argument('--fine_tune_vgg',
+                        help='fine tune the pretrained vgg16 network',
                         action='store_true',
                         default=False)
 
