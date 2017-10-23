@@ -40,12 +40,20 @@ def prepare_video(args):
     pathgen = lambda x : os.path.join(data_root, str(video_path), x)
     frames = sorted( os.listdir(pathgen('')) )
 
-    num_frames = min(len(frames)//video_downsample_ratio, video_length)
-    assert(num_frames != 0)
-
     flip_frames = bool(random.getrandbits(1)) and is_training
     crop_frames = bool(random.getrandbits(1)) and is_training
     add_noise = bool(random.getrandbits(1)) and is_training
+
+    # choose a random time to start the video
+    num_frames = len(frames)//video_downsample_ratio
+    t_offset = 0
+    stride_offset = 0
+    if is_training and num_frames > video_length:
+        t_offset = random.choice(range(num_frames - video_length))
+        stride_offset = random.choice(range(video_downsample_ratio))
+        
+    num_frames = min(len(frames)//video_downsample_ratio, video_length)
+    assert(num_frames != 0)
 
     x1 = random.choice(list(range(20)))
     y1 = random.choice(list(range(20)))
@@ -54,7 +62,8 @@ def prepare_video(args):
 
     video_mem[video_index,:,:,:] = 0
     for i in range(num_frames):
-        image_idx = video_downsample_ratio*i
+        image_idx = video_downsample_ratio * (i + t_offset)
+        image_idx = min(image_idx + stride_offset, len(frames))
         image = Image.open(pathgen(frames[image_idx])) # in RGB order by default
         image = image.convert('L') # convert to YUV and grab Y-component
 
