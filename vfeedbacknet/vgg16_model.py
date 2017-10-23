@@ -56,35 +56,35 @@ class VGG16:
                 biases = tf.get_variable('biases', shape=[256], dtype=tf.float32, trainable=trainable)
                 self.parameters += [kernel, biases]
 
-            # with tf.variable_scope('conv4_1'):
-            #     kernel = tf.get_variable('weights', shape=[3, 3, 256, 512], dtype=tf.float32, trainable=trainable)
-            #     biases = tf.get_variable('biases', shape=[512], dtype=tf.float32, trainable=trainable)
-            #     self.parameters += [kernel, biases]
+            with tf.variable_scope('conv4_1'):
+                kernel = tf.get_variable('weights', shape=[3, 3, 256, 512], dtype=tf.float32, trainable=trainable)
+                biases = tf.get_variable('biases', shape=[512], dtype=tf.float32, trainable=trainable)
+                self.parameters += [kernel, biases]
 
-            # with tf.variable_scope('conv4_2'):
-            #     kernel = tf.get_variable('weights', shape=[3, 3, 512, 512], dtype=tf.float32, trainable=trainable)
-            #     biases = tf.get_variable('biases', shape=[512], dtype=tf.float32, trainable=trainable)
-            #     self.parameters += [kernel, biases]
+            with tf.variable_scope('conv4_2'):
+                kernel = tf.get_variable('weights', shape=[3, 3, 512, 512], dtype=tf.float32, trainable=trainable)
+                biases = tf.get_variable('biases', shape=[512], dtype=tf.float32, trainable=trainable)
+                self.parameters += [kernel, biases]
 
-            # with tf.variable_scope('conv4_3'):
-            #     kernel = tf.get_variable('weights', shape=[3, 3, 512, 512], dtype=tf.float32, trainable=trainable)
-            #     biases = tf.get_variable('biases', shape=[512], dtype=tf.float32, trainable=trainable)
-            #     self.parameters += [kernel, biases]
+            with tf.variable_scope('conv4_3'):
+                kernel = tf.get_variable('weights', shape=[3, 3, 512, 512], dtype=tf.float32, trainable=trainable)
+                biases = tf.get_variable('biases', shape=[512], dtype=tf.float32, trainable=trainable)
+                self.parameters += [kernel, biases]
 
-            # with tf.variable_scope('conv5_1'):
-            #     kernel = tf.get_variable('weights', shape=[3, 3, 512, 512], dtype=tf.float32, trainable=trainable)
-            #     biases = tf.get_variable('biases', shape=[512], dtype=tf.float32, trainable=trainable)
-            #     self.parameters += [kernel, biases]
+            with tf.variable_scope('conv5_1'):
+                kernel = tf.get_variable('weights', shape=[3, 3, 512, 512], dtype=tf.float32, trainable=trainable)
+                biases = tf.get_variable('biases', shape=[512], dtype=tf.float32, trainable=trainable)
+                self.parameters += [kernel, biases]
 
-            # with tf.variable_scope('conv5_2'):
-            #     kernel = tf.get_variable('weights', shape=[3, 3, 512, 512], dtype=tf.float32, trainable=trainable)
-            #     biases = tf.get_variable('biases', shape=[512], dtype=tf.float32, trainable=trainable)
-            #     self.parameters += [kernel, biases]
+            with tf.variable_scope('conv5_2'):
+                kernel = tf.get_variable('weights', shape=[3, 3, 512, 512], dtype=tf.float32, trainable=trainable)
+                biases = tf.get_variable('biases', shape=[512], dtype=tf.float32, trainable=trainable)
+                self.parameters += [kernel, biases]
 
-            # with tf.variable_scope('conv5_3'):
-            #     kernel = tf.get_variable('weights', shape=[3, 3, 512, 512], dtype=tf.float32, trainable=trainable)
-            #     biases = tf.get_variable('biases', shape=[512], dtype=tf.float32, trainable=trainable)
-            #     self.parameters += [kernel, biases]
+            with tf.variable_scope('conv5_3'):
+                kernel = tf.get_variable('weights', shape=[3, 3, 512, 512], dtype=tf.float32, trainable=trainable)
+                biases = tf.get_variable('biases', shape=[512], dtype=tf.float32, trainable=trainable)
+                self.parameters += [kernel, biases]
 
     def load_weights(self):
         '''
@@ -201,8 +201,6 @@ class VGG16:
                                 strides=[1, 2, 2, 1],
                                 padding='SAME',
                                 name='pool3')
-
-        return inputs
 
         # conv4_1
         with tf.variable_scope('conv4_1'):
