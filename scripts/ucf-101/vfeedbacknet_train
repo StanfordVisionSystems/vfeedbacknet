@@ -41,8 +41,8 @@ def prepare_video(args):
     frames = sorted( os.listdir(pathgen('')) )
 
     flip_frames = bool(random.getrandbits(1)) and is_training
-    crop_frames = bool(random.getrandbits(1)) and is_training
-    add_noise = bool(random.getrandbits(1)) and is_training
+    crop_frames = is_training
+    add_noise = is_training
 
     # choose a random time to start the video
     num_frames = len(frames)//video_downsample_ratio
@@ -60,6 +60,8 @@ def prepare_video(args):
     x2 = video_width - random.choice(list(range(20)))
     y2 = video_height - random.choice(list(range(20)))
 
+    rotation_angle = random.choice(list(range(-30,30,1)))
+    
     video_mem[video_index,:,:,:] = 0
     for i in range(num_frames):
         image_idx = video_downsample_ratio * (i + t_offset)
@@ -68,9 +70,11 @@ def prepare_video(args):
         image = image.convert('L') # convert to YUV and grab Y-component
 
         image = image.resize((video_width, video_height), PIL.Image.BICUBIC)
-
+        
         if flip_frames:
             image = image.transpose(PIL.Image.FLIP_LEFT_RIGHT)
+
+        image = image.rotate(rotation_angle)
             
         if crop_frames:
             image = image.crop(box=(x1,y1,x2,y2))
