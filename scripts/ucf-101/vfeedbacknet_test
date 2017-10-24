@@ -91,8 +91,8 @@ def main(args):
         random.shuffle(data_video_paths)
 
         # force overfitting
-        args.prefetch_batch_size = 16
-        data_video_paths = data_video_paths[:args.prefetch_batch_size]
+        # args.prefetch_batch_size = 16
+        # data_video_paths = data_video_paths[:args.prefetch_batch_size]
         
     # allocate shared memory up front
     logging.info('allocating memory')
@@ -121,6 +121,10 @@ def main(args):
                 saver = tf.train.import_meta_graph(args.checkpoint_prefix+'.meta')
                 saver.restore(sess, args.checkpoint_prefix)
 
+                # graph = tf.get_default_graph()    
+                # for op in graph.get_operations():
+                #     print((op.name))
+                
                 logging.info('process data')
                 cum_data_correct_predictions = 0
                 cum_data_loss = 0
@@ -153,7 +157,8 @@ def main(args):
                         end = i + args.eval_batch_size
                         batch_labels = keras.utils.to_categorical(video_batch['video_labelnums'][begin:end], len(labels_num2str))
                         
-                        _total_loss_val, _loss_vals, _predict_vals = sess.run(['total_loss:0', 'losses:0', 'predictions:0'],
+                        #_total_loss_val, _loss_vals, _predict_vals = sess.run(['total_loss:0', 'loss:0', 'predictions:0'],
+                        _total_loss_val, _loss_vals, _predict_vals = sess.run(['total_loss:0', 'loss:0', 'stack:0'],
                                                                               feed_dict={'x_input:0' : video_batch['video_rawframes'][begin:end,:,:,:],
                                                                                          'x_length:0' : video_batch['video_numframes'][begin:end],
                                                                                          'y_label:0' : batch_labels,
@@ -248,15 +253,15 @@ if __name__ == '__main__':
     # tuning parameters
     parser.add_argument('--video_width', type=int, nargs=None,
                         help='the width to rescale all videos (official run: XXX for UCF-101)',
-                        default=96)
+                        default=112)
 
     parser.add_argument('--video_height', type=int, nargs=None,
                         help='the height to rescale all videos (official run: XXXX for UCF-101)',
-                        default=96)
+                        default=112)
 
     parser.add_argument('--video_length', type=int, nargs=None,
                         help='the num frames to truncate all videos (official run: XXXX for UCF-101)',
-                        default=40)
+                        default=20)
 
     parser.add_argument('--video_downsample_ratio', type=int, nargs=None,
                         help='the num frames to truncate all videos (official run: XXXX for UCF-101)',

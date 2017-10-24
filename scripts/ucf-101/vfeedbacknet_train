@@ -42,7 +42,7 @@ def prepare_video(args):
 
     flip_frames = bool(random.getrandbits(1)) and is_training
     crop_frames = is_training
-    add_noise = is_training
+    add_noise = bool(random.getrandbits(1)) and is_training
 
     # choose a random time to start the video
     num_frames = len(frames)//video_downsample_ratio
@@ -60,7 +60,7 @@ def prepare_video(args):
     x2 = video_width - random.choice(list(range(20)))
     y2 = video_height - random.choice(list(range(20)))
 
-    rotation_angle = random.choice(list(range(-30,30,1)))
+    rotation_angle = random.choice(list(range(-15,15,1))) if is_training else 0
     
     video_mem[video_index,:,:,:] = 0
     for i in range(num_frames):
@@ -74,17 +74,17 @@ def prepare_video(args):
         if flip_frames:
             image = image.transpose(PIL.Image.FLIP_LEFT_RIGHT)
 
-        image = image.rotate(rotation_angle)
+        if rotation_angle != 0:
+            image = image.rotate(rotation_angle)
             
         if crop_frames:
             image = image.crop(box=(x1,y1,x2,y2))
             image = image.resize((video_width, video_height), PIL.Image.BICUBIC)
 
         image = np.asarray(image, dtype=np.int32)
-        image = np.clip(image + 12, 0, 255) # mean pixel value is 116; center data
+        image = image - 116  # center on mean value of 116 (as computed in preprocessing step)
         image = np.asarray(image, dtype=np.float32)
-        image = (image / 128) - 1 # squash between -1 and 1
-
+        
         if add_noise:
             noise = np.random.normal(scale=0.03125, size=(video_height, video_width))
             image = image + noise
@@ -182,6 +182,8 @@ def main(args):
     zeros = np.zeros((args.train_batch_size,))
 
     model_generator_dict = {
+        'NoFeedbackNetVgg16' : lambda : v.NoFeedbackNetVgg16(sess, '/home/jemmons/vgg16_weights.npz', num_classes=len(labels_num2str), fine_tune_vgg16=args.fine_tune_vgg),
+        'NoFeedbackNetLSTMVgg16_2LSTM' : lambda : v.NoFeedbackNetLSTMVgg16_2LSTM(sess, '/home/jemmons/vgg16_weights.npz', num_classes=len(labels_num2str), fine_tune_vgg16=args.fine_tune_vgg),
         'NoFeedbackNetLSTMVgg16_reg0_5' : lambda : v.NoFeedbackNetLSTMVgg16_reg0_5(sess, '/home/jemmons/vgg16_weights.npz', num_classes=len(labels_num2str), fine_tune_vgg16=args.fine_tune_vgg),
         'NoFeedbackNetLSTMVgg16_short' : lambda : v.NoFeedbackNetLSTMVgg16_short(sess, '/home/jemmons/vgg16_weights.npz', num_classes=len(labels_num2str), fine_tune_vgg16=args.fine_tune_vgg),
         'NoFeedbackNetGRUVgg16_short' : lambda : v.NoFeedbackNetGRUVgg16_short(sess, '/home/jemmons/vgg16_weights.npz', num_classes=len(labels_num2str), fine_tune_vgg16=args.fine_tune_vgg),
@@ -225,6 +227,9 @@ def main(args):
     # begin the training process
     ############################################################################
     logging.info('begin training')
+    if os.path.isfile(args.train_progress_csv):
+        args.train_progress_csv = args.train_progress_csv + '.' + str(datetime.datetime.now())
+
     with open(args.train_progress_csv, 'w') as logfile:
         if args.overfit or args.overfitt:
             logfile.write('# OVERFITTING! OVERFITTING! OVERFITTING! \n')
@@ -387,6 +392,7 @@ def main(args):
                         saver.save(sess, checkpoint_path)
                         t2 = timeit.default_timer()
                         logging.info('SAVING MODEL done! (save model to disk): {})'.format(t2 - t1))
+                        saver.restore(sess, checkpoint_path)
 
                         ####################################################
                         # compute validation accuracy/loss
@@ -401,6 +407,14 @@ def main(args):
 
                         for valid_base_idx in range(0, num_validation_videos, args.prefetch_batch_size):
                             validation_batch = load_videos(pool, args.data_root, validation_labels, validation_video_paths[valid_base_idx:valid_base_idx+args.prefetch_batch_size], args.video_width, args.video_height, args.video_length, args.video_downsample_ratio, False, args.prefetch_batch_size, shared_mem)
+                        
+                            # print('print out a video to make sure things are working')
+                            # print(validation_batch['video_labelnums'][0], labels_num2str[validation_batch['video_labelnums'][0]])
+                            # for i in range(args.video_length):
+                            #     frame = (128*(validation_batch['video_rawframes'][0,i,:,:] + 1)).astype(dtype=np.uint8)
+                            #     im = Image.fromarray(frame)
+                            #     im.save('/home/jemmons/frame{}.jpg'.format(i))
+                            # return 
 
                             for i in range(0, num_batch_videos, args.train_batch_size):
                                 begin = i
@@ -435,14 +449,11 @@ def main(args):
                                         predict_copy = predict.copy()
                                         fmax5.append(predict_copy.argsort()[-5:][::-1])
 
-                                        floss.append(_loss_vals[video_idx, :])
-
                                     predict_analysis.append({
                                         'frame_labelvec' : fvec,
                                         'frame_labelmax' : fmax,
                                         'frame_labelmax5' : fmax5,
                                         'frame_probsum' : fsum,
-                                        'frame_loss' : floss,
                                         'video_length' : video_length,
                                         'video_labelnum' : video_labelnum,
                                         'video_labelstr' : video_labelstr
@@ -485,6 +496,8 @@ def main(args):
                         logfile.flush()
 
                         logging.info('VALIDATION TOTAL\taccuracy (top-1): {}'.format(cum_validation_correct_predictions / num_validation_videos))
+                        logging.info('VALIDATION TOTAL\taccuracy (top-3): {}'.format(cum_validation_correct_predictions3 / num_validation_videos))
+                        logging.info('VALIDATION TOTAL\taccuracy (top-5): {}'.format(cum_validation_correct_predictions5 / num_validation_videos))
                         logging.info('VALIDATION TOTAL\tloss: {}'.format(cum_validation_loss))
                         logging.info('VALIDATION TOTAL\tnum_examples: {}'.format(num_validation_videos))
 
@@ -547,15 +560,15 @@ if __name__ == '__main__':
 
     parser.add_argument('--video_width', type=int, nargs=None,
                         help='the width to rescale all videos (official run: 176 for UCF-101)',
-                        default=224)
+                        default=112)
 
     parser.add_argument('--video_height', type=int, nargs=None,
                         help='the height to rescale all videos (official run: XXXX for UCF-101)',
-                        default=224)
+                        default=112)
 
     parser.add_argument('--video_length', type=int, nargs=None,
                         help='the num frames to truncate all videos (official run: XXXX for UCF-101)',
-                        default=30)
+                        default=20)
     
     parser.add_argument('--video_downsample_ratio', type=int, nargs=None,
                         help='the temporal downsampling ratio to use for all the videos (official run: XXXX for UCF-101)',
