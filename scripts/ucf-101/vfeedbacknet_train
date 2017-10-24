@@ -182,8 +182,11 @@ def main(args):
     zeros = np.zeros((args.train_batch_size,))
 
     model_generator_dict = {
+        'NoFeedbackNetLSTMVgg16_reg0_5' : lambda : v.NoFeedbackNetLSTMVgg16_reg0_5(sess, '/home/jemmons/vgg16_weights.npz', num_classes=len(labels_num2str), fine_tune_vgg16=args.fine_tune_vgg),
+        'NoFeedbackNetLSTMVgg16_short' : lambda : v.NoFeedbackNetLSTMVgg16_short(sess, '/home/jemmons/vgg16_weights.npz', num_classes=len(labels_num2str), fine_tune_vgg16=args.fine_tune_vgg),
+        'NoFeedbackNetGRUVgg16_short' : lambda : v.NoFeedbackNetGRUVgg16_short(sess, '/home/jemmons/vgg16_weights.npz', num_classes=len(labels_num2str), fine_tune_vgg16=args.fine_tune_vgg),
         'NoFeedbackNetLSTMVgg16' : lambda : v.NoFeedbackNetLSTMVgg16(sess, '/home/jemmons/vgg16_weights.npz', num_classes=len(labels_num2str), fine_tune_vgg16=args.fine_tune_vgg),
-        'NoFeedbackNetGRUVgg16' : lambda : v.NoFeedbackNeTGRUVgg16(sess, '/home/jemmons/vgg16_weights.npz', num_classes=len(labels_num2str), fine_tune_vgg16=args.fine_tune_vgg),
+        'NoFeedbackNetGRUVgg16' : lambda : v.NoFeedbackNetGRUVgg16(sess, '/home/jemmons/vgg16_weights.npz', num_classes=len(labels_num2str), fine_tune_vgg16=args.fine_tune_vgg),        
     }
 
     model = model_generator_dict[args.model_name]()    
@@ -561,6 +564,10 @@ if __name__ == '__main__':
     parser.add_argument('--num_epoch', type=int, nargs=None,
                         help='number of training epochs over the whole dataset (official run: XXXX for UCF-101)',
                         default=256000)
+
+    parser.add_argument('--last_loss_multipler', type=float, nargs=None,
+                        help='the multipler to apply to the loss on the last frame of the video (official run: XXXX for UCF-101)',
+                        default=1)
 
     parser.add_argument('--learning_rate_init', type=float, nargs=None,
                         help='initial vlaue for learning rate for the optimization (official run: XXXX for UCF-101)',
