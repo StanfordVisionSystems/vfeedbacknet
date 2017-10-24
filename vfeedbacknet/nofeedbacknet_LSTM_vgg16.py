@@ -73,7 +73,7 @@ class NoFeedbackNetLSTMVgg16:
             
         # use feedback network architecture below
         with tf.variable_scope('NoFeedBackNetVgg16'):
-            with tf.variable_scope('convgru1'):
+            with tf.variable_scope('convlstm1'):
                 
                 num_filters = 512 # convLSTM internal fitlers
                 h, w = int(inputs[0].shape[1]), int(inputs[0].shape[2])
