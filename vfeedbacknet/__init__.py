@@ -1,3 +1,6 @@
+from vfeedbacknet.nofeedbacknet_singleimage_vgg16 import NoFeedbackNetVgg16
+from vfeedbacknet.nofeedbacknet_LSTM_vgg16 import NoFeedbackNetLSTMVgg16 as NoFeedbackNetLSTMVgg16_2LSTM
+
 from vfeedbacknet.nofeedbacknet_singleLSTM_vgg16_reg0_5 import NoFeedbackNetLSTMVgg16 as NoFeedbackNetLSTMVgg16_reg0_5
 
 from vfeedbacknet.nofeedbacknet_singleLSTM_vgg16_short import NoFeedbackNetLSTMVgg16 as NoFeedbackNetLSTMVgg16_short
