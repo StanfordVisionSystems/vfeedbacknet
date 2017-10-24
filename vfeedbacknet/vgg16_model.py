@@ -107,11 +107,11 @@ class VGG16:
         with tf.variable_scope('vgg16', reuse=True):
             with tf.name_scope('preprocess'):
                 frame = tf.tile(frame, [1, 1, 1, 3]) # expand the channels to 3
-                img_mean = [123.68, 123.68, 123.68]
+                # img_mean = [123.68, 123.68, 123.68]
                 
-                #img_mean = [123.68, 116.779, 103.939]
-                mean = tf.constant(img_mean, dtype=tf.float32, shape=[1, 1, 1, 3], name='img_mean')
-                frame = frame - mean
+                # #img_mean = [123.68, 116.779, 103.939]
+                # mean = tf.constant(img_mean, dtype=tf.float32, shape=[1, 1, 1, 3], name='img_mean')
+                # frame = frame - mean
                 
             output = self.convlayers(frame, self.trainable)
             return output

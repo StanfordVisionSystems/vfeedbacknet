@@ -92,14 +92,14 @@ class VGG16:
                 self.parameters += [fc1w, fc1b]
 
             with tf.variable_scope('fc2'):
-                fc2w = tf.get_variable('weights', shape=[4096, 4096], dtype=tf.float32, trainable=True)
+                fc2w = tf.get_variable('weights', shape=[4096, 4096], dtype=tf.float32, trainable=trainable)
                 fc2b = tf.get_variable('biases', shape=[4096], dtype=tf.float32, trainable=trainable)
                 self.parameters += [fc2w, fc2b]
 
-            with tf.variable_scope('fc3'):
-                fc3w = tf.get_variable('weights', shape=[4096, 1000], dtype=tf.float32, trainable=True)
-                fc3b = tf.get_variable('biases', shape=[1000], dtype=tf.float32, trainable=trainable)
-                self.parameters += [fc3w, fc3b]
+            # with tf.variable_scope('fc3'):
+            #     fc3w = tf.get_variable('weights', shape=[4096, 1000], dtype=tf.float32, trainable=trainable)
+            #     fc3b = tf.get_variable('biases', shape=[1000], dtype=tf.float32, trainable=trainable)
+            #     self.parameters += [fc3w, fc3b]
 
     def load_weights(self):
         '''
@@ -112,17 +112,20 @@ class VGG16:
             print('VGG16:', (i, k, np.shape(raw_weights[k])))
             self.sess.run(self.parameters[i].assign(raw_weights[k]))
 
+            if k == 'fc7_b':
+                break
+            
     def __call__(self, frame):
             
         # for black and white input (Y-component of YUV) 
         with tf.variable_scope('vgg16', reuse=True):
             with tf.name_scope('preprocess'):
                 frame = tf.tile(frame, [1, 1, 1, 3]) # expand the channels to 3
-                img_mean = [123.68, 123.68, 123.68]
+            #     img_mean = [123.68, 123.68, 123.68]
                 
-                #img_mean = [123.68, 116.779, 103.939]
-                mean = tf.constant(img_mean, dtype=tf.float32, shape=[1, 1, 1, 3], name='img_mean')
-                frame = frame - mean
+            #     #img_mean = [123.68, 116.779, 103.939]
+            #     mean = tf.constant(img_mean, dtype=tf.float32, shape=[1, 1, 1, 3], name='img_mean')
+            #     frame = frame - mean
                 
             output = self.layers(frame, self.trainable)
             return output
