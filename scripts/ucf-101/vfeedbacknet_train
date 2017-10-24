@@ -175,14 +175,18 @@ def main(args):
                              name='x_input')
     x_length = tf.placeholder(tf.int32, [None,], name='x_length')
     
-    assert(len(labels_num2str) == 101) # there should be 101 classes in the 20BN dataset
+    assert(len(labels_num2str) == 101) # there should be 101 classes in the UCF-101 dataset
     y_label = tf.placeholder(tf.float32, [None, len(labels_num2str)], name='y_label')
     
     y_zeros = tf.placeholder(tf.float32, [None,],  name='y_zeros')
     zeros = np.zeros((args.train_batch_size,))
 
-    model = v.nofeedbacknet_vgg16.NoFeedbackNetVgg16(sess, '/home/jemmons/vgg16_weights.npz',
-                                                     num_classes=len(labels_num2str), fine_tune_vgg16=args.fine_tune_vgg)
+    model_generator_dict = {
+        'NoFeedbackNetLSTMVgg16' : lambda : v.NoFeedbackNetLSTMVgg16(sess, '/home/jemmons/vgg16_weights.npz', num_classes=len(labels_num2str), fine_tune_vgg16=args.fine_tune_vgg),
+        'NoFeedbackNetGRUVgg16' : lambda : v.NoFeedbackNeTGRUVgg16(sess, '/home/jemmons/vgg16_weights.npz', num_classes=len(labels_num2str), fine_tune_vgg16=args.fine_tune_vgg),
+    }
+
+    model = model_generator_dict[args.model_name]()    
     logits = model(x_input, x_length)
 
     losses, total_loss, predictions = v.vfeedbacknet_lossfunctions.basic_loss_pred(logits,

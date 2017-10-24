@@ -10,7 +10,7 @@ from vfeedbacknet.vfeedbacknet_lossfunctions import basic_loss_pred
 _BATCH_NORM_DECAY = 0.997
 _BATCH_NORM_EPSILON = 1e-5
 
-class NoFeedbackNetVgg16:
+class NoFeedbackNetLSTMVgg16:
     
     def __init__(self, sess, vgg16_weights, num_classes=101, fine_tune_vgg16=False, is_training=True):
         self.sess = sess
@@ -32,7 +32,7 @@ class NoFeedbackNetVgg16:
                                                 weights=self.vgg16_weights,
                                                 trainable=self.fine_tune_vgg16)
             with tf.variable_scope('fc'):
-                regularizer = tf.contrib.layers.l2_regularizer(scale=0.5)
+                regularizer = None # tf.contrib.layers.l2_regularizer(scale=0.25)
                 kernel = tf.get_variable('weights', shape=[512, self.num_classes], dtype=tf.float32, initializer=tf.contrib.layers.xavier_initializer(), regularizer=regularizer, trainable=self.is_training)
                 biases = tf.get_variable('biases', shape=[self.num_classes], dtype=tf.float32, initializer=tf.contrib.layers.xavier_initializer(), regularizer=regularizer, trainable=self.is_training)
                 
@@ -77,7 +77,7 @@ class NoFeedbackNetVgg16:
                 
                 num_filters = 512 # convLSTM internal fitlers
                 h, w = int(inputs[0].shape[1]), int(inputs[0].shape[2])
-                cell = convLSTM.ConvGRUCell([h, w], num_filters, [3, 3])
+                cell = convLSTM.ConvLSTMCell([h, w], num_filters, [3, 3])
                 inputs, state = tf.nn.dynamic_rnn(
                     cell,
                     tf.stack(inputs, axis=1),
@@ -88,12 +88,12 @@ class NoFeedbackNetVgg16:
                 inputs = tf.unstack(inputs, axis=1)
                 ModelLogger.log('convLSTM_output', inputs)
                 
-                inputs = [ tf.nn.max_pool(inp,
-                                          ksize=[1, 2, 2, 1],
-                                          strides=[1, 2, 2, 1],
-                                          padding='SAME',
-                                          name='pool1') for inp in inputs ]
-                ModelLogger.log('pool_output', inputs)
+                # inputs = [ tf.nn.max_pool(inp,
+                #                           ksize=[1, 2, 2, 1],
+                #                           strides=[1, 2, 2, 1],
+                #                           padding='SAME',
+                #                           name='pool1') for inp in inputs ]
+                # ModelLogger.log('pool_output', inputs)
                     
             # with tf.variable_scope('convlstm2', reuse=False):
             #         num_filters = 512 # convLSTM internal fitlers
@@ -120,7 +120,7 @@ class NoFeedbackNetVgg16:
             with tf.variable_scope('fc', reuse=True):
 
                 inputs = [ tf.layers.average_pooling2d(
-                    inputs=inp, pool_size=4, strides=1, padding='VALID',
+                    inputs=inp, pool_size=7, strides=1, padding='VALID',
                     data_format='channels_last', name='ave_pool') for inp in inputs ]
                 ModelLogger.log('ave_pool_output', inputs)
 
