@@ -518,7 +518,7 @@ def main(args):
                     train_batch_count += 1
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='train the feedbacknet for the 20BN data set')
+    parser = argparse.ArgumentParser(description='train the feedbacknet for the UCF-101 data set')
 
     # dataset parameters (all required)
     parser.add_argument('label_file', type=str, nargs=None,
