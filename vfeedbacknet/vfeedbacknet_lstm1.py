@@ -29,9 +29,12 @@ class NoFeedbackNetLSTMVgg16:
         with tf.variable_scope('NoFeedBackNetVgg16'):
             regularizer = None # tf.contrib.layers.l2_regularizer(scale=0.25)
 
-            self.vgg_layers = vgg16_model.VGG16(sess=self.sess,
-                                                weights=self.vgg16_weights,
-                                                trainable=self.fine_tune_vgg16)
+            with tf.variable_scope('vgg16'):
+                pass
+            
+            with tf.variable_scope('feedback'):
+                pass
+            
             with tf.variable_scope('fc'):
                 kernel = tf.get_variable('weights', shape=[512, self.num_classes], dtype=tf.float32, initializer=tf.contrib.layers.xavier_initializer(), regularizer=regularizer, trainable=self.is_training)
                 biases = tf.get_variable('biases', shape=[self.num_classes], dtype=tf.float32, initializer=tf.contrib.layers.xavier_initializer(), regularizer=regularizer, trainable=self.is_training)

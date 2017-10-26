@@ -1,4 +1,4 @@
-import vfeedbacknet.vgg16_model_short as vgg16_model
+import vfeedbacknet.legacy.vgg16_model as vgg16_model
 import vfeedbacknet.convLSTM as convLSTM
 
 import tensorflow as tf
@@ -10,7 +10,7 @@ from vfeedbacknet.vfeedbacknet_lossfunctions import basic_loss_pred
 _BATCH_NORM_DECAY = 0.997
 _BATCH_NORM_EPSILON = 1e-5
 
-class NoFeedbackNetLSTMVgg16:
+class NoFeedbackNetGRUVgg16:
     
     def __init__(self, sess, vgg16_weights, num_classes=101, fine_tune_vgg16=False, is_training=True):
         self.sess = sess
@@ -75,9 +75,9 @@ class NoFeedbackNetLSTMVgg16:
         with tf.variable_scope('NoFeedBackNetVgg16'):
             with tf.variable_scope('convgru1'):
                 
-                num_filters = 512 # convLSTM internal fitlers
+                num_filters = 512 # convGRU internal fitlers
                 h, w = int(inputs[0].shape[1]), int(inputs[0].shape[2])
-                cell = convLSTM.ConvLSTMCell([h, w], num_filters, [3, 3])
+                cell = convLSTM.ConvGRUCell([h, w], num_filters, [3, 3])
                 inputs, state = tf.nn.dynamic_rnn(
                     cell,
                     tf.stack(inputs, axis=1),
@@ -86,7 +86,7 @@ class NoFeedbackNetLSTMVgg16:
                 )
                 
                 inputs = tf.unstack(inputs, axis=1)
-                ModelLogger.log('convLSTM_output', inputs)
+                ModelLogger.log('convGRU_output', inputs)
                 
                 # inputs = [ tf.nn.max_pool(inp,
                 #                           ksize=[1, 2, 2, 1],
@@ -120,7 +120,7 @@ class NoFeedbackNetLSTMVgg16:
             with tf.variable_scope('fc', reuse=True):
 
                 inputs = [ tf.layers.average_pooling2d(
-                    inputs=inp, pool_size=7, strides=1, padding='VALID',
+                    inputs=inp, pool_size=4, strides=1, padding='VALID',
                     data_format='channels_last', name='ave_pool') for inp in inputs ]
                 ModelLogger.log('ave_pool_output', inputs)
 

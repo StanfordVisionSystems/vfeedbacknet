@@ -1,4 +1,4 @@
-import vfeedbacknet.vgg16_model_short as vgg16_model
+import vfeedbacknet.legacy.vgg16_model_short as vgg16_model
 import vfeedbacknet.convLSTM as convLSTM
 
 import tensorflow as tf

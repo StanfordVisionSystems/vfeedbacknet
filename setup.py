@@ -8,5 +8,5 @@ setup(name='vfeedbacknet',
       author='John Emmons',
       author_email='jemmons@cs.stanford.edu',
       url='https://github.com/StanfordVisionSystems/vfeedbacknet',
-      packages=['vfeedbacknet'],
+      packages=['vfeedbacknet', 'vfeedbacknet/legacy'],
 )
