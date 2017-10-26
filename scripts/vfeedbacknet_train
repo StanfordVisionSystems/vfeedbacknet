@@ -329,7 +329,7 @@ def main(args):
                         ####################################################
                         logging.info('SAVING MODEL to disk')
                         t1 = timeit.default_timer() 
-                        checkpoint_path = os.path.join(args.checkpoint_dir, 'vfeedbacknet-epoch{}-batch{}'.format(epoch,train_minibatch_count-1))
+                        checkpoint_path = os.path.join(args.checkpoint_dir, 'vfeedbacknet-epoch{}-batch-minibatch{}'.format(epoch,train_batch_count,train_minibatch_count-1))
                         saver.save(sess, checkpoint_path)
                         t2 = timeit.default_timer()
                         logging.info('SAVING MODEL done! (save model to disk): {})'.format(t2 - t1))
