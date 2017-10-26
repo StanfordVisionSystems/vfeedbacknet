@@ -162,35 +162,39 @@ def main(args):
     # begin the training process
     ############################################################################
     logging.info('begin training')
-    if os.path.isfile(args.train_progress_csv):
-        args.train_progress_csv = args.train_progress_csv + '.' + str(datetime.datetime.now())
+    validation_count = 0
+    train_batch_count = 0
+    train_minibatch_count = 0
 
-    with open(args.train_progress_csv, 'w') as logfile:
-        if args.overfit or args.overfitt:
-            logfile.write('# OVERFITTING! OVERFITTING! OVERFITTING! \n')
-        logfile.write('# {}\n'.format(' '.join(sys.argv)))
-        logfile.write('# {}\n'.format(args.model_name))
-        logfile.write('# {}\n'.format(args.checkpoint_dir))
-        logfile.write('# {}\n'.format(datetime.datetime.now()))
-        logfile.write('# {}\n'.format(args))
-        logfile.write('# model_name:{} data_size:{} validation_size:{} prefetch_batch_size:{} train_batch_size:{} num_labels:{} initial_learning_rate:{} learning_rate_decay:{} minimum_learning_rate:{} overfit:{}\n'.format(args.model_name, num_data_videos, num_validation_videos, args.prefetch_batch_size, args.train_batch_size, len(labels_num2str), args.learning_rate_init, args.learning_rate_decay, args.learning_rate_min, args.overfit or args.overfitt))
-        logfile.write('# video_width:{} video_height:{} video_length:{} video_downsample_ratio:{} \n'.format(args.video_width, args.video_height, args.video_length, args.video_downsample_ratio))
-        logfile.write('batch_num, learning_rate, train_acc_top1, train_acc_top3, train_acc_top5, train_loss, valid_acc_top1, valid_acc_top3, valid_acc_top5, valid_loss, checkpoint_path\n')
-        logfile.flush()
+    if os.path.isfile(args.train_progress_csv):
+        with open(args.train_progress_csv, 'r') as f:
+            train_batch_count = int(f.read().strip().split('\n')[-1].split(',')[0])
+            train_batch_count += 1
+            
+    with open(args.train_progress_csv, 'a') as logfile:
+        if not args.continue_training:
+            if args.overfit or args.overfitt:
+                logfile.write('# OVERFITTING! OVERFITTING! OVERFITTING! \n')
+            logfile.write('# {}\n'.format(' '.join(sys.argv)))
+            logfile.write('# {}\n'.format(args.model_name))
+            logfile.write('# {}\n'.format(args.checkpoint_dir))
+            logfile.write('# {}\n'.format(datetime.datetime.now()))
+            logfile.write('# {}\n'.format(args))
+            logfile.write('# model_name:{} data_size:{} validation_size:{} prefetch_batch_size:{} train_batch_size:{} num_labels:{} initial_learning_rate:{} learning_rate_decay:{} minimum_learning_rate:{} overfit:{}\n'.format(args.model_name, num_data_videos, num_validation_videos, args.prefetch_batch_size, args.train_batch_size, len(labels_num2str), args.learning_rate_init, args.learning_rate_decay, args.learning_rate_min, args.overfit or args.overfitt))
+            logfile.write('# video_width:{} video_height:{} video_length:{} video_downsample_ratio:{} \n'.format(args.video_width, args.video_height, args.video_length, args.video_downsample_ratio))
+            logfile.write('batch_num, learning_rate, train_acc_top1, train_acc_top3, train_acc_top5, train_loss, valid_acc_top1, valid_acc_top3, valid_acc_top5, valid_loss, checkpoint_path\n')
+            logfile.flush()
 
         with mp.Pool(processes=mp.cpu_count(), initializer=pool_init, initargs=(shared_mem,)) as pool:
-            validation_count = 0
-            train_batch_count = 0
-            train_minibatch_count = 0
             
             if args.continue_training:                    
                 saver.restore(sess, tf.train.latest_checkpoint(args.checkpoint_dir))
                 if args.global_step_init is not None:
                     sess.run([learning_rate], feed_dict={step : args.global_step_init})
-
+                    
             else:
                 model.initialize_variables()
-        
+
             for epoch in range(args.num_epoch):
                 video_paths = data_video_paths.copy()
                 random.shuffle(video_paths)

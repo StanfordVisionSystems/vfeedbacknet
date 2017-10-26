@@ -16,4 +16,4 @@ python3 -u vfeedbacknet_train $UCF101_ROOT/classInd.txt \
         $UCF101_ROOT/ \
         $2 \
         $3 \
-        $3/training_log.csv --ucf101 ${*:4} 2>&1 | tee $3/training_log.log 
+        $3/training_log.csv --ucf101 ${*:4} 2>&1 | tee -a $3/training_log.log 
