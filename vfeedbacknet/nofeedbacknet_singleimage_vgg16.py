@@ -71,9 +71,9 @@ class NoFeedbackNetVgg16:
             ModelLogger.log('vgg16_conv', inputs)
             
         # use feedback network architecture below
-        with tf.variable_scope('NoFeedBackNetVgg16'):
-            with tf.variable_scope('convgru1'):
-                pass
+        # with tf.variable_scope('NoFeedBackNetVgg16'):
+        #     with tf.variable_scope('convgru1'):
+        #         pass
             
         with tf.variable_scope('NoFeedBackNetVgg16', reuse=True):
             with tf.variable_scope('fc', reuse=True):
@@ -110,8 +110,6 @@ if __name__ == '__main__':
     model.initialize_variables()
 
     # use the model
-
-    
     # graph = tf.get_default_graph()    
     # for op in graph.get_operations():
     #     print((op.name))
