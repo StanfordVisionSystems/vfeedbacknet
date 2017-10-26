@@ -1,5 +1,7 @@
 #!/bin/bash
 
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
 if [[ -z $1 || -z $2 || -z $3 ]]; then
     echo "usage: ./jemmons_train.sh <GPU_NUM> <MODEL_NAME> <CHKT_PREFIX>"
     exit 0
@@ -20,7 +22,7 @@ mkdir -p $3
 
 UCF101_ROOT=/mnt/scratch/jemmons/UCF-101-dumpjpg
 
-python3 -u vfeedbacknet_train $UCF101_ROOT/classInd.txt \
+python3 -u $DIR/vfeedbacknet_train $UCF101_ROOT/classInd.txt \
         $UCF101_ROOT/testlist01.txt \
         $UCF101_ROOT/trainlist01.txt \
         $UCF101_ROOT/ \

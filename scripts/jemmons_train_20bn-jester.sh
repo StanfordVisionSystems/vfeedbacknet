@@ -1,5 +1,7 @@
 #!/bin/bash
 
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
 if [[ -z $1 || -z $2 || -z $3 ]]; then
     echo "usage: ./jemmons_train.sh <GPU_NUM> <MODEL_NAME> <CHKT_PREFIX>"
     exit 0
@@ -20,7 +22,7 @@ mkdir -p $3
 
 TWENTYBN_ROOT=/mnt/scratch/jemmons/20bn-jester
 
-python3 -u vfeedbacknet_train $TWENTYBN_ROOT/jester-v1-labels.csv \
+python3 -u $DIR/vfeedbacknet_train $TWENTYBN_ROOT/jester-v1-labels.csv \
         $TWENTYBN_ROOT/jester-v1-validation.csv \
         $TWENTYBN_ROOT/jester-v1-train.csv \
         $TWENTYBN_ROOT/20bn-jester-v1 \
