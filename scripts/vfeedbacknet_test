@@ -143,14 +143,14 @@ def main(args):
                     for video_idx in range(args.eval_batch_size):
                         video_labelnum = video_batch['video_labelnums'][begin:end][video_idx]
                         video_labelstr = labels_num2str[video_labelnum]
-                        video_length = video_batch['video_numframes'][video_idx]
+                        video_length = video_batch['video_numframes'][begin:end][video_idx]
 
                         fvec = []
                         fmax = []
                         fmax5 = []
                         fsum = []
                         floss = []
-                        for frame_idx in range(video_batch['video_numframes'][video_idx]):
+                        for frame_idx in range(video_length):
                             predict = predict_vals[video_idx, frame_idx, :]
                             fvec.append(predict)
                             fsum.append(sum(predict))
