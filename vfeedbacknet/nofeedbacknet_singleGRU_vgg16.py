@@ -86,7 +86,7 @@ class NoFeedbackNetGRUVgg16:
                 )
                 
                 inputs = tf.unstack(inputs, axis=1)
-                ModelLogger.log('convLSTM_output', inputs)
+                ModelLogger.log('convGRU_output', inputs)
                 
                 # inputs = [ tf.nn.max_pool(inp,
                 #                           ksize=[1, 2, 2, 1],
@@ -120,7 +120,7 @@ class NoFeedbackNetGRUVgg16:
             with tf.variable_scope('fc', reuse=True):
 
                 inputs = [ tf.layers.average_pooling2d(
-                    inputs=inp, pool_size=7, strides=1, padding='VALID',
+                    inputs=inp, pool_size=4, strides=1, padding='VALID',
                     data_format='channels_last', name='ave_pool') for inp in inputs ]
                 ModelLogger.log('ave_pool_output', inputs)
 
