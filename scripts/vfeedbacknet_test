@@ -110,9 +110,11 @@ def main(args):
 
         if args.overfit:
             logging.info('OVERFITTING!')
+            args.prefetch_batch_size = 16
             data_video_paths = data_video_paths[:args.prefetch_batch_size] # force overfitting
         elif args.overfitt:
             logging.info('OVERFITTING!')
+            args.prefetch_batch_size = 1024
             data_video_paths = data_video_paths[:args.prefetch_batch_size] # force overfitting
 
     # allocate shared memory up front
