@@ -1,7 +1,7 @@
 # util functions
-from vfeedbacknet.data_loaders import pool_init
-from vfeedbacknet.data_loaders import prepare_video
-from vfeedbacknet.data_loaders import load_videos
+from vfeedbacknet.vfeedbacknet_utilities import pool_init
+from vfeedbacknet.vfeedbacknet_utilities import prepare_video
+from vfeedbacknet.vfeedbacknet_utilities import load_videos
 
 # models
 
