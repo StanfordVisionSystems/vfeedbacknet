@@ -18,6 +18,7 @@ pip install -r requirements.txt
 python setup.py install
 
 # download dataset (if training from scratch)
+pip install twentybn-dl
 twentybn-dl obtain jester
   Set storage directory [Enter for "/home/user/20bn-datasets"]:
   Using: '/home/user/20bn-datasets' as storage.
