@@ -129,8 +129,6 @@ def main(args):
     model = model_generator_dict[args.model_name]()
     logits_ = model(x_input, x_length)
 
-    print(logits_.shape)
-    
     logits_ = tf.unstack(logits_, axis=1)
     logits_ = [ tf.unstack(l, axis=1) for l in logits_ ]
     
@@ -266,17 +264,20 @@ def main(args):
 
                         analysis = TrainingLogger.process_prediction(_predict_vals, video_batch['video_labelnums'][begin:end], video_batch['video_numframes'][begin:end])
 
-                        cum_data_correct_predictions_l.append([])
-                        cum_data_correct_predictions3_l.append([])
-                        cum_data_correct_predictions5_l.append([])
+                        if len(cum_data_correct_predictions_l) == 0:
+                            for feedback_idx in range(_predict_vals.shape[1]):
+                                cum_data_correct_predictions_l.append([])
+                                cum_data_correct_predictions3_l.append([])
+                                cum_data_correct_predictions5_l.append([])
+                            
                         for feedback_idx in range(_predict_vals.shape[1]):
                             correct_predictions = analysis[feedback_idx]['correct_predictions']
                             correct_predictions3 = analysis[feedback_idx]['correct_predictions3']
                             correct_predictions5 = analysis[feedback_idx]['correct_predictions5']
 
-                            cum_data_correct_predictions_l[i].append(correct_predictions)
-                            cum_data_correct_predictions3_l[i].append(correct_predictions3)
-                            cum_data_correct_predictions5_l[i].append(correct_predictions5)
+                            cum_data_correct_predictions_l[feedback_idx].append(correct_predictions)
+                            cum_data_correct_predictions3_l[feedback_idx].append(correct_predictions3)
+                            cum_data_correct_predictions5_l[feedback_idx].append(correct_predictions5)
 
                         cum_data_loss += _total_loss_val
 
@@ -364,17 +365,20 @@ def main(args):
                                 correct_predictions3 = analysis[0]['correct_predictions3']
                                 correct_predictions5 = analysis[0]['correct_predictions5']
 
-                                cum_validation_correct_predictions_l.append([])
-                                cum_validation_correct_predictions3_l.append([])
-                                cum_validation_correct_predictions5_l.append([])
+                                if len(cum_validation_correct_predictions_l) == 0:
+                                    for feedback_idx in range(_predict_vals.shape[1]):
+                                        cum_validation_correct_predictions_l.append([])
+                                        cum_validation_correct_predictions3_l.append([])
+                                        cum_validation_correct_predictions5_l.append([])
+
                                 for feedback_idx in range(_predict_vals.shape[1]):
                                     correct_predictions = analysis[feedback_idx]['correct_predictions']
                                     correct_predictions3 = analysis[feedback_idx]['correct_predictions3']
                                     correct_predictions5 = analysis[feedback_idx]['correct_predictions5']
 
-                                    cum_validation_correct_predictions_l[i].append(correct_predictions)
-                                    cum_validation_correct_predictions3_l[i].append(correct_predictions3)
-                                    cum_validation_correct_predictions5_l[i].append(correct_predictions5)
+                                    cum_validation_correct_predictions_l[feedback_idx].append(correct_predictions)
+                                    cum_validation_correct_predictions3_l[feedback_idx].append(correct_predictions3)
+                                    cum_validation_correct_predictions5_l[feedback_idx].append(correct_predictions5)
 
                                 cum_validation_loss += _total_loss_val
 
