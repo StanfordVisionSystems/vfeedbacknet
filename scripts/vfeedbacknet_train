@@ -241,7 +241,7 @@ def main(args):
                     # train model
                     ########################################################
                     logging.debug('begin train batch')
-                    t1 = timeit.default_timer()
+                    t1_train = timeit.default_timer()
 
                     cum_data_loss = 0
                     cum_data_correct_predictions_l = []
@@ -252,7 +252,9 @@ def main(args):
                         begin = i
                         end = i + args.train_batch_size
                         batch_labels = keras.utils.to_categorical(video_batch['video_labelnums'][begin:end], len(labels_num2str))
+
                         
+                        t1_trainstep = timeit.default_timer()
                         _, _step, _learn_rate, _total_loss_val, _loss_vals, _predict_vals = sess.run([train_step, step, learning_rate, total_loss, losses, predictions],
                                                                                                      feed_dict={x_input : video_batch['video_rawframes'][begin:end,:,:,:],
                                                                                                                 x_length : video_batch['video_numframes'][begin:end],
@@ -261,7 +263,9 @@ def main(args):
 
                         assert(not np.isnan(_total_loss_val))
                         assert(not np.any(np.isnan(_predict_vals)))
+                        t2_trainstep = timeit.default_timer()
 
+                        t1_log = timeit.default_timer()
                         analysis = TrainingLogger.process_prediction(_predict_vals, video_batch['video_labelnums'][begin:end], video_batch['video_numframes'][begin:end])
 
                         if len(cum_data_correct_predictions_l) == 0:
@@ -291,6 +295,10 @@ def main(args):
 
                         train_minibatch_count += 1
 
+                        t2_log = timeit.default_timer()
+                        logging.debug('done! (train step: {})'.format(t2_trainstep-t1_trainstep))
+                        logging.debug('done! (train log: {})'.format(t2_log-t1_log))
+                        
                     for feedback_idx in range(len(cum_data_correct_predictions_l)):
                         cum_data_correct_predictions = sum(cum_data_correct_predictions_l[feedback_idx])
                         cum_data_correct_predictions3 = sum(cum_data_correct_predictions3_l[feedback_idx])
@@ -298,9 +306,9 @@ def main(args):
                     
                         logfile.write('{}, {}, {}, {}, {}, {}, {}, {}, {}, , , , , ,\n'.format(train_batch_count, epoch, _step, _learn_rate, feedback_idx, cum_data_correct_predictions/args.prefetch_batch_size, cum_data_correct_predictions3/args.prefetch_batch_size, cum_data_correct_predictions5/args.prefetch_batch_size, cum_data_loss))
                     logfile.flush()
-
-                    t2 = timeit.default_timer()
-                    logging.debug('done! (train batch: {})'.format(t2-t1))
+                                        
+                    t2_train = timeit.default_timer()
+                    logging.debug('done! (train batch: {})'.format(t2_train-t1_train))
 
                     ########################################################
                     # save the model and compute validation accuracy/loss
