@@ -315,7 +315,7 @@ def main(args):
                         logging.info('TRAINING BATCH\tnum_examples: {}'.format(args.train_batch_size))
                         train_minibatch_count += 1
 
-                    logfile.write('{}, {}, {}, {}, {}, {}, , , , , ,\n'.format(train_batch_count, _step, _learn_rate, cum_data_correct_predictions/args.prefetch_batch_size, cum_data_correct_predictions3/args.prefetch_batch_size, cum_data_correct_predictions5/args.prefetch_batch_size, cum_data_loss))
+                    logfile.write('{}, {}, {}, {}, {}, {}, {}, , , , , ,\n'.format(train_batch_count, _step, _learn_rate, cum_data_correct_predictions/args.prefetch_batch_size, cum_data_correct_predictions3/args.prefetch_batch_size, cum_data_correct_predictions5/args.prefetch_batch_size, cum_data_loss))
                     logfile.flush()
 
                     t2 = timeit.default_timer()
