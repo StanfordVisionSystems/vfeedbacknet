@@ -281,22 +281,23 @@ def main(args):
 
                         cum_data_loss += _total_loss_val
 
-                        logging.info('TRAINING BATCH\taccuracy (top-1): {}'.format(correct_predictions / args.train_batch_size))
-                        logging.info('TRAINING BATCH\taccuracy (top-3): {}'.format(correct_predictions3 / args.train_batch_size))
-                        logging.info('TRAINING BATCH\taccuracy (top-5): {}'.format(correct_predictions5 / args.train_batch_size))
-                        logging.info('TRAINING BATCH\tloss: {}'.format(_total_loss_val))
-                        logging.info('TRAINING BATCH\tlearning_rate: {}'.format(_learn_rate))
-                        logging.info('TRAINING BATCH\tnum_examples: {}'.format(args.train_batch_size))
                         train_minibatch_count += 1
 
                     for feedback_idx in range(len(cum_data_correct_predictions_l)):
-                        cum_data_correct_predictions = sum(cum_data_correct_predictions_l[i])
-                        cum_data_correct_predictions3 = sum(cum_data_correct_predictions3_l[i])
-                        cum_data_correct_predictions5 = sum(cum_data_correct_predictions5_l[i])
+                        cum_data_correct_predictions = sum(cum_data_correct_predictions_l[feedback_idx])
+                        cum_data_correct_predictions3 = sum(cum_data_correct_predictions3_l[feedback_idx])
+                        cum_data_correct_predictions5 = sum(cum_data_correct_predictions5_l[feedback_idx])
                     
                         logfile.write('{}, {}, {}, {}, {}, {}, {}, {}, {}, , , , , ,\n'.format(train_batch_count, epoch, _step, _learn_rate, feedback_idx, cum_data_correct_predictions/args.prefetch_batch_size, cum_data_correct_predictions3/args.prefetch_batch_size, cum_data_correct_predictions5/args.prefetch_batch_size, cum_data_loss))
 
+                        logging.info('TRAINING BATCH\taccuracy (top-1) (feedback:{}): {}'.format(feedback_idx, correct_predictions / args.train_batch_size))
+                        logging.info('TRAINING BATCH\taccuracy (top-3) (feedback:{}): {}'.format(feedback_idx, correct_predictions3 / args.train_batch_size))
+                        logging.info('TRAINING BATCH\taccuracy (top-5) (feedback:{}): {}'.format(feedback_idx, correct_predictions5 / args.train_batch_size))
+
                     logfile.flush()
+                    logging.info('TRAINING BATCH\tloss: {}'.format(_total_loss_val))
+                    logging.info('TRAINING BATCH\tlearning_rate: {}'.format(_learn_rate))
+                    logging.info('TRAINING BATCH\tnum_examples: {}'.format(args.train_batch_size))
 
                     t2 = timeit.default_timer()
                     logging.debug('done! (train batch: {})'.format(t2-t1))
@@ -388,18 +389,20 @@ def main(args):
                                 logging.debug('VALIDATION batch loss: {}'.format(total_loss_val))
 
                         for feedback_idx in range(len(cum_validation_correct_predictions_l)):
-                            cum_validation_correct_predictions = sum(cum_validation_correct_predictions_l[i])
-                            cum_validation_correct_predictions3 = sum(cum_validation_correct_predictions3_l[i])
-                            cum_validation_correct_predictions5 = sum(cum_validation_correct_predictions5_l[i])
+                            cum_validation_correct_predictions = sum(cum_validation_correct_predictions_l[feedback_idx])
+                            cum_validation_correct_predictions3 = sum(cum_validation_correct_predictions3_l[feedback_idx])
+                            cum_validation_correct_predictions5 = sum(cum_validation_correct_predictions5_l[feedback_idx])
                             
                             logfile.write('{}, {}, {}, {}, {}, , , , , {}, {}, {}, {}, {}, {}\n'.format(train_batch_count, epoch, _step, learn_rate, feedback_idx, cum_validation_correct_predictions/num_validation_videos, cum_validation_correct_predictions3/num_validation_videos, cum_validation_correct_predictions5/num_validation_videos, cum_validation_loss, checkpoint_path, model_weights_path))
-                        logfile.flush()
 
-                        logging.info('VALIDATION TOTAL\taccuracy (top-1): {}'.format(cum_validation_correct_predictions / num_validation_videos))
-                        logging.info('VALIDATION TOTAL\taccuracy (top-3): {}'.format(cum_validation_correct_predictions3 / num_validation_videos))
-                        logging.info('VALIDATION TOTAL\taccuracy (top-5): {}'.format(cum_validation_correct_predictions5 / num_validation_videos))
-                        logging.info('VALIDATION TOTAL\tloss: {}'.format(cum_validation_loss))
+                            logging.info('VALIDATION TOTAL\taccuracy (top-1) (feedback:{}): {}'.format(feedback_idx, cum_validation_correct_predictions / num_validation_videos))
+                            logging.info('VALIDATION TOTAL\taccuracy (top-3) (feedback:{}): {}'.format(feedback_idx, cum_validation_correct_predictions3 / num_validation_videos))
+                            logging.info('VALIDATION TOTAL\taccuracy (top-5) (feedback:{}): {}'.format(feedback_idx, cum_validation_correct_predictions5 / num_validation_videos))
+                            logging.info('VALIDATION TOTAL\tloss: {}'.format(cum_validation_loss))
+                    
+                        logfile.flush()
                         logging.info('VALIDATION TOTAL\tnum_examples: {}'.format(num_validation_videos))
+                            
 
                         t2 = timeit.default_timer()
                         logging.debug('done! (validation accuracy computation): {})'.format(t2 - t1))
