@@ -143,7 +143,7 @@ class VGG16:
                                 padding='SAME',
                                 name='pool1')
 
-        # # conv2_1
+        # conv2_1
         with tf.variable_scope('conv2_1'):
             kernel = tf.get_variable('weights')
             biases = tf.get_variable('biases')
