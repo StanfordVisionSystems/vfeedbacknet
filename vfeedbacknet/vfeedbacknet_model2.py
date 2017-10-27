@@ -9,13 +9,14 @@ from vfeedbacknet.vfeedbacknet_base import VFeedbackNetBase
 class VFeedbackNetModel2:
 
 
-    def __init__(self, sess, num_classes,
+    def __init__(self, sess, num_classes, batch_size,
                  train_featurizer='FINE_TUNE', train_main_model='FINE_TUNE', train_fc='FINE_TUNE',
                  weights_filename=None, is_training=True):
 
         self.sess = sess
         self.weights = np.load(weights_filename) if weights_filename is not None else None
         self.num_classes = num_classes
+        self.batch_size = batch_size
         
         assert train_featurizer in ['NO', 'FINE_TUNE', 'FROM_SCRATCH'], 'train_featurizer must be either: NO, FINE_TUNE, or FROM_SCRATCH'
         self.train_featurizer = train_featurizer if is_training else 'NO'
@@ -250,7 +251,7 @@ class VFeedbackNetModel2:
                 kernel = tf.get_variable('kernel')
                 biases = tf.get_variable('biases')
 
-                inputs = tf.nn.conv2d_transpose(inputs, kernel, tf.stack([8, 28, 28, 128]), [1, 2, 2, 1], padding='SAME')
+                inputs = tf.nn.conv2d_transpose(inputs, kernel, tf.stack([self.batch_size, 28, 28, 128]), [1, 2, 2, 1], padding='SAME')
                 inputs = tf.nn.bias_add(inputs, biases)
                 inputs = tf.nn.relu(inputs)
 

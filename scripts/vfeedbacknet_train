@@ -121,7 +121,7 @@ def main(args):
         'vfeedbacknet_model1' : lambda : v.vfeedbacknet_model1.VFeedbackNetModel1(sess, len(labels_num2str),
                                                                                   train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
                                                                                   weights_filename='/home/jemmons/vfeedbacknet_base_weights.npz'),
-        'vfeedbacknet_model2' : lambda : v.vfeedbacknet_model2.VFeedbackNetModel2(sess, len(labels_num2str),
+        'vfeedbacknet_model2' : lambda : v.vfeedbacknet_model2.VFeedbackNetModel2(sess, len(labels_num2str), args.train_batch_size,
                                                                                   train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
                                                                                   weights_filename='/home/jemmons/vfeedbacknet_base_weights.npz'),
     }
