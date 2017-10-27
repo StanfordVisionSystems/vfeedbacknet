@@ -89,12 +89,17 @@ class TrainingLogger:
 
             analysis_per_feedback.append(analysis_per_frame)
 
-        first = True
         predictions_summary = []
-        for analysis_per_video in analysis_per_feedback:
-            
-            for analysis in analysis_per_video:
+        analysis_per_feedback_len = len(analysis_per_feedback)
+        analysis_per_video_len = len(analysis_per_feedback[0])
 
+        for j in range(analysis_per_video_len):
+
+            first = True
+            for i in range(analysis_per_feedback_len):
+
+                analysis = analysis_per_feedback[i][j]
+                
                 for a in analysis['frame_probsum']:
                     assert( abs(a - 1) < 0.00001 )
 
@@ -105,11 +110,12 @@ class TrainingLogger:
                 log_str = '                               ({}) {}'.format(fmax5_str, fmax_str)
                 if first:
                     log_str = '{} true_label,prediction: {},{} ({}) {}'.format('T' if tl==fmax_str[-1] else 'F', tl, fmax_str[-1], fmax5_str, fmax_str)
-                    
+                    first = False
+
                 logging.debug(log_str)
                 #logging.debug('{} true_label,prediction: {},{} ({}) {}'.format('T' if tl==fmax_str[-1] else 'F', tl, fmax_str[-1], fmax5_str, fmax_str))
                 #logging.debug('{}'.format(analysis['frame_loss']))
-
+                
             predicted_vals = np.asarray([ p['frame_labelmax'][-1] for p in analysis_per_frame ])
             correct_predictions = sum(labels == predicted_vals)
 
@@ -124,7 +130,6 @@ class TrainingLogger:
                 'correct_predictions3' : correct_predictions3,
                 'correct_predictions5' : correct_predictions5
             })    
-            first = False
 
         return predictions_summary
             

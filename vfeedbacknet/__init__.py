@@ -5,20 +5,23 @@ from vfeedbacknet.vfeedbacknet_utilities import pool_init
 from vfeedbacknet.vfeedbacknet_utilities import prepare_video
 from vfeedbacknet.vfeedbacknet_utilities import load_videos
 
+import vfeedbacknet.vfeedbacknet_lossfunctions
+
 # models
 import vfeedbacknet.vfeedbacknet_model1 as vfeedbacknet_model1
+import vfeedbacknet.vfeedbacknet_model2 as vfeedbacknet_model2
 
 # legacy models
-import vfeedbacknet.legacy.convLSTM
-import vfeedbacknet.legacy.convLSTM
+# import vfeedbacknet.legacy.convLSTM
+# import vfeedbacknet.legacy.convLSTM
 
-from vfeedbacknet.legacy.nofeedbacknet_singleimage_vgg16 import NoFeedbackNetVgg16
-from vfeedbacknet.legacy.nofeedbacknet_LSTM_vgg16 import NoFeedbackNetLSTMVgg16 as NoFeedbackNetLSTMVgg16_2LSTM
+# from vfeedbacknet.legacy.nofeedbacknet_singleimage_vgg16 import NoFeedbackNetVgg16
+# from vfeedbacknet.legacy.nofeedbacknet_LSTM_vgg16 import NoFeedbackNetLSTMVgg16 as NoFeedbackNetLSTMVgg16_2LSTM
 
-from vfeedbacknet.legacy.nofeedbacknet_singleLSTM_vgg16_reg0_5 import NoFeedbackNetLSTMVgg16 as NoFeedbackNetLSTMVgg16_reg0_5
+# from vfeedbacknet.legacy.nofeedbacknet_singleLSTM_vgg16_reg0_5 import NoFeedbackNetLSTMVgg16 as NoFeedbackNetLSTMVgg16_reg0_5
 
-from vfeedbacknet.legacy.nofeedbacknet_singleLSTM_vgg16_short import NoFeedbackNetLSTMVgg16 as NoFeedbackNetLSTMVgg16_short
-from vfeedbacknet.legacy.nofeedbacknet_singleGRU_vgg16_short import NoFeedbackNetGRUVgg16 as NoFeedbackNetGRUVgg16_short
+# from vfeedbacknet.legacy.nofeedbacknet_singleLSTM_vgg16_short import NoFeedbackNetLSTMVgg16 as NoFeedbackNetLSTMVgg16_short
+# from vfeedbacknet.legacy.nofeedbacknet_singleGRU_vgg16_short import NoFeedbackNetGRUVgg16 as NoFeedbackNetGRUVgg16_short
 
-from vfeedbacknet.legacy.nofeedbacknet_singleLSTM_vgg16 import NoFeedbackNetLSTMVgg16
-from vfeedbacknet.legacy.nofeedbacknet_singleGRU_vgg16 import NoFeedbackNetGRUVgg16
+# from vfeedbacknet.legacy.nofeedbacknet_singleLSTM_vgg16 import NoFeedbackNetLSTMVgg16
+# from vfeedbacknet.legacy.nofeedbacknet_singleGRU_vgg16 import NoFeedbackNetGRUVgg16

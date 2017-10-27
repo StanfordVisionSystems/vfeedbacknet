@@ -141,8 +141,8 @@ class VFeedbackNetModel2:
         inputs = [ self.vfeedbacknet_base.vgg16_layer3(inp, var_list=self.featurizer_variables) for inp in inputs ]
         ModelLogger.log('vgg-layer3', inputs)
 
-        # inputs = [ self.vfeedbacknet_base.vgg16_layer4(inp, var_list=self.featurizer_variables) for inp in inputs ]
-        # ModelLogger.log('vgg-layer4', inputs)
+        inputs = [ self.vfeedbacknet_base.vgg16_layer4(inp, var_list=self.featurizer_variables) for inp in inputs ]
+        ModelLogger.log('vgg-layer4', inputs)
 
         inputs = self.convLSTM_layer1(inputs, inputs_sequence_length, var_list=self.main_model_variables)
         ModelLogger.log('convLSTM1', inputs)
@@ -153,16 +153,15 @@ class VFeedbackNetModel2:
 
         inputs = [ self.vfeedbacknet_base.fc_layer(inp, var_list=self.fc_variables) for inp in inputs ]
         ModelLogger.log('fc', inputs)
-
-        logits.append(inputs)
-
+        logits.append(tf.stack(inputs, axis=1))
+        
         # feedback 2
         inputs = featurizer_outputs
         inputs = [ self.vfeedbacknet_base.vgg16_layer3(inp, var_list=self.featurizer_variables) for inp in inputs ]
         ModelLogger.log('vgg-layer3', inputs)
 
-        # inputs = [ self.vfeedbacknet_base.vgg16_layer4(inp, var_list=self.featurizer_variables) for inp in inputs ]
-        # ModelLogger.log('vgg-layer4', inputs)
+        inputs = [ self.vfeedbacknet_base.vgg16_layer4(inp, var_list=self.featurizer_variables) for inp in inputs ]
+        ModelLogger.log('vgg-layer4', inputs)
 
         inputs = self.convLSTM_layer1(inputs, inputs_sequence_length, var_list=self.main_model_variables)
         ModelLogger.log('convLSTM1', inputs)
@@ -173,8 +172,9 @@ class VFeedbackNetModel2:
 
         inputs = [ self.vfeedbacknet_base.fc_layer(inp, var_list=self.fc_variables) for inp in inputs ]
         ModelLogger.log('fc', inputs)
+        logits.append(tf.stack(inputs, axis=1))
 
-        logits.append(inputs)
+        logits = tf.stack(logits, axis=1)
 
         ## ave_pool and fc ##
         return logits

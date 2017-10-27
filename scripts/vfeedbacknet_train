@@ -20,7 +20,8 @@ import tensorflow as tf
 from tensorflow.python.client import device_lib
 
 import vfeedbacknet as v
-from vfeedbacknet import pool_init, prepare_video, load_videos 
+from vfeedbacknet import TrainingLogger
+from vfeedbacknet import pool_init, prepare_video, load_videos
 
 #logging.basicConfig(level=logging.INFO)
 logging.basicConfig(level=logging.DEBUG)
@@ -117,27 +118,39 @@ def main(args):
     zeros = np.zeros((args.train_batch_size,))
 
     model_generator_dict = {
-        'vfeedbacknet_model1' : lambda : v.vfeedbacknet_model1.VFeedbackNetModel1(sess, len(labels_num2str), train_featurizer='NO', weights_filename='/home/jemmons/vfeedbacknet_base_weights.npz'),
-        # legacy models below
-        # 'NoFeedbackNetVgg16' : lambda : v.NoFeedbackNetVgg16(sess, '/home/jemmons/vgg16_weights.npz', num_classes=len(labels_num2str), fine_tune_vgg16=args.fine_tune_vgg),
-        # 'NoFeedbackNetLSTMVgg16_2LSTM' : lambda : v.NoFeedbackNetLSTMVgg16_2LSTM(sess, '/home/jemmons/vgg16_weights.npz', num_classes=len(labels_num2str), fine_tune_vgg16=args.fine_tune_vgg),
-        # 'NoFeedbackNetLSTMVgg16_reg0_5' : lambda : v.NoFeedbackNetLSTMVgg16_reg0_5(sess, '/home/jemmons/vgg16_weights.npz', num_classes=len(labels_num2str), fine_tune_vgg16=args.fine_tune_vgg),
-        # 'NoFeedbackNetLSTMVgg16_short' : lambda : v.NoFeedbackNetLSTMVgg16_short(sess, '/home/jemmons/vgg16_weights.npz', num_classes=len(labels_num2str), fine_tune_vgg16=args.fine_tune_vgg),
-        # 'NoFeedbackNetGRUVgg16_short' : lambda : v.NoFeedbackNetGRUVgg16_short(sess, '/home/jemmons/vgg16_weights.npz', num_classes=len(labels_num2str), fine_tune_vgg16=args.fine_tune_vgg),
-        # 'NoFeedbackNetLSTMVgg16' : lambda : v.NoFeedbackNetLSTMVgg16(sess, '/home/jemmons/vgg16_weights.npz', num_classes=len(labels_num2str), fine_tune_vgg16=args.fine_tune_vgg),
-        # 'NoFeedbackNetGRUVgg16' : lambda : v.NoFeedbackNetGRUVgg16(sess, '/home/jemmons/vgg16_weights.npz', num_classes=len(labels_num2str), fine_tune_vgg16=args.fine_tune_vgg),        
+        'vfeedbacknet_model1' : lambda : v.vfeedbacknet_model1.VFeedbackNetModel1(sess, len(labels_num2str),
+                                                                                  train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
+                                                                                  weights_filename='/home/jemmons/vfeedbacknet_base_weights.npz'),
+        'vfeedbacknet_model2' : lambda : v.vfeedbacknet_model2.VFeedbackNetModel2(sess, len(labels_num2str),
+                                                                                  train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
+                                                                                  weights_filename='/home/jemmons/vfeedbacknet_base_weights.npz'),
     }
 
     model = model_generator_dict[args.model_name]()
-    logits = model(x_input, x_length)
+    logits_ = model(x_input, x_length)
 
-    losses, total_loss, predictions = v.vfeedbacknet_lossfunctions.basic_loss_pred(logits,
-                                                                                   x_length,
-                                                                                   args.video_length,
-                                                                                   y_label,
-                                                                                   y_zeros,
-                                                                                   last_loss_multiple=args.last_loss_multipler)
+    print(logits_.shape)
+    
+    logits_ = tf.unstack(logits_, axis=1)
+    logits_ = [ tf.unstack(l, axis=1) for l in logits_ ]
+    
+    # tuple: (losses, total_loss, predictions)
+    outputs = [ v.vfeedbacknet_lossfunctions.basic_loss_pred(logits,
+                                                             x_length,
+                                                             args.video_length,
+                                                             y_label,
+                                                             y_zeros,
+                                                             last_loss_multiple=args.last_loss_multipler) for logits in logits_ ]
 
+    total_loss = 0
+    for output in outputs:
+        total_loss += output[1]
+        
+    losses = tf.stack(list(map(lambda x: x[0], outputs)), axis=1, name='losses_agg')
+    predictions = tf.stack(list(map(lambda x: x[2], outputs)), axis=1, name='predictions_agg')
+    # print(losses.shape, losses)
+    # print(predictions.shape, predictions)
+    
     step = tf.Variable(args.global_step_init if (args.global_step_init is not None) else 0, trainable=False, name='step')
     learning_rate = tf.maximum(tf.train.exponential_decay(args.learning_rate_init, step, args.prefetch_batch_size//args.train_batch_size, args.learning_rate_decay), args.learning_rate_min, name='learning_rate')
     optimizer = tf.train.AdadeltaOptimizer(learning_rate=learning_rate, name='optimizer')
@@ -184,7 +197,7 @@ def main(args):
             logfile.write('# {}\n'.format(args))
             logfile.write('# model_name:{} data_size:{} validation_size:{} prefetch_batch_size:{} train_batch_size:{} num_labels:{} initial_learning_rate:{} learning_rate_decay:{} minimum_learning_rate:{} overfit:{}\n'.format(args.model_name, num_data_videos, num_validation_videos, args.prefetch_batch_size, args.train_batch_size, len(labels_num2str), args.learning_rate_init, args.learning_rate_decay, args.learning_rate_min, args.overfit or args.overfitt))
             logfile.write('# video_width:{} video_height:{} video_length:{} video_downsample_ratio:{} \n'.format(args.video_width, args.video_height, args.video_length, args.video_downsample_ratio))
-            logfile.write('batch_num, epoch, global_step, learning_rate, train_acc_top1, train_acc_top3, train_acc_top5, train_loss, valid_acc_top1, valid_acc_top3, valid_acc_top5, valid_loss, checkpoint_path, model_export_path\n')
+            logfile.write('batch_num, epoch, global_step, learning_rate, feedback_iteration, train_acc_top1, train_acc_top3, train_acc_top5, train_loss, valid_acc_top1, valid_acc_top3, valid_acc_top5, valid_loss, checkpoint_path, model_export_path\n')
             logfile.flush()
 
         with mp.Pool(processes=mp.cpu_count(), initializer=pool_init, initargs=(shared_mem,)) as pool:
@@ -233,9 +246,9 @@ def main(args):
                     t1 = timeit.default_timer()
 
                     cum_data_loss = 0
-                    cum_data_correct_predictions = 0
-                    cum_data_correct_predictions3 = 0
-                    cum_data_correct_predictions5 = 0
+                    cum_data_correct_predictions_l = []
+                    cum_data_correct_predictions3_l = []
+                    cum_data_correct_predictions5_l = []
 
                     for i in range(0, num_batch_videos, args.train_batch_size):
                         begin = i
@@ -247,64 +260,24 @@ def main(args):
                                                                                                                 x_length : video_batch['video_numframes'][begin:end],
                                                                                                                 y_label : batch_labels,
                                                                                                                 y_zeros : zeros})
-                        predict_analysis = []
-                        for video_idx in range(args.train_batch_size):
-                            video_labelnum = video_batch['video_labelnums'][begin:end][video_idx]
-                            video_labelstr = labels_num2str[video_labelnum]
-                            video_length = video_batch['video_numframes'][begin:end][video_idx]
-
-                            fvec = []
-                            fmax = []
-                            fmax5 = []
-                            fsum = []
-                            floss = []
-                            for frame_idx in range(video_length):
-                                predict = _predict_vals[video_idx, frame_idx, :]
-                                fvec.append(predict)
-                                fsum.append(sum(predict))
-                                fmax.append(np.argmax(predict))
-
-                                predict_copy = predict.copy()
-                                fmax5.append(predict_copy.argsort()[-5:][::-1])
-                                
-                                floss.append(_loss_vals[video_idx, :])
-
-                            predict_analysis.append({
-                                'frame_labelvec' : fvec,
-                                'frame_labelmax' : fmax,
-                                'frame_labelmax5' : fmax5,
-                                'frame_probsum' : fsum,
-                                'frame_loss' : floss,
-                                'video_length' : video_length,
-                                'video_labelnum' : video_labelnum,
-                                'video_labelstr' : video_labelstr
-                            })
-
-                        for analysis in predict_analysis:
-                            for a in analysis['frame_probsum']:
-                                assert( abs(a - 1) < 0.00001 )
-
-                            fmax_str = list(map(lambda x: str(x).zfill(2), analysis['frame_labelmax']))
-                            fmax5_str = list(map(lambda x: str(x).zfill(2), analysis['frame_labelmax5'][-1]))
-                            tl = str(analysis['video_labelnum']).zfill(2)
-                            logging.debug('{} true_label,prediction: {},{} ({}) {}'.format('T' if tl==fmax_str[-1] else 'F', tl, fmax_str[-1], fmax5_str, fmax_str))
-                            #logging.debug('{}'.format(analysis['frame_loss']))
 
                         assert(not np.isnan(_total_loss_val))
                         assert(not np.any(np.isnan(_predict_vals)))
 
-                        predicted_vals = np.asarray([ p['frame_labelmax'][-1] for p in predict_analysis ])
-                        correct_predictions = sum(video_batch['video_labelnums'][begin:end] == predicted_vals)
+                        analysis = TrainingLogger.process_prediction(_predict_vals, video_batch['video_labelnums'][begin:end], video_batch['video_numframes'][begin:end])
 
-                        predicted_vals3 = [ l in p['frame_labelmax5'][-1][:3] for l,p in zip(video_batch['video_labelnums'][begin:end], predict_analysis) ]
-                        correct_predictions3 = sum(predicted_vals3)
+                        cum_data_correct_predictions_l.append([])
+                        cum_data_correct_predictions3_l.append([])
+                        cum_data_correct_predictions5_l.append([])
+                        for feedback_idx in range(_predict_vals.shape[1]):
+                            correct_predictions = analysis[feedback_idx]['correct_predictions']
+                            correct_predictions3 = analysis[feedback_idx]['correct_predictions3']
+                            correct_predictions5 = analysis[feedback_idx]['correct_predictions5']
 
-                        predicted_vals5 = [ l in p['frame_labelmax5'][-1] for l,p in zip(video_batch['video_labelnums'][begin:end], predict_analysis) ]
-                        correct_predictions5 = sum(predicted_vals5)
+                            cum_data_correct_predictions_l[i].append(correct_predictions)
+                            cum_data_correct_predictions3_l[i].append(correct_predictions3)
+                            cum_data_correct_predictions5_l[i].append(correct_predictions5)
 
-                        cum_data_correct_predictions += correct_predictions
-                        cum_data_correct_predictions3 += correct_predictions3
-                        cum_data_correct_predictions5 += correct_predictions5
                         cum_data_loss += _total_loss_val
 
                         logging.info('TRAINING BATCH\taccuracy (top-1): {}'.format(correct_predictions / args.train_batch_size))
@@ -315,7 +288,13 @@ def main(args):
                         logging.info('TRAINING BATCH\tnum_examples: {}'.format(args.train_batch_size))
                         train_minibatch_count += 1
 
-                    logfile.write('{}, {}, {}, {}, {}, {}, {}, {}, , , , , ,\n'.format(train_batch_count, epoch, _step, _learn_rate, cum_data_correct_predictions/args.prefetch_batch_size, cum_data_correct_predictions3/args.prefetch_batch_size, cum_data_correct_predictions5/args.prefetch_batch_size, cum_data_loss))
+                    for feedback_idx in range(len(cum_data_correct_predictions_l)):
+                        cum_data_correct_predictions = sum(cum_data_correct_predictions_l[i])
+                        cum_data_correct_predictions3 = sum(cum_data_correct_predictions3_l[i])
+                        cum_data_correct_predictions5 = sum(cum_data_correct_predictions5_l[i])
+                    
+                        logfile.write('{}, {}, {}, {}, {}, {}, {}, {}, {}, , , , , ,\n'.format(train_batch_count, epoch, _step, _learn_rate, feedback_idx, cum_data_correct_predictions/args.prefetch_batch_size, cum_data_correct_predictions3/args.prefetch_batch_size, cum_data_correct_predictions5/args.prefetch_batch_size, cum_data_loss))
+
                     logfile.flush()
 
                     t2 = timeit.default_timer()
@@ -349,9 +328,9 @@ def main(args):
                         t1 = timeit.default_timer() 
 
                         cum_validation_loss = 0
-                        cum_validation_correct_predictions = 0
-                        cum_validation_correct_predictions3 = 0
-                        cum_validation_correct_predictions5 = 0
+                        cum_validation_correct_predictions_l = []
+                        cum_validation_correct_predictions3_l = []
+                        cum_validation_correct_predictions5_l = []
 
                         for valid_base_idx in range(0, num_validation_videos, args.prefetch_batch_size):
                             validation_batch = load_videos(pool, args.data_root, validation_labels, validation_video_paths[valid_base_idx:valid_base_idx+args.prefetch_batch_size], args.video_width, args.video_height, args.video_length, args.video_downsample_ratio, False, args.prefetch_batch_size, shared_mem)
@@ -376,68 +355,40 @@ def main(args):
                                                                                                       y_label : keras.utils.to_categorical(validation_batch['video_labelnums'][begin:end],len(labels_num2str)),
                                                                                                       y_zeros : zeros})
 
+
                                 assert(not np.isnan(total_loss_val))
                                 assert(not np.any(np.isnan(predict_vals)))
-                                
-                                predict_analysis = []
-                                for video_idx in range(args.train_batch_size):
-                                    video_labelnum = validation_batch['video_labelnums'][begin:end][video_idx]
-                                    video_labelstr = labels_num2str[video_labelnum]
-                                    video_length = validation_batch['video_numframes'][begin:end][video_idx]
 
-                                    fvec = []
-                                    fmax = []
-                                    fmax5 = []
-                                    fsum = []
-                                    floss = []
-                                    for frame_idx in range(video_length):
-                                        predict = predict_vals[video_idx, frame_idx, :]
-                                        fvec.append(predict)
-                                        fsum.append(sum(predict))
-                                        fmax.append(np.argmax(predict))
+                                analysis = TrainingLogger.process_prediction(_predict_vals, video_batch['video_labelnums'][begin:end], video_batch['video_numframes'][begin:end])
+                                correct_predictions = analysis[0]['correct_predictions']
+                                correct_predictions3 = analysis[0]['correct_predictions3']
+                                correct_predictions5 = analysis[0]['correct_predictions5']
 
-                                        predict_copy = predict.copy()
-                                        fmax5.append(predict_copy.argsort()[-5:][::-1])
+                                cum_validation_correct_predictions_l.append([])
+                                cum_validation_correct_predictions3_l.append([])
+                                cum_validation_correct_predictions5_l.append([])
+                                for feedback_idx in range(_predict_vals.shape[1]):
+                                    correct_predictions = analysis[feedback_idx]['correct_predictions']
+                                    correct_predictions3 = analysis[feedback_idx]['correct_predictions3']
+                                    correct_predictions5 = analysis[feedback_idx]['correct_predictions5']
 
-                                    predict_analysis.append({
-                                        'frame_labelvec' : fvec,
-                                        'frame_labelmax' : fmax,
-                                        'frame_labelmax5' : fmax5,
-                                        'frame_probsum' : fsum,
-                                        'video_length' : video_length,
-                                        'video_labelnum' : video_labelnum,
-                                        'video_labelstr' : video_labelstr
-                                    })
+                                    cum_validation_correct_predictions_l[i].append(correct_predictions)
+                                    cum_validation_correct_predictions3_l[i].append(correct_predictions3)
+                                    cum_validation_correct_predictions5_l[i].append(correct_predictions5)
 
-                                for analysis in predict_analysis:
-                                    for a in analysis['frame_probsum']:
-                                        assert( abs(a - 1) < 0.00001 )
-
-                                    fmax_str = list(map(lambda x: str(x).zfill(2), analysis['frame_labelmax']))
-                                    fmax5_str = list(map(lambda x: str(x).zfill(2), analysis['frame_labelmax5'][-1]))
-                                    tl = str(analysis['video_labelnum']).zfill(2)
-                                    logging.debug('{} true_label,prediction: {},{} ({}) {}'.format('T' if tl==fmax_str[-1] else 'F', tl, fmax_str[-1], fmax5_str, fmax_str))
-
-                                predicted_vals = np.asarray([ p['frame_labelmax'][-1] for p in predict_analysis ])
-                                correct_predictions = sum(validation_batch['video_labelnums'][begin:end] == predicted_vals)
-
-                                predicted_vals3 = [ l in p['frame_labelmax5'][-1][:3] for l,p in zip(validation_batch['video_labelnums'][begin:end], predict_analysis) ]
-                                correct_predictions3 = sum(predicted_vals3)
-
-                                predicted_vals5 = [ l in p['frame_labelmax5'][-1] for l,p in zip(validation_batch['video_labelnums'][begin:end], predict_analysis) ]
-                                correct_predictions5 = sum(predicted_vals5)
-
-                                cum_validation_correct_predictions += correct_predictions
-                                cum_validation_correct_predictions3 += correct_predictions3
-                                cum_validation_correct_predictions5 += correct_predictions5
-                                cum_validation_loss += total_loss_val
+                                cum_validation_loss += _total_loss_val
 
                                 logging.debug('VALIDATION batch accuracy (top-1): {}'.format(correct_predictions / args.train_batch_size))
                                 logging.debug('VALIDATION batch accuracy (top-3): {}'.format(correct_predictions3 / args.train_batch_size))
                                 logging.debug('VALIDATION batch accuracy (top-5): {}'.format(correct_predictions5 / args.train_batch_size))
                                 logging.debug('VALIDATION batch loss: {}'.format(total_loss_val))
 
-                        logfile.write('{}, {}, {}, {}, , , , , {}, {}, {}, {}, {}, {}\n'.format(train_batch_count, epoch, _step, learn_rate, cum_validation_correct_predictions/num_validation_videos, cum_validation_correct_predictions3/num_validation_videos, cum_validation_correct_predictions5/num_validation_videos, cum_validation_loss, checkpoint_path, model_weights_path))
+                        for feedback_idx in range(len(cum_validation_correct_predictions_l)):
+                            cum_validation_correct_predictions = sum(cum_validation_correct_predictions_l[i])
+                            cum_validation_correct_predictions3 = sum(cum_validation_correct_predictions3_l[i])
+                            cum_validation_correct_predictions5 = sum(cum_validation_correct_predictions5_l[i])
+                            
+                            logfile.write('{}, {}, {}, {}, {}, , , , , {}, {}, {}, {}, {}, {}\n'.format(train_batch_count, epoch, _step, learn_rate, feedback_idx, cum_validation_correct_predictions/num_validation_videos, cum_validation_correct_predictions3/num_validation_videos, cum_validation_correct_predictions5/num_validation_videos, cum_validation_loss, checkpoint_path, model_weights_path))
                         logfile.flush()
 
                         logging.info('VALIDATION TOTAL\taccuracy (top-1): {}'.format(cum_validation_correct_predictions / num_validation_videos))
