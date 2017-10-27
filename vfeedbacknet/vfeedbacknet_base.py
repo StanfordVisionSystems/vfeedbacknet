@@ -12,7 +12,7 @@ class VFeedbackNetBase:
                  weights_filename=None, is_training=True):
 
         self.sess = sess
-        self.weights = np.load(weights) if weights_filename is not None else None
+        self.weights = np.load(weights_filename) if weights_filename is not None else None
         self.num_classes = num_classes
 
         assert train_vgg16 in ['NO', 'FINE_TUNE', 'FROM_SCRATCH'], 'train_vgg16 must be either: NO, FINE_TUNE, or FROM_SCRATCH'
@@ -124,7 +124,7 @@ class VFeedbackNetBase:
     
     def print_variables(self):
 
-        for var in self.vgg_variables + self.vfeedbacknet_feedback_variables + self.vfeedbacknet_fc_variables:
+        for var in self.get_variables():
             print(var.name)
 
     
