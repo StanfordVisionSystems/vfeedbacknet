@@ -8,7 +8,7 @@ class VFeedbackNetBase:
 
     
     def __init__(self, sess, num_classes,
-                 train_vgg16='NO', train_feedback='FROM_SCRATCH', train_fc='FROM_SCRATCH',
+                 train_vgg16='FROM_SCRATCH', train_feedback='FROM_SCRATCH', train_fc='FROM_SCRATCH',
                  weights_filename=None, is_training=True):
 
         self.sess = sess
