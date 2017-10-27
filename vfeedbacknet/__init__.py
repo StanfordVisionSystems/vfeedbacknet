@@ -10,6 +10,7 @@ import vfeedbacknet.vfeedbacknet_lossfunctions
 # models
 import vfeedbacknet.vfeedbacknet_model1 as vfeedbacknet_model1
 import vfeedbacknet.vfeedbacknet_model2 as vfeedbacknet_model2
+import vfeedbacknet.vfeedbacknet_model3 as vfeedbacknet_model3
 
 # legacy models
 # import vfeedbacknet.legacy.convLSTM

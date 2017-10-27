@@ -124,9 +124,9 @@ def main(args):
         'vfeedbacknet_model2' : lambda : v.vfeedbacknet_model2.VFeedbackNetModel2(sess, len(labels_num2str), args.train_batch_size,
                                                                                   train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
                                                                                   weights_filename='/home/jemmons/vfeedbacknet_base_weights.npz'),
-        'vfeedbacknet_model2.1' : lambda : v.vfeedbacknet_model2.VFeedbackNetModel2(sess, len(labels_num2str), args.train_batch_size,
-                                                                                    train_featurizer='FINE_TUNE', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
-                                                                                    weights_filename='/home/jemmons/vfeedbacknet_base_weights.npz'),
+        'vfeedbacknet_model3' : lambda : v.vfeedbacknet_model3.VFeedbackNetModel3(sess, len(labels_num2str), args.train_batch_size,
+                                                                                  train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
+                                                                                  weights_filename='/home/jemmons/vfeedbacknet_base_weights.npz'),
     }
 
     model = model_generator_dict[args.model_name]()

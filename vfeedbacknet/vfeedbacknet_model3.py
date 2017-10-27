@@ -6,7 +6,7 @@ from vfeedbacknet.vfeedbacknet_convLSTM import ConvLSTMCell
 from vfeedbacknet.vfeedbacknet_utilities import ModelLogger
 from vfeedbacknet.vfeedbacknet_base import VFeedbackNetBase
 
-class VFeedbackNetModel2:
+class VFeedbackNetModel3:
 
 
     def __init__(self, sess, num_classes, batch_size,
@@ -39,7 +39,7 @@ class VFeedbackNetModel2:
 
     def _declare_variables(self):
 
-        with tf.variable_scope('vfeedbacknet_model2'):
+        with tf.variable_scope('vfeedbacknet_model3'):
             with tf.variable_scope('convlstm1'):
                 with tf.variable_scope('rnn'):
                     with tf.variable_scope('conv_lstm_cell'):
@@ -156,7 +156,7 @@ class VFeedbackNetModel2:
         
         # feedback 1
         inputs = featurizer_outputs
-        inputs = [ self.vfeedbacknet_base.vgg16_layer3(inp, var_list=self.featurizer_variables) for inp in inputs ]
+        inputs = [ self.vfeedbacknet_base.vgg16_layer3(inp, var_list=self.main_model_variables) for inp in inputs ]
         ModelLogger.log('vgg-layer3', inputs)
 
         inputs = self.convLSTM_layer1(inputs, inputs_sequence_length, var_list=self.main_model_variables)
@@ -178,7 +178,7 @@ class VFeedbackNetModel2:
         inputs = [ self.dconv_layer(feedback_o, var_list=self.main_model_variables) for featurizer_o,feedback_o in zip(featurizer_outputs,feedback_outputs) ]
         ModelLogger.log('dconv0', inputs)
 
-        inputs = [ self.vfeedbacknet_base.vgg16_layer3(inp, var_list=self.featurizer_variables) for inp in inputs ]
+        inputs = [ self.vfeedbacknet_base.vgg16_layer3(inp, var_list=self.main_model_variables) for inp in inputs ]
         ModelLogger.log('vgg-layer3', inputs)
 
         inputs = self.convLSTM_layer1(inputs, inputs_sequence_length, var_list=self.main_model_variables)
@@ -222,7 +222,7 @@ class VFeedbackNetModel2:
     
     def conv_layer(self, inputs, var_list=None):
 
-        with tf.variable_scope('vfeedbacknet_model2', reuse=True):
+        with tf.variable_scope('vfeedbacknet_model3', reuse=True):
             with tf.variable_scope('conv1'):
                 kernel = tf.get_variable('kernel')
                 biases = tf.get_variable('biases')
@@ -246,7 +246,7 @@ class VFeedbackNetModel2:
 
     def dconv_layer(self, inputs, var_list=None):
 
-        with tf.variable_scope('vfeedbacknet_model2', reuse=True):
+        with tf.variable_scope('vfeedbacknet_model3', reuse=True):
             with tf.variable_scope('dconv1'):
                 kernel = tf.get_variable('kernel')
                 biases = tf.get_variable('biases')
@@ -265,7 +265,7 @@ class VFeedbackNetModel2:
 
     def convLSTM_layer1(self, inputs, inputs_sequence_length, var_list=None):
 
-        with tf.variable_scope('vfeedbacknet_model2'):
+        with tf.variable_scope('vfeedbacknet_model3'):
             with tf.variable_scope('convlstm1'):
                 with tf.variable_scope('rnn'):
                     with tf.variable_scope('conv_lstm_cell'):
