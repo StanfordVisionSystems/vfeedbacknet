@@ -160,11 +160,11 @@ class VFeedbackNetModel1:
         inputs = [ self.vfeedbacknet_base.vgg16_layer4(inp, var_list=self.featurizer_variables) for inp in inputs ]
         ModelLogger.log('vgg-layer4', inputs)
 
-        inputs = self.convLSTM_layer(inputs, inputs_sequence_length, var_list=self.main_model_variables, scope='convlstm1')
-        ModelLogger.log('convLSTM', inputs)
+        inputs = self.convLSTM_layer1(inputs, inputs_sequence_length, var_list=self.main_model_variables)
+        ModelLogger.log('convLSTM1', inputs)
 
-        inputs = self.convLSTM_layer(inputs, inputs_sequence_length, var_list=self.main_model_variables, scope='convlstm2')
-        ModelLogger.log('convLSTM', inputs)
+        inputs = self.convLSTM_layer2(inputs, inputs_sequence_length, var_list=self.main_model_variables)
+        ModelLogger.log('convLSTM2', inputs)
 
         ## ave_pool and fc ##
         inputs = [ self.vfeedbacknet_base.ave_pool(inp) for inp in inputs ]
@@ -177,10 +177,10 @@ class VFeedbackNetModel1:
         return logits
 
 
-    def convLSTM_layer(self, inputs, inputs_sequence_length, var_list=None, scope='convlstm'):
+    def convLSTM_layer1(self, inputs, inputs_sequence_length, var_list=None):
 
         with tf.variable_scope('vfeedbacknet_model1'):
-            with tf.variable_scope(scope):
+            with tf.variable_scope('convlstm1'):
                 with tf.variable_scope('rnn'):
                     with tf.variable_scope('conv_lstm_cell'):
                         with tf.variable_scope('convlstm', reuse=True):
@@ -203,7 +203,7 @@ class VFeedbackNetModel1:
 
                             
                 inputs, state = tf.nn.dynamic_rnn(
-                    self.convLSTMCell,
+                    self.convLSTMCell1,
                     tf.stack(inputs, axis=1),
                     dtype=tf.float32,
                     sequence_length=inputs_sequence_length,
@@ -212,7 +212,44 @@ class VFeedbackNetModel1:
                 inputs = tf.unstack(inputs, axis=1)
                 
                 return inputs
-    
+
+
+    def convLSTM_layer2(self, inputs, inputs_sequence_length, var_list=None):
+
+        with tf.variable_scope('vfeedbacknet_model1'):
+            with tf.variable_scope('convlstm2'):
+                with tf.variable_scope('rnn'):
+                    with tf.variable_scope('conv_lstm_cell'):
+                        with tf.variable_scope('convlstm', reuse=True):
+                            kernel = tf.get_variable('kernel')
+                            W_ci = tf.get_variable('W_ci')
+                            W_cf = tf.get_variable('W_cf')
+                            W_co = tf.get_variable('W_co')
+                            bias = tf.get_variable('bias')
+
+                            if var_list is not None and kernel not in var_list:
+                                var_list.append(kernel)
+                            if var_list is not None and W_ci not in var_list:
+                                var_list.append(W_ci)
+                            if var_list is not None and W_cf not in var_list:
+                                var_list.append(W_cf)
+                            if var_list is not None and W_co not in var_list:
+                                var_list.append(W_co)
+                            if var_list is not None and bias not in var_list:
+                                var_list.append(bias)
+
+                            
+                inputs, state = tf.nn.dynamic_rnn(
+                    self.convLSTMCell2,
+                    tf.stack(inputs, axis=1),
+                    dtype=tf.float32,
+                    sequence_length=inputs_sequence_length,
+                )
+
+                inputs = tf.unstack(inputs, axis=1)
+                
+                return inputs
+            
 
 if __name__ == '__main__':
 
