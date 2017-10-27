@@ -39,6 +39,95 @@ class ModelLogger:
         else:
             logging.debug('{}-{}:{}{}'.format(n, c, p, var.shape))
 
+class TrainingLogger:
+    '''
+    logging utility for debugging during training
+    '''
+
+    @staticmethod
+    def process_prediction(predictions, labels, lengths, losses=None):
+
+        batch_size = predictions.shape[0]
+        feedback_iterations = predictions.shape[1]
+
+        analysis_per_feedback = []
+        for feedback_idx in range(feedback_iterations):
+            
+            analysis_per_frame = []
+            for video_idx in range(batch_size):
+                video_labelnum = labels[video_idx]
+                #video_labelstr = labels_num2str[video_labelnum]
+                video_length = lengths[video_idx]
+
+                fvec = []
+                fmax = []
+                fmax5 = []
+                fsum = []
+                floss = []
+                for frame_idx in range(video_length):
+                    predict = predictions[video_idx, feedback_idx, frame_idx, :]
+                    fvec.append(predict)
+                    fsum.append(sum(predict))
+                    fmax.append(np.argmax(predict))
+
+                    predict_copy = predict.copy()
+                    fmax5.append(predict_copy.argsort()[-5:][::-1])
+
+                    if losses is not None:
+                        floss.append(losses[video_idx, feedback_idx, :])
+
+                analysis_per_frame.append({
+                    'frame_labelvec' : fvec,
+                    'frame_labelmax' : fmax,
+                    'frame_labelmax5' : fmax5,
+                    'frame_probsum' : fsum,
+                    'frame_loss' : floss,
+                    'video_length' : video_length,
+                    'video_labelnum' : video_labelnum,
+                    #'video_labelstr' : video_labelstr
+                })
+
+            analysis_per_feedback.append(analysis_per_frame)
+
+        first = True
+        predictions_summary = []
+        for analysis_per_video in analysis_per_feedback:
+            
+            for analysis in analysis_per_video:
+
+                for a in analysis['frame_probsum']:
+                    assert( abs(a - 1) < 0.00001 )
+
+                fmax_str = list(map(lambda x: str(x).zfill(2), analysis['frame_labelmax']))
+                fmax5_str = list(map(lambda x: str(x).zfill(2), analysis['frame_labelmax5'][-1]))
+                tl = str(analysis['video_labelnum']).zfill(2)
+
+                log_str = '                               ({}) {}'.format(fmax5_str, fmax_str)
+                if first:
+                    log_str = '{} true_label,prediction: {},{} ({}) {}'.format('T' if tl==fmax_str[-1] else 'F', tl, fmax_str[-1], fmax5_str, fmax_str)
+                    
+                logging.debug(log_str)
+                #logging.debug('{} true_label,prediction: {},{} ({}) {}'.format('T' if tl==fmax_str[-1] else 'F', tl, fmax_str[-1], fmax5_str, fmax_str))
+                #logging.debug('{}'.format(analysis['frame_loss']))
+
+            predicted_vals = np.asarray([ p['frame_labelmax'][-1] for p in analysis_per_frame ])
+            correct_predictions = sum(labels == predicted_vals)
+
+            predicted_vals3 = [ l in p['frame_labelmax5'][-1][:3] for l,p in zip(labels, analysis_per_frame) ]
+            correct_predictions3 = sum(predicted_vals3)
+
+            predicted_vals5 = [ l in p['frame_labelmax5'][-1] for l,p in zip(labels, analysis_per_frame) ]
+            correct_predictions5 = sum(predicted_vals5)
+                
+            predictions_summary.append({
+                'correct_predictions' : correct_predictions,
+                'correct_predictions3' : correct_predictions3,
+                'correct_predictions5' : correct_predictions5
+            })    
+            first = False
+
+        return predictions_summary
+            
 def pool_init(shared_mem_):
     global shared_mem
     shared_mem = shared_mem_

@@ -1,4 +1,6 @@
 # util functions
+from vfeedbacknet.vfeedbacknet_utilities import TrainingLogger
+from vfeedbacknet.vfeedbacknet_utilities import ModelLogger
 from vfeedbacknet.vfeedbacknet_utilities import pool_init
 from vfeedbacknet.vfeedbacknet_utilities import prepare_video
 from vfeedbacknet.vfeedbacknet_utilities import load_videos

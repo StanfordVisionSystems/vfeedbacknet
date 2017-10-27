@@ -173,7 +173,10 @@ class VFeedbackNetModel1:
         inputs = [ self.vfeedbacknet_base.fc_layer(inp, var_list=self.fc_variables) for inp in inputs ]
         ModelLogger.log('fc', inputs)
 
-        logits = inputs
+        logits = tf.stack(inputs, axis=1)
+        logits = tf.expand_dims(logits, axis=1)
+
+        ModelLogger.log('logits', logits)
         return logits
 
 
