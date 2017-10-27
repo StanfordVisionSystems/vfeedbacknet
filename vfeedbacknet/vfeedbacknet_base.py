@@ -1,5 +1,3 @@
-import vfeedbacknet.convLSTM as convLSTM
-
 import numpy as np
 import tensorflow as tf
 import logging
@@ -7,13 +5,14 @@ import logging
 from vfeedbacknet.vfeedbacknet_utilities import ModelLogger
 
 class VFeedbackNetBase:
+
     
     def __init__(self, sess, num_classes,
                  train_vgg16='NO', train_feedback='FROM_SCRATCH', train_fc='FROM_SCRATCH',
-                 weights=None, is_training=True):
+                 weights_filename=None, is_training=True):
 
         self.sess = sess
-        self.weights = np.load(weights) if weights is not None else None
+        self.weights = np.load(weights) if weights_filename is not None else None
         self.num_classes = num_classes
 
         assert train_vgg16 in ['NO', 'FINE_TUNE', 'FROM_SCRATCH'], 'train_vgg16 must be either: NO, FINE_TUNE, or FROM_SCRATCH'
@@ -105,7 +104,7 @@ class VFeedbackNetBase:
                 initializer = tf.contrib.layers.xavier_initializer()
                 
                 trainable = False if self.train_feedback == 'NO' else True
-                self.vfeedbacknet_variables += []
+                self.vfeedbacknet_feedback_variables += []
                 
             with tf.variable_scope('fc'):
 
@@ -180,7 +179,7 @@ class VFeedbackNetBase:
             inputs = [ tf.tile(inp, [1, 1, 1, 3]) for inp in inputs ]
             return inputs
             
-    def vgg16_layer1(self, inputs):
+    def vgg16_layer1(self, inputs, var_list=None):
         
         with tf.variable_scope('vfeedbacknet_base', reuse=True):
             with tf.variable_scope('vgg16'):
@@ -199,6 +198,11 @@ class VFeedbackNetBase:
                     if biases not in self.vgg_variables:
                         self.vgg_variables += [biases]
 
+                    if var_list is not None and kernel not in var_list:
+                        var_list.append(kernel)
+                    if var_list is not None and biases not in var_list:
+                        var_list.append(biases)
+
                 # conv1_2
                 with tf.variable_scope('conv1_2'):
                     kernel = tf.get_variable('weights')
@@ -213,6 +217,11 @@ class VFeedbackNetBase:
                     if biases not in self.vgg_variables:
                         self.vgg_variables += [biases]
 
+                    if var_list is not None and kernel not in var_list:
+                        var_list.append(kernel)
+                    if var_list is not None and biases not in var_list:
+                        var_list.append(biases)
+
                 # pool1
                 inputs = tf.nn.max_pool(inputs,
                                         ksize=[1, 2, 2, 1],
@@ -223,7 +232,7 @@ class VFeedbackNetBase:
                 return inputs
 
         
-    def vgg16_layer2(self, inputs):
+    def vgg16_layer2(self, inputs, var_list=None):
 
         with tf.variable_scope('vfeedbacknet_base', reuse=True):
             with tf.variable_scope('vgg16'):
@@ -242,6 +251,11 @@ class VFeedbackNetBase:
                     if biases not in self.vgg_variables:
                         self.vgg_variables += [biases]
 
+                    if var_list is not None and kernel not in var_list:
+                        var_list.append(kernel)
+                    if var_list is not None and biases not in var_list:
+                        var_list.append(biases)
+
                 # conv2_2
                 with tf.variable_scope('conv2_2'):
                     kernel = tf.get_variable('weights')
@@ -256,6 +270,11 @@ class VFeedbackNetBase:
                     if biases not in self.vgg_variables:
                         self.vgg_variables += [biases]
 
+                    if var_list is not None and kernel not in var_list:
+                        var_list.append(kernel)
+                    if var_list is not None and biases not in var_list:
+                        var_list.append(biases)
+
                 # pool2
                 inputs = tf.nn.max_pool(inputs,
                                         ksize=[1, 2, 2, 1],
@@ -266,7 +285,7 @@ class VFeedbackNetBase:
                 return inputs
 
         
-    def vgg16_layer3(self, inputs):
+    def vgg16_layer3(self, inputs, var_list=None):
 
         with tf.variable_scope('vfeedbacknet_base', reuse=True):
             with tf.variable_scope('vgg16'):
@@ -285,6 +304,11 @@ class VFeedbackNetBase:
                     if biases not in self.vgg_variables:
                         self.vgg_variables += [biases]
 
+                    if var_list is not None and kernel not in var_list:
+                        var_list.append(kernel)
+                    if var_list is not None and biases not in var_list:
+                        var_list.append(biases)
+
                 # conv3_2
                 with tf.variable_scope('conv3_2'):
                     kernel = tf.get_variable('weights')
@@ -298,6 +322,11 @@ class VFeedbackNetBase:
                         self.vgg_variables += [kernel]
                     if biases not in self.vgg_variables:
                         self.vgg_variables += [biases]
+
+                    if var_list is not None and kernel not in var_list:
+                        var_list.append(kernel)
+                    if var_list is not None and biases not in var_list:
+                        var_list.append(biases)
 
                 # conv3_3
                 with tf.variable_scope('conv3_3'):
@@ -313,6 +342,11 @@ class VFeedbackNetBase:
                     if biases not in self.vgg_variables:
                         self.vgg_variables += [biases]
 
+                    if var_list is not None and kernel not in var_list:
+                        var_list.append(kernel)
+                    if var_list is not None and biases not in var_list:
+                        var_list.append(biases)
+
                 # pool3
                 inputs = tf.nn.max_pool(inputs,
                                         ksize=[1, 2, 2, 1],
@@ -322,7 +356,7 @@ class VFeedbackNetBase:
                 return inputs
 
         
-    def vgg16_layer4(self, inputs): 
+    def vgg16_layer4(self, inputs, var_list=None): 
 
         with tf.variable_scope('vfeedbacknet_base', reuse=True):
             with tf.variable_scope('vgg16'):
@@ -341,6 +375,11 @@ class VFeedbackNetBase:
                     if biases not in self.vgg_variables:
                         self.vgg_variables += [biases]
 
+                    if var_list is not None and kernel not in var_list:
+                        var_list.append(kernel)
+                    if var_list is not None and biases not in var_list:
+                        var_list.append(biases)
+
                 # conv4_2
                 with tf.variable_scope('conv4_2'):
                     kernel = tf.get_variable('weights')
@@ -354,6 +393,11 @@ class VFeedbackNetBase:
                         self.vgg_variables += [kernel]
                     if biases not in self.vgg_variables:
                         self.vgg_variables += [biases]
+
+                    if var_list is not None and kernel not in var_list:
+                        var_list.append(kernel)
+                    if var_list is not None and biases not in var_list:
+                        var_list.append(biases)
 
                 # conv4_3
                 with tf.variable_scope('conv4_3'):
@@ -369,6 +413,11 @@ class VFeedbackNetBase:
                     if biases not in self.vgg_variables:
                         self.vgg_variables += [biases]
 
+                    if var_list is not None and kernel not in var_list:
+                        var_list.append(kernel)
+                    if var_list is not None and biases not in var_list:
+                        var_list.append(biases)
+                        
                 # pool4
                 inputs = tf.nn.max_pool(inputs,
                                         ksize=[1, 2, 2, 1],
@@ -379,7 +428,7 @@ class VFeedbackNetBase:
                 return inputs
 
         
-    def vgg16_layer5(self, inputs):
+    def vgg16_layer5(self, inputs, var_list=None):
 
         with tf.variable_scope('vfeedbacknet_base', reuse=True):
             with tf.variable_scope('vgg16'):
@@ -398,6 +447,11 @@ class VFeedbackNetBase:
                     if biases not in self.vgg_variables:
                         self.vgg_variables += [biases]
 
+                    if var_list is not None and kernel not in var_list:
+                        var_list.append(kernel)
+                    if var_list is not None and biases not in var_list:
+                        var_list.append(biases)
+
                 # conv5_2
                 with tf.variable_scope('conv5_2'):
                     kernel = tf.get_variable('weights')
@@ -405,12 +459,18 @@ class VFeedbackNetBase:
 
                     inputs = tf.nn.conv2d(inputs, kernel, [1, 1, 1, 1], padding='SAME')
                     inputs = tf.nn.bias_add(inputs, biases)
+                    inputs = tf.nn.relu(inputs)
 
                     if kernel not in self.vgg_variables:
                         self.vgg_variables += [kernel]
                     if biases not in self.vgg_variables:
                         self.vgg_variables += [biases]
-                    inputs = tf.nn.relu(inputs)
+
+                    if var_list is not None and kernel not in var_list:
+                        var_list.append(kernel)
+                    if var_list is not None and biases not in var_list:
+                        var_list.append(biases)
+
 
                 # conv5_3
                 with tf.variable_scope('conv5_3'):
@@ -425,6 +485,11 @@ class VFeedbackNetBase:
                         self.vgg_variables += [kernel]
                     if biases not in self.vgg_variables:
                         self.vgg_variables += [biases]
+
+                    if var_list is not None and kernel not in var_list:
+                        var_list.append(kernel)
+                    if var_list is not None and biases not in var_list:
+                        var_list.append(biases)
 
                 # pool5
                 inputs = tf.nn.max_pool(inputs,
@@ -449,7 +514,7 @@ class VFeedbackNetBase:
             return inputs
 
             
-    def fc_layer(self, inputs):
+    def fc_layer(self, inputs, var_list=None):
         
         with tf.variable_scope('vfeedbacknet_base', reuse=True):
             with tf.variable_scope('fc'):
@@ -468,6 +533,11 @@ class VFeedbackNetBase:
                 if biases not in self.vfeedbacknet_fc_variables:
                     self.vfeedbacknet_fc_variables += [biases]
 
+                if var_list is not None and weights not in var_list:
+                    var_list.append(weights)
+                if var_list is not None and biases not in var_list:
+                    var_list.append(biases)
+                    
                 return inputs
                  
 if __name__ == '__main__':
@@ -483,31 +553,34 @@ if __name__ == '__main__':
     
     inputs = vfeedbacknet_base.split_video(x)
     ModelLogger.log('split', inputs)
+
+    variables = []
     
-    inputs = [ vfeedbacknet_base.vgg16_layer1(inp) for inp in inputs ]
+    inputs = [ vfeedbacknet_base.vgg16_layer1(inp, var_list=variables) for inp in inputs ]
     ModelLogger.log('vgg-layer', inputs)
 
-    inputs = [ vfeedbacknet_base.vgg16_layer2(inp) for inp in inputs ]
+    inputs = [ vfeedbacknet_base.vgg16_layer2(inp, var_list=variables) for inp in inputs ]
     ModelLogger.log('vgg-layer', inputs)
 
-    inputs = [ vfeedbacknet_base.vgg16_layer3(inp) for inp in inputs ]
+    inputs = [ vfeedbacknet_base.vgg16_layer3(inp, var_list=variables) for inp in inputs ]
     ModelLogger.log('vgg-layer', inputs)
 
-    inputs = [ vfeedbacknet_base.vgg16_layer4(inp) for inp in inputs ]
+    inputs = [ vfeedbacknet_base.vgg16_layer4(inp, var_list=variables) for inp in inputs ]
     ModelLogger.log('vgg-layer', inputs)
 
-    inputs = [ vfeedbacknet_base.vgg16_layer5(inp) for inp in inputs ]
+    inputs = [ vfeedbacknet_base.vgg16_layer5(inp, var_list=variables) for inp in inputs ]
     ModelLogger.log('vgg-layer', inputs)
 
     inputs = [ vfeedbacknet_base.ave_pool(inp) for inp in inputs ]
     ModelLogger.log('ave_pool', inputs)
 
-    logits = [ vfeedbacknet_base.fc_layer(inp) for inp in inputs ]
+    logits = [ vfeedbacknet_base.fc_layer(inp, var_list=variables) for inp in inputs ]
     ModelLogger.log('logits', logits)
 
     print('len(self.vgg_variables) =', len(vfeedbacknet_base.vgg_variables))
     print('len(self.vfeedbacknet_feedback_variables) =', len(vfeedbacknet_base.vfeedbacknet_feedback_variables))
     print('len(self.vfeedbacknet_fc_variables) =', len(vfeedbacknet_base.vfeedbacknet_fc_variables))
+    print('len(var_list) =', len(variables))
     
     vfeedbacknet_base.initialize_variables()
     vfeedbacknet_base.print_variables()
