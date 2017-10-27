@@ -105,9 +105,7 @@ class VFeedbackNetBase:
                 initializer = tf.contrib.layers.xavier_initializer()
                 
                 trainable = False if self.train_feedback == 'NO' else True
-
-
-                #self.vfeedbacknet_variables += []
+                self.vfeedbacknet_variables += []
                 
             with tf.variable_scope('fc'):
 
@@ -473,85 +471,85 @@ class VFeedbackNetBase:
                 return inputs
                  
 if __name__ == '__main__':
-    # sess = tf.Session()
-    # x = tf.placeholder(tf.float32, [None, 20, 112, 112], name='inputs')
-    # x_len = tf.placeholder(tf.float32, [None], name='inputs_len')
-    # zeros = tf.placeholder(tf.float32, [20], name='inputs_len')
-    # labels = tf.placeholder(tf.float32, [None], name='inputs_len')
-
-    # vfeedbacknet_base = VFeedbackNetBase(sess, 27, train_vgg16='FROM_SCRATCH')
-
-    # ModelLogger.log('input', x)
-    
-    # inputs = vfeedbacknet_base.split_video(x)
-    # ModelLogger.log('split', inputs)
-    
-    # inputs = [ vfeedbacknet_base.vgg16_layer1(inp) for inp in inputs ]
-    # ModelLogger.log('vgg-layer', inputs)
-
-    # inputs = [ vfeedbacknet_base.vgg16_layer2(inp) for inp in inputs ]
-    # ModelLogger.log('vgg-layer', inputs)
-
-    # inputs = [ vfeedbacknet_base.vgg16_layer3(inp) for inp in inputs ]
-    # ModelLogger.log('vgg-layer', inputs)
-
-    # inputs = [ vfeedbacknet_base.vgg16_layer4(inp) for inp in inputs ]
-    # ModelLogger.log('vgg-layer', inputs)
-
-    # inputs = [ vfeedbacknet_base.vgg16_layer5(inp) for inp in inputs ]
-    # ModelLogger.log('vgg-layer', inputs)
-
-    # inputs = [ vfeedbacknet_base.ave_pool(inp) for inp in inputs ]
-    # ModelLogger.log('ave_pool', inputs)
-
-    # logits = [ vfeedbacknet_base.fc_layer(inp) for inp in inputs ]
-    # ModelLogger.log('logits', logits)
-
-    # print('len(self.vgg_variables) =', len(vfeedbacknet_base.vgg_variables))
-    # print('len(self.vfeedbacknet_feedback_variables) =', len(vfeedbacknet_base.vfeedbacknet_feedback_variables))
-    # print('len(self.vfeedbacknet_fc_variables) =', len(vfeedbacknet_base.vfeedbacknet_fc_variables))
-    
-    # vfeedbacknet_base.initialize_variables()
-    # vfeedbacknet_base.print_variables()
-    # print('num variables:', len(vfeedbacknet_base.get_variables()))
-
-    # VFeedbackNetBase.export_variables(sess, vfeedbacknet_base.get_variables(), '/tmp/weights.npz')
-
-    
     sess = tf.Session()
     x = tf.placeholder(tf.float32, [None, 20, 112, 112], name='inputs')
     x_len = tf.placeholder(tf.float32, [None], name='inputs_len')
     zeros = tf.placeholder(tf.float32, [20], name='inputs_len')
     labels = tf.placeholder(tf.float32, [None], name='inputs_len')
 
-    new_vfeedbacknet_base = VFeedbackNetBase(sess, 27, train_vgg16='NO', train_fc='NO', weights='/tmp/weights.npz')
+    vfeedbacknet_base = VFeedbackNetBase(sess, 27, train_vgg16='FROM_SCRATCH')
+
+    ModelLogger.log('input', x)
     
-    inputs = new_vfeedbacknet_base.split_video(x)
+    inputs = vfeedbacknet_base.split_video(x)
     ModelLogger.log('split', inputs)
     
-    inputs = [ new_vfeedbacknet_base.vgg16_layer1(inp) for inp in inputs ]
+    inputs = [ vfeedbacknet_base.vgg16_layer1(inp) for inp in inputs ]
     ModelLogger.log('vgg-layer', inputs)
 
-    inputs = [ new_vfeedbacknet_base.vgg16_layer2(inp) for inp in inputs ]
+    inputs = [ vfeedbacknet_base.vgg16_layer2(inp) for inp in inputs ]
     ModelLogger.log('vgg-layer', inputs)
 
-    inputs = [ new_vfeedbacknet_base.vgg16_layer3(inp) for inp in inputs ]
+    inputs = [ vfeedbacknet_base.vgg16_layer3(inp) for inp in inputs ]
     ModelLogger.log('vgg-layer', inputs)
 
-    inputs = [ new_vfeedbacknet_base.vgg16_layer4(inp) for inp in inputs ]
+    inputs = [ vfeedbacknet_base.vgg16_layer4(inp) for inp in inputs ]
     ModelLogger.log('vgg-layer', inputs)
 
-    inputs = [ new_vfeedbacknet_base.vgg16_layer5(inp) for inp in inputs ]
+    inputs = [ vfeedbacknet_base.vgg16_layer5(inp) for inp in inputs ]
     ModelLogger.log('vgg-layer', inputs)
 
-    inputs = [ new_vfeedbacknet_base.ave_pool(inp) for inp in inputs ]
+    inputs = [ vfeedbacknet_base.ave_pool(inp) for inp in inputs ]
     ModelLogger.log('ave_pool', inputs)
 
-    logits = [ new_vfeedbacknet_base.fc_layer(inp) for inp in inputs ]
+    logits = [ vfeedbacknet_base.fc_layer(inp) for inp in inputs ]
     ModelLogger.log('logits', logits)
 
-    new_vfeedbacknet_base.initialize_variables()
-    VFeedbackNetBase.export_variables(sess, new_vfeedbacknet_base.get_variables(), '/tmp/weights1.npz')
+    print('len(self.vgg_variables) =', len(vfeedbacknet_base.vgg_variables))
+    print('len(self.vfeedbacknet_feedback_variables) =', len(vfeedbacknet_base.vfeedbacknet_feedback_variables))
+    print('len(self.vfeedbacknet_fc_variables) =', len(vfeedbacknet_base.vfeedbacknet_fc_variables))
+    
+    vfeedbacknet_base.initialize_variables()
+    vfeedbacknet_base.print_variables()
+    print('num variables:', len(vfeedbacknet_base.get_variables()))
+
+    VFeedbackNetBase.export_variables(sess, vfeedbacknet_base.get_variables(), '/tmp/weights.npz')
+
+    
+    # sess = tf.Session()
+    # x = tf.placeholder(tf.float32, [None, 20, 112, 112], name='inputs')
+    # x_len = tf.placeholder(tf.float32, [None], name='inputs_len')
+    # zeros = tf.placeholder(tf.float32, [20], name='inputs_len')
+    # labels = tf.placeholder(tf.float32, [None], name='inputs_len')
+
+    # new_vfeedbacknet_base = VFeedbackNetBase(sess, 27, train_vgg16='NO', train_fc='NO', weights='/tmp/weights.npz')
+    
+    # inputs = new_vfeedbacknet_base.split_video(x)
+    # ModelLogger.log('split', inputs)
+    
+    # inputs = [ new_vfeedbacknet_base.vgg16_layer1(inp) for inp in inputs ]
+    # ModelLogger.log('vgg-layer', inputs)
+
+    # inputs = [ new_vfeedbacknet_base.vgg16_layer2(inp) for inp in inputs ]
+    # ModelLogger.log('vgg-layer', inputs)
+
+    # inputs = [ new_vfeedbacknet_base.vgg16_layer3(inp) for inp in inputs ]
+    # ModelLogger.log('vgg-layer', inputs)
+
+    # inputs = [ new_vfeedbacknet_base.vgg16_layer4(inp) for inp in inputs ]
+    # ModelLogger.log('vgg-layer', inputs)
+
+    # inputs = [ new_vfeedbacknet_base.vgg16_layer5(inp) for inp in inputs ]
+    # ModelLogger.log('vgg-layer', inputs)
+
+    # inputs = [ new_vfeedbacknet_base.ave_pool(inp) for inp in inputs ]
+    # ModelLogger.log('ave_pool', inputs)
+
+    # logits = [ new_vfeedbacknet_base.fc_layer(inp) for inp in inputs ]
+    # ModelLogger.log('logits', logits)
+
+    # new_vfeedbacknet_base.initialize_variables()
+    # VFeedbackNetBase.export_variables(sess, new_vfeedbacknet_base.get_variables(), '/tmp/weights1.npz')
     
     # print out the model
     # graph = tf.get_default_graph()    

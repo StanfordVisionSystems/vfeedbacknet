@@ -1,0 +1,50 @@
+#!/usr/bin/env python3
+
+import numpy as np
+import tensorflow as tf
+import sys
+
+weights = ['vfeedbacknet_base/vgg16/conv1_1/weights:0',
+           'vfeedbacknet_base/vgg16/conv1_1/biases:0',
+           'vfeedbacknet_base/vgg16/conv1_2/weights:0',
+           'vfeedbacknet_base/vgg16/conv1_2/biases:0',
+           'vfeedbacknet_base/vgg16/conv2_1/weights:0',
+           'vfeedbacknet_base/vgg16/conv2_1/biases:0',
+           'vfeedbacknet_base/vgg16/conv2_2/weights:0',
+           'vfeedbacknet_base/vgg16/conv2_2/biases:0',
+           'vfeedbacknet_base/vgg16/conv3_1/weights:0',
+           'vfeedbacknet_base/vgg16/conv3_1/biases:0',
+           'vfeedbacknet_base/vgg16/conv3_2/weights:0',
+           'vfeedbacknet_base/vgg16/conv3_2/biases:0',
+           'vfeedbacknet_base/vgg16/conv3_3/weights:0',
+           'vfeedbacknet_base/vgg16/conv3_3/biases:0',
+           'vfeedbacknet_base/vgg16/conv4_1/weights:0',
+           'vfeedbacknet_base/vgg16/conv4_1/biases:0',
+           'vfeedbacknet_base/vgg16/conv4_2/weights:0',
+           'vfeedbacknet_base/vgg16/conv4_2/biases:0',
+           'vfeedbacknet_base/vgg16/conv4_3/weights:0',
+           'vfeedbacknet_base/vgg16/conv4_3/biases:0',
+           'vfeedbacknet_base/vgg16/conv5_1/weights:0',
+           'vfeedbacknet_base/vgg16/conv5_1/biases:0',
+           'vfeedbacknet_base/vgg16/conv5_2/weights:0',
+           'vfeedbacknet_base/vgg16/conv5_2/biases:0',
+           'vfeedbacknet_base/vgg16/conv5_3/weights:0',
+           'vfeedbacknet_base/vgg16/conv5_3/biases:0']
+
+input_filename = sys.argv[1]
+output_filename = sys.argv[2]
+
+w = np.load(input_filename)
+# for k in sorted(w.keys()):
+#     print(k, w[k].shape)
+
+d = {}
+for i,k, in zip(range(len(weights)), sorted(list(w.keys()))):
+    print('{} <- {}'.format(weights[i], k))
+    d[ weights[i] ] = w[k]
+
+np.savez(output_filename, **d)
+
+w = np.load(output_filename)
+for k in sorted(w.keys()):
+    print(k, w[k].shape)
