@@ -29,7 +29,8 @@ class ConvLSTMCell(tf.nn.rnn_cell.RNNCell):
     else:
         raise ValueError('Unknown data_format')
 
-    
+    # TODO(jremmons) fix this.
+    self.is_training = True #is_training
       
   @property
   def state_size(self):
@@ -59,9 +60,9 @@ class ConvLSTMCell(tf.nn.rnn_cell.RNNCell):
         f += tf.get_variable('W_cf', c.shape[1:]) * c
 
     if self._normalize:
-      j = tf.contrib.layers.layer_norm(j, training=self.is_training)
-      i = tf.contrib.layers.layer_norm(i, training=self.is_training)
-      f = tf.contrib.layers.layer_norm(f, training=self.is_training)
+      j = tf.contrib.layers.layer_norm(j, trainable=self.is_training)
+      i = tf.contrib.layers.layer_norm(i, trainable=self.is_training)
+      f = tf.contrib.layers.layer_norm(f, trainable=self.is_training)
 
     f = tf.sigmoid(f + self._forget_bias)
     i = tf.sigmoid(i)
@@ -72,8 +73,8 @@ class ConvLSTMCell(tf.nn.rnn_cell.RNNCell):
         o += tf.get_variable('W_co', c.shape[1:]) * c
 
     if self._normalize:
-      o = tf.contrib.layers.layer_norm(o, training=self.is_training)
-      c = tf.contrib.layers.layer_norm(c, training=self.is_training)
+      o = tf.contrib.layers.layer_norm(o, trainable=self.is_training)
+      c = tf.contrib.layers.layer_norm(c, trainable=self.is_training)
 
     o = tf.sigmoid(o)
     h = o * self._activation(c)

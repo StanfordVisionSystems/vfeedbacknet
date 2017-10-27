@@ -4,8 +4,12 @@ from vfeedbacknet.vfeedbacknet_utilities import prepare_video
 from vfeedbacknet.vfeedbacknet_utilities import load_videos
 
 # models
+import vfeedbacknet.vfeedbacknet_model1 as vfeedbacknet_model1
 
 # legacy models
+import vfeedbacknet.legacy.convLSTM
+import vfeedbacknet.legacy.convLSTM
+
 from vfeedbacknet.legacy.nofeedbacknet_singleimage_vgg16 import NoFeedbackNetVgg16
 from vfeedbacknet.legacy.nofeedbacknet_LSTM_vgg16 import NoFeedbackNetLSTMVgg16 as NoFeedbackNetLSTMVgg16_2LSTM
 

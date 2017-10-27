@@ -117,16 +117,18 @@ def main(args):
     zeros = np.zeros((args.train_batch_size,))
 
     model_generator_dict = {
-        'NoFeedbackNetVgg16' : lambda : v.NoFeedbackNetVgg16(sess, '/home/jemmons/vgg16_weights.npz', num_classes=len(labels_num2str), fine_tune_vgg16=args.fine_tune_vgg),
-        'NoFeedbackNetLSTMVgg16_2LSTM' : lambda : v.NoFeedbackNetLSTMVgg16_2LSTM(sess, '/home/jemmons/vgg16_weights.npz', num_classes=len(labels_num2str), fine_tune_vgg16=args.fine_tune_vgg),
-        'NoFeedbackNetLSTMVgg16_reg0_5' : lambda : v.NoFeedbackNetLSTMVgg16_reg0_5(sess, '/home/jemmons/vgg16_weights.npz', num_classes=len(labels_num2str), fine_tune_vgg16=args.fine_tune_vgg),
-        'NoFeedbackNetLSTMVgg16_short' : lambda : v.NoFeedbackNetLSTMVgg16_short(sess, '/home/jemmons/vgg16_weights.npz', num_classes=len(labels_num2str), fine_tune_vgg16=args.fine_tune_vgg),
-        'NoFeedbackNetGRUVgg16_short' : lambda : v.NoFeedbackNetGRUVgg16_short(sess, '/home/jemmons/vgg16_weights.npz', num_classes=len(labels_num2str), fine_tune_vgg16=args.fine_tune_vgg),
-        'NoFeedbackNetLSTMVgg16' : lambda : v.NoFeedbackNetLSTMVgg16(sess, '/home/jemmons/vgg16_weights.npz', num_classes=len(labels_num2str), fine_tune_vgg16=args.fine_tune_vgg),
-        'NoFeedbackNetGRUVgg16' : lambda : v.NoFeedbackNetGRUVgg16(sess, '/home/jemmons/vgg16_weights.npz', num_classes=len(labels_num2str), fine_tune_vgg16=args.fine_tune_vgg),        
+        'vfeedbacknet_model1' : lambda : v.vfeedbacknet_model1.VFeedbackNetModel1(sess, len(labels_num2str), train_featurizer='NO', weights_filename='/home/jemmons/vfeedbacknet_base_weights.npz'),
+        # legacy models below
+        # 'NoFeedbackNetVgg16' : lambda : v.NoFeedbackNetVgg16(sess, '/home/jemmons/vgg16_weights.npz', num_classes=len(labels_num2str), fine_tune_vgg16=args.fine_tune_vgg),
+        # 'NoFeedbackNetLSTMVgg16_2LSTM' : lambda : v.NoFeedbackNetLSTMVgg16_2LSTM(sess, '/home/jemmons/vgg16_weights.npz', num_classes=len(labels_num2str), fine_tune_vgg16=args.fine_tune_vgg),
+        # 'NoFeedbackNetLSTMVgg16_reg0_5' : lambda : v.NoFeedbackNetLSTMVgg16_reg0_5(sess, '/home/jemmons/vgg16_weights.npz', num_classes=len(labels_num2str), fine_tune_vgg16=args.fine_tune_vgg),
+        # 'NoFeedbackNetLSTMVgg16_short' : lambda : v.NoFeedbackNetLSTMVgg16_short(sess, '/home/jemmons/vgg16_weights.npz', num_classes=len(labels_num2str), fine_tune_vgg16=args.fine_tune_vgg),
+        # 'NoFeedbackNetGRUVgg16_short' : lambda : v.NoFeedbackNetGRUVgg16_short(sess, '/home/jemmons/vgg16_weights.npz', num_classes=len(labels_num2str), fine_tune_vgg16=args.fine_tune_vgg),
+        # 'NoFeedbackNetLSTMVgg16' : lambda : v.NoFeedbackNetLSTMVgg16(sess, '/home/jemmons/vgg16_weights.npz', num_classes=len(labels_num2str), fine_tune_vgg16=args.fine_tune_vgg),
+        # 'NoFeedbackNetGRUVgg16' : lambda : v.NoFeedbackNetGRUVgg16(sess, '/home/jemmons/vgg16_weights.npz', num_classes=len(labels_num2str), fine_tune_vgg16=args.fine_tune_vgg),        
     }
 
-    model = model_generator_dict[args.model_name]()    
+    model = model_generator_dict[args.model_name]()
     logits = model(x_input, x_length)
 
     losses, total_loss, predictions = v.vfeedbacknet_lossfunctions.basic_loss_pred(logits,
@@ -193,8 +195,9 @@ def main(args):
                     sess.run([learning_rate], feed_dict={step : args.global_step_init})
                     
             else:
-                model.initialize_variables()
-
+                sess.run(tf.global_variables_initializer()) # initialize all variables
+                model.initialize_variables() # set any model specific variables
+                
             for epoch in range(args.num_epoch):
                 video_paths = data_video_paths.copy()
                 random.shuffle(video_paths)
