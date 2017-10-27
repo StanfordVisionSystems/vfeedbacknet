@@ -1,6 +1,7 @@
 # util functions
 from vfeedbacknet.vfeedbacknet_utilities import TrainingLogger
 from vfeedbacknet.vfeedbacknet_utilities import ModelLogger
+
 from vfeedbacknet.vfeedbacknet_utilities import pool_init
 from vfeedbacknet.vfeedbacknet_utilities import prepare_video
 from vfeedbacknet.vfeedbacknet_utilities import load_videos
@@ -11,6 +12,7 @@ import vfeedbacknet.vfeedbacknet_lossfunctions
 import vfeedbacknet.vfeedbacknet_model1 as vfeedbacknet_model1
 import vfeedbacknet.vfeedbacknet_model2 as vfeedbacknet_model2
 import vfeedbacknet.vfeedbacknet_model3 as vfeedbacknet_model3
+import vfeedbacknet.vfeedbacknet_model4 as vfeedbacknet_model4
 
 # legacy models
 # import vfeedbacknet.legacy.convLSTM
