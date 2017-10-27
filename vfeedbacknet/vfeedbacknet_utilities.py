@@ -89,16 +89,15 @@ class TrainingLogger:
 
             analysis_per_feedback.append(analysis_per_frame)
 
-        predictions_summary = []
         analysis_per_feedback_len = len(analysis_per_feedback)
         analysis_per_video_len = len(analysis_per_feedback[0])
 
-        for j in range(analysis_per_video_len):
+        for video_idx in range(analysis_per_video_len):
 
             first = True
-            for i in range(analysis_per_feedback_len):
+            for feedback_idx in range(analysis_per_feedback_len):
 
-                analysis = analysis_per_feedback[i][j]
+                analysis = analysis_per_feedback[feedback_idx][video_idx]
                 
                 for a in analysis['frame_probsum']:
                     assert( abs(a - 1) < 0.00001 )
@@ -107,7 +106,7 @@ class TrainingLogger:
                 fmax5_str = list(map(lambda x: str(x).zfill(2), analysis['frame_labelmax5'][-1]))
                 tl = str(analysis['video_labelnum']).zfill(2)
 
-                log_str = '                               ({}) {}'.format(fmax5_str, fmax_str)
+                log_str = '{}                              ({}) {}'.format('T' if tl==fmax_str[-1] else 'F', fmax5_str, fmax_str)
                 if first:
                     log_str = '{} true_label,prediction: {},{} ({}) {}'.format('T' if tl==fmax_str[-1] else 'F', tl, fmax_str[-1], fmax5_str, fmax_str)
                     first = False
@@ -115,14 +114,17 @@ class TrainingLogger:
                 logging.debug(log_str)
                 #logging.debug('{} true_label,prediction: {},{} ({}) {}'.format('T' if tl==fmax_str[-1] else 'F', tl, fmax_str[-1], fmax5_str, fmax_str))
                 #logging.debug('{}'.format(analysis['frame_loss']))
-                
-            predicted_vals = np.asarray([ p['frame_labelmax'][-1] for p in analysis_per_frame ])
+
+        predictions_summary = []
+        for feedback_idx in range(analysis_per_feedback_len):
+            
+            predicted_vals = np.asarray([ p['frame_labelmax'][-1] for p in analysis_per_feedback[feedback_idx] ])
             correct_predictions = sum(labels == predicted_vals)
 
-            predicted_vals3 = [ l in p['frame_labelmax5'][-1][:3] for l,p in zip(labels, analysis_per_frame) ]
+            predicted_vals3 = [ l in p['frame_labelmax5'][-1][:3] for l,p in zip(labels, analysis_per_feedback[feedback_idx]) ]
             correct_predictions3 = sum(predicted_vals3)
 
-            predicted_vals5 = [ l in p['frame_labelmax5'][-1] for l,p in zip(labels, analysis_per_frame) ]
+            predicted_vals5 = [ l in p['frame_labelmax5'][-1] for l,p in zip(labels, analysis_per_feedback[feedback_idx]) ]
             correct_predictions5 = sum(predicted_vals5)
                 
             predictions_summary.append({
