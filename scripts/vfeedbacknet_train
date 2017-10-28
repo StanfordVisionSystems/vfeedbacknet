@@ -130,6 +130,9 @@ def main(args):
         'vfeedbacknet_model4' : lambda : v.vfeedbacknet_model4.Model(sess, len(labels_num2str), args.train_batch_size,
                                                                      train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
                                                                      weights_filename='/home/jemmons/vfeedbacknet_base_weights.npz'),
+        'vfeedbacknet_model5' : lambda : v.vfeedbacknet_model5.VFeedbackNetModel5(sess, len(labels_num2str),
+                                                                                  train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
+                                                                                  weights_filename='/home/jemmons/vfeedbacknet_base_weights.npz'),
     }
 
     model = model_generator_dict[args.model_name]()
