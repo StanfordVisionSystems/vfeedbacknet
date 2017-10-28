@@ -149,7 +149,13 @@ class Model:
         inputs = [ self.vfeedbacknet_base.vgg16_layer2(inp, var_list=self.featurizer_variables) for inp in inputs ]
         ModelLogger.log('vgg-layer2', inputs)
         
+        inputs = [ self.vfeedbacknet_base.vgg16_layer2(inp, var_list=self.featurizer_variables) for inp in inputs ]
+        ModelLogger.log('vgg-layer2', inputs)
 
+        inputs = [ self.vfeedbacknet_base.vgg16_layer2(inp, var_list=self.featurizer_variables) for inp in inputs ]
+        ModelLogger.log('vgg-layer2', inputs)
+
+        
         ## main model ##
         logits = []
         featurizer_outputs = inputs
@@ -223,47 +229,47 @@ class Model:
         return logits
 
     
-    def conv_layer(self, inputs, var_list=None):
+    # def conv_layer(self, inputs, var_list=None):
 
-        with tf.variable_scope('vfeedbacknet_{}'.format(Model.model_name), reuse=True):
-            with tf.variable_scope('conv1'):
-                kernel = tf.get_variable('kernel')
-                biases = tf.get_variable('biases')
+    #     with tf.variable_scope('vfeedbacknet_{}'.format(Model.model_name), reuse=True):
+    #         with tf.variable_scope('conv1'):
+    #             kernel = tf.get_variable('kernel')
+    #             biases = tf.get_variable('biases')
 
-                inputs = tf.nn.conv2d(inputs, kernel, [1, 2, 2, 1], padding='SAME')
-                inputs = tf.nn.bias_add(inputs, biases)
-                inputs = tf.nn.relu(inputs)
+    #             inputs = tf.nn.conv2d(inputs, kernel, [1, 2, 2, 1], padding='SAME')
+    #             inputs = tf.nn.bias_add(inputs, biases)
+    #             inputs = tf.nn.relu(inputs)
 
-                # inputs = tf.nn.max_pool(inputs,
-                #                         ksize=[1, 2, 2, 1],
-                #                         strides=[1, 2, 2, 1],
-                #                         padding='VALID')
+    #             # inputs = tf.nn.max_pool(inputs,
+    #             #                         ksize=[1, 2, 2, 1],
+    #             #                         strides=[1, 2, 2, 1],
+    #             #                         padding='VALID')
                 
-                if var_list is not None and kernel not in var_list:
-                    var_list.append(kernel)
-                if var_list is not None and biases not in var_list:
-                    var_list.append(biases)
+    #             if var_list is not None and kernel not in var_list:
+    #                 var_list.append(kernel)
+    #             if var_list is not None and biases not in var_list:
+    #                 var_list.append(biases)
                 
-                return inputs
+    #             return inputs
 
 
-    def dconv_layer(self, inputs, var_list=None):
+    # def dconv_layer(self, inputs, var_list=None):
 
-        with tf.variable_scope('vfeedbacknet_{}'.format(Model.model_name), reuse=True):
-            with tf.variable_scope('dconv1'):
-                kernel = tf.get_variable('kernel')
-                biases = tf.get_variable('biases')
+    #     with tf.variable_scope('vfeedbacknet_{}'.format(Model.model_name), reuse=True):
+    #         with tf.variable_scope('dconv1'):
+    #             kernel = tf.get_variable('kernel')
+    #             biases = tf.get_variable('biases')
 
-                inputs = tf.nn.conv2d_transpose(inputs, kernel, tf.stack([self.batch_size, 28, 28, 128]), [1, 2, 2, 1], padding='SAME')
-                inputs = tf.nn.bias_add(inputs, biases)
-                inputs = tf.nn.relu(inputs)
+    #             inputs = tf.nn.conv2d_transpose(inputs, kernel, tf.stack([self.batch_size, 28, 28, 128]), [1, 2, 2, 1], padding='SAME')
+    #             inputs = tf.nn.bias_add(inputs, biases)
+    #             inputs = tf.nn.relu(inputs)
 
-                if var_list is not None and kernel not in var_list:
-                    var_list.append(kernel)
-                if var_list is not None and biases not in var_list:
-                    var_list.append(biases)
+    #             if var_list is not None and kernel not in var_list:
+    #                 var_list.append(kernel)
+    #             if var_list is not None and biases not in var_list:
+    #                 var_list.append(biases)
                 
-                return inputs
+    #             return inputs
                 
 
     def convLSTM_layer1(self, inputs, inputs_sequence_length, var_list=None):

@@ -378,7 +378,7 @@ def main(args):
                                 assert(not np.isnan(total_loss_val))
                                 assert(not np.any(np.isnan(predict_vals)))
 
-                                analysis = TrainingLogger.process_prediction(_predict_vals, video_batch['video_labelnums'][begin:end], video_batch['video_numframes'][begin:end])
+                                analysis = TrainingLogger.process_prediction(predict_vals, validation_batch['video_labelnums'][begin:end], validation_batch['video_numframes'][begin:end])
                                 correct_predictions = analysis[0]['correct_predictions']
                                 correct_predictions3 = analysis[0]['correct_predictions3']
                                 correct_predictions5 = analysis[0]['correct_predictions5']
