@@ -7,7 +7,9 @@ from vfeedbacknet.vfeedbacknet_utilities import ModelLogger
 from vfeedbacknet.vfeedbacknet_base import VFeedbackNetBase
 
 class VFeedbackNetModel2:
-
+    '''
+    simple feedback mechanism using deconvolution (no fine tuning on VGG layers)
+    '''
 
     def __init__(self, sess, num_classes, batch_size,
                  train_featurizer='FINE_TUNE', train_main_model='FINE_TUNE', train_fc='FINE_TUNE',

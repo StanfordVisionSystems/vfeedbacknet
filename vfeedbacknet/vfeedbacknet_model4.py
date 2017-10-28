@@ -7,7 +7,11 @@ from vfeedbacknet.vfeedbacknet_utilities import ModelLogger
 from vfeedbacknet.vfeedbacknet_base import VFeedbackNetBase
 
 class Model:
+    '''
+    convLSTM based feedback mechanism
+    '''
 
+    
     model_name = 'model4'
     
     def __init__(self, sess, num_classes, batch_size,
