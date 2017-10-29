@@ -13,6 +13,7 @@ import vfeedbacknet.vfeedbacknet_model1 as vfeedbacknet_model1 # VGG16 + 2 x con
 import vfeedbacknet.vfeedbacknet_model2 as vfeedbacknet_model2 # VGG16 + deconv feedback (no fine tuning on pretrained VGG layers)
 import vfeedbacknet.vfeedbacknet_model3 as vfeedbacknet_model3 # VGG16 + deconv feedback (with some fine tuning on pretrained VGG layers)
 import vfeedbacknet.vfeedbacknet_model4 as vfeedbacknet_model4 # VGG16 + convLSTM based feedback (no fine tuning on VGG pretrained layers)
+import vfeedbacknet.vfeedbacknet_model5 as vfeedbacknet_model5 # Same as model2, but with three feedback layers instead of two
 
 # legacy models
 # import vfeedbacknet.legacy.convLSTM

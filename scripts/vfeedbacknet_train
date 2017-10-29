@@ -106,49 +106,81 @@ def main(args):
     sess = tf.Session()
 
     x_input = tf.placeholder(tf.float32,
-                             [None, args.video_length,
+                             [args.train_batch_size, args.video_length,
                               args.video_height, args.video_width],
                              name='x_input')
-    x_length = tf.placeholder(tf.int32, [None,], name='x_length')
+    x_length = tf.placeholder(tf.int32, [args.train_batch_size,], name='x_length')
     
     logging.debug('creating model with {} outputs'.format(len(labels_num2str)))
-    y_label = tf.placeholder(tf.float32, [None, len(labels_num2str)], name='y_label')
+    y_label = tf.placeholder(tf.float32, [args.train_batch_size, len(labels_num2str)], name='y_label')
     
-    y_zeros = tf.placeholder(tf.float32, [None,],  name='y_zeros')
+    y_zeros = tf.placeholder(tf.float32, [args.train_batch_size,],  name='y_zeros')
     zeros = np.zeros((args.train_batch_size,))
 
+    assert args.train_batch_size % args.num_gpus == 0, 'train_batch_size must be divisible by num_gpus'
     model_generator_dict = {
         'vfeedbacknet_model1' : lambda : v.vfeedbacknet_model1.VFeedbackNetModel1(sess, len(labels_num2str),
                                                                                   train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
                                                                                   weights_filename='/home/jemmons/vfeedbacknet_base_weights.npz'),
-        'vfeedbacknet_model2' : lambda : v.vfeedbacknet_model2.VFeedbackNetModel2(sess, len(labels_num2str), args.train_batch_size,
+        'vfeedbacknet_model2' : lambda : v.vfeedbacknet_model2.VFeedbackNetModel2(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
                                                                                   train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
                                                                                   weights_filename='/home/jemmons/vfeedbacknet_base_weights.npz'),
-        'vfeedbacknet_model3' : lambda : v.vfeedbacknet_model3.VFeedbackNetModel3(sess, len(labels_num2str), args.train_batch_size,
+        'vfeedbacknet_model3' : lambda : v.vfeedbacknet_model3.VFeedbackNetModel3(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
                                                                                   train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
                                                                                   weights_filename='/home/jemmons/vfeedbacknet_base_weights.npz'),
-        'vfeedbacknet_model4' : lambda : v.vfeedbacknet_model4.Model(sess, len(labels_num2str), args.train_batch_size,
+        'vfeedbacknet_model4' : lambda : v.vfeedbacknet_model4.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
                                                                      train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
                                                                      weights_filename='/home/jemmons/vfeedbacknet_base_weights.npz'),
-        'vfeedbacknet_model5' : lambda : v.vfeedbacknet_model5.VFeedbackNetModel5(sess, len(labels_num2str),
-                                                                                  train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
-                                                                                  weights_filename='/home/jemmons/vfeedbacknet_base_weights.npz'),
+        'vfeedbacknet_model5' : lambda : v.vfeedbacknet_model5.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
+                                                                     train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
+                                                                     weights_filename='/home/jemmons/vfeedbacknet_base_weights.npz'),
     }
 
-    model = model_generator_dict[args.model_name]()
-    logits_ = model(x_input, x_length)
+    model = None
+    with tf.device('/cpu:0'):
+        model = model_generator_dict[args.model_name]()
 
-    logits_ = tf.unstack(logits_, axis=1)
-    logits_ = [ tf.unstack(l, axis=1) for l in logits_ ]
-    
-    # tuple: (losses, total_loss, predictions)
-    outputs = [ v.vfeedbacknet_lossfunctions.basic_loss_pred(logits,
-                                                             x_length,
-                                                             args.video_length,
-                                                             y_label,
-                                                             y_zeros,
-                                                             last_loss_multiple=args.last_loss_multipler) for logits in logits_ ]
+    x_input_split = tf.split(x_input, num_or_size_splits=args.num_gpus, axis=0)
+    x_length_split = tf.split(x_length, num_or_size_splits=args.num_gpus, axis=0)
+    print(x_input_split)
+    print(x_length_split)
+    # y_label_split = tf.split(y_label, num_or_size_splits=args.num_gpus, axis=0)
+    # y_zeros_split = tf.split(y_zeros, num_or_size_splits=args.num_gpus, axis=0)
+    # zeros_split = np.split(zeros, indices_or_sections=args.num_gpus, axis=1)
+        
+    logits_ = []
+    for gpu_num in range(args.num_gpus):
+        with tf.device('/gpu:{}'.format(gpu_num)):
+            logits_.append( model(x_input_split[gpu_num], x_length_split[gpu_num]) )
 
+   
+    with tf.device('/cpu:0'):
+        logits_ = tf.concat(logits_, axis=0)
+
+        logits_ = tf.unstack(logits_, axis=1)
+        logits_ = [ tf.unstack(l, axis=1) for l in logits_ ]
+
+        # output is list of tuples: [(losses, total_loss, predictions), ...]
+        outputs = [ v.vfeedbacknet_lossfunctions.basic_loss_pred(logits,
+                                                                 x_length,
+                                                                 args.video_length,
+                                                                 y_label,
+                                                                 y_zeros,
+                                                                 last_loss_multiple=args.last_loss_multipler) for logits in logits_ ]
+
+    # model = model_generator_dict[args.model_name]()
+    # logits_ = model(x_input, x_length)
+
+    # logits_ = tf.unstack(logits_, axis=1)
+    # logits_ = [ tf.unstack(l, axis=1) for l in logits_ ]
+
+    # # output is list of tuples: [(losses, total_loss, predictions), ...]
+    # outputs = [ v.vfeedbacknet_lossfunctions.basic_loss_pred(logits,
+    #                                                          x_length,
+    #                                                          args.video_length,
+    #                                                          y_label,
+    #                                                          y_zeros,
+    #                                                          last_loss_multiple=args.last_loss_multipler) for logits in logits_ ]
     total_loss = 0
     for output in outputs:
         total_loss += output[1]
@@ -161,7 +193,7 @@ def main(args):
     step = tf.Variable(args.global_step_init if (args.global_step_init is not None) else 0, trainable=False, name='step')
     learning_rate = tf.maximum(tf.train.exponential_decay(args.learning_rate_init, step, args.prefetch_batch_size//args.train_batch_size, args.learning_rate_decay), args.learning_rate_min, name='learning_rate')
     optimizer = tf.train.AdadeltaOptimizer(learning_rate=learning_rate, name='optimizer')
-    train_step = optimizer.minimize(total_loss, global_step=step)
+    train_step = optimizer.minimize(total_loss, colocate_gradients_with_ops=True, global_step=step)
     saver = tf.train.Saver()
 
     ############################################################################
@@ -468,6 +500,10 @@ if __name__ == '__main__':
                         default=False)
     
     # tuning parameters (optional)
+    parser.add_argument('--num_gpus', type=int, nargs=None,
+                        help='number of gpus to use during training', 
+                        default=1)
+
     parser.add_argument('--overfit',
                         help='overfit on a small chunk [64 data points] of data (official run: False)',
                         action='store_true',
