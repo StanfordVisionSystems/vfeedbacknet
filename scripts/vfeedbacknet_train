@@ -20,7 +20,7 @@ import tensorflow as tf
 from tensorflow.python.client import device_lib
 
 import vfeedbacknet as v
-from vfeedbacknet import TrainingLogger
+from vfeedbacknet import TrainingLogger, ModelLogger
 from vfeedbacknet import pool_init, prepare_video, load_videos
 
 #logging.basicConfig(level=logging.INFO)
@@ -140,26 +140,29 @@ def main(args):
     with tf.device('/cpu:0'):
         model = model_generator_dict[args.model_name]()
 
-    x_input_split = tf.split(x_input, num_or_size_splits=args.num_gpus, axis=0)
-    x_length_split = tf.split(x_length, num_or_size_splits=args.num_gpus, axis=0)
-    print(x_input_split)
-    print(x_length_split)
-    # y_label_split = tf.split(y_label, num_or_size_splits=args.num_gpus, axis=0)
-    # y_zeros_split = tf.split(y_zeros, num_or_size_splits=args.num_gpus, axis=0)
-    # zeros_split = np.split(zeros, indices_or_sections=args.num_gpus, axis=1)
+        x_input_split = tf.split(x_input, num_or_size_splits=args.num_gpus, axis=0)
+        x_length_split = tf.split(x_length, num_or_size_splits=args.num_gpus, axis=0)
         
     logits_ = []
     for gpu_num in range(args.num_gpus):
         with tf.device('/gpu:{}'.format(gpu_num)):
-            logits_.append( model(x_input_split[gpu_num], x_length_split[gpu_num]) )
+            logging.debug('-- placing ops on gpu:{} --'.format(gpu_num))
 
-   
+            tmp = model(x_input_split[gpu_num], x_length_split[gpu_num])
+            logits_.append( tmp )
+
     with tf.device('/cpu:0'):
+        logging.debug('-- placing ops on cpu:0 --')
+
         logits_ = tf.concat(logits_, axis=0)
+        ModelLogger.log('combined_logits1', logits_)
 
         logits_ = tf.unstack(logits_, axis=1)
-        logits_ = [ tf.unstack(l, axis=1) for l in logits_ ]
+        ModelLogger.log('combined_logits2', logits_)
 
+        logits_ = [ tf.unstack(l, axis=1) for l in logits_ ]
+        logging.debug('{} feedback iterations detected!'.format(len(logits_)))
+        
         # output is list of tuples: [(losses, total_loss, predictions), ...]
         outputs = [ v.vfeedbacknet_lossfunctions.basic_loss_pred(logits,
                                                                  x_length,
@@ -168,27 +171,15 @@ def main(args):
                                                                  y_zeros,
                                                                  last_loss_multiple=args.last_loss_multipler) for logits in logits_ ]
 
-    # model = model_generator_dict[args.model_name]()
-    # logits_ = model(x_input, x_length)
-
-    # logits_ = tf.unstack(logits_, axis=1)
-    # logits_ = [ tf.unstack(l, axis=1) for l in logits_ ]
-
-    # # output is list of tuples: [(losses, total_loss, predictions), ...]
-    # outputs = [ v.vfeedbacknet_lossfunctions.basic_loss_pred(logits,
-    #                                                          x_length,
-    #                                                          args.video_length,
-    #                                                          y_label,
-    #                                                          y_zeros,
-    #                                                          last_loss_multiple=args.last_loss_multipler) for logits in logits_ ]
-    total_loss = 0
-    for output in outputs:
-        total_loss += output[1]
+    
+        total_loss = 0
+        for output in outputs:
+            total_loss += output[1]
         
-    losses = tf.stack(list(map(lambda x: x[0], outputs)), axis=1, name='losses_agg')
-    predictions = tf.stack(list(map(lambda x: x[2], outputs)), axis=1, name='predictions_agg')
-    # print(losses.shape, losses)
-    # print(predictions.shape, predictions)
+        losses = tf.stack(list(map(lambda x: x[0], outputs)), axis=1, name='losses_agg')
+        predictions = tf.stack(list(map(lambda x: x[2], outputs)), axis=1, name='predictions_agg')
+        ModelLogger.log('losses_agg', losses)
+        ModelLogger.log('predictions_agg', predictions)
     
     step = tf.Variable(args.global_step_init if (args.global_step_init is not None) else 0, trainable=False, name='step')
     learning_rate = tf.maximum(tf.train.exponential_decay(args.learning_rate_init, step, args.prefetch_batch_size//args.train_batch_size, args.learning_rate_decay), args.learning_rate_min, name='learning_rate')

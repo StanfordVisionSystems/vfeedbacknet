@@ -91,14 +91,20 @@ class Model:
     
     def print_variables(self):
 
-        for var in self.get_variables():
-            print(var.name)
+        var_list = self.get_variables()
+        var_list_len = len(var_list)
+        for var,idx in zip(var_list, range(var_list_len)):
+            print(str(idx).zfill(3), var.name)
 
 
     def initialize_variables(self):
 
         logging.debug('--- begin variable initialization (vfeedbacknet) ---')
+        var_list = self.get_variables()
 
+        self.print_variables()
+        logging.debug('Number of variables in model: {}'.format( len(var_list) ))
+        
         if self.train_featurizer == 'FROM_SCRATCH':
             logging.debug('vgg16:FROM_SCRATCH; using random initialization')
             for var in self.featurizer_variables:
@@ -222,6 +228,7 @@ class Model:
         logits.append(tf.stack(inputs, axis=1))
 
         logits = tf.stack(logits, axis=1)
+        ModelLogger.log('combined-feedback-logits', logits)
         return logits
 
     
