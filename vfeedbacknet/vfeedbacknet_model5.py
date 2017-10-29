@@ -186,7 +186,6 @@ class Model:
         
         # feedback 2
         inputs = [ featurizer_o + self.dconv_layer(feedback_o, var_list=self.main_model_variables) for featurizer_o,feedback_o in zip(featurizer_outputs,feedback_outputs) ]
-        inputs = [ self.dconv_layer(feedback_o, var_list=self.main_model_variables) for featurizer_o,feedback_o in zip(featurizer_outputs,feedback_outputs) ]
         ModelLogger.log('dconv0', inputs)
 
         inputs = [ self.vfeedbacknet_base.vgg16_layer3(inp, var_list=self.featurizer_variables) for inp in inputs ]

@@ -8,9 +8,10 @@ from vfeedbacknet.vfeedbacknet_base import VFeedbackNetBase
 
 class Model:
     '''
-    convLSTM based feedback mechanism
+    simple feedback mechanism using deconvolution (no fine tuning on VGG layers)
+    (three feedback layers)
     '''
-    
+
     model_name = 'model4'
     
     def __init__(self, sess, num_classes, batch_size,
@@ -90,14 +91,20 @@ class Model:
     
     def print_variables(self):
 
-        for var in self.get_variables():
-            print(var.name)
+        var_list = self.get_variables()
+        var_list_len = len(var_list)
+        for var,idx in zip(var_list, range(var_list_len)):
+            print(str(idx).zfill(3), var.name)
 
 
     def initialize_variables(self):
 
         logging.debug('--- begin variable initialization (vfeedbacknet) ---')
+        var_list = self.get_variables()
 
+        self.print_variables()
+        logging.debug('Number of variables in model: {}'.format( len(var_list) ))
+        
         if self.train_featurizer == 'FROM_SCRATCH':
             logging.debug('vgg16:FROM_SCRATCH; using random initialization')
             for var in self.featurizer_variables:
@@ -152,25 +159,44 @@ class Model:
         inputs = [ self.vfeedbacknet_base.vgg16_layer2(inp, var_list=self.featurizer_variables) for inp in inputs ]
         ModelLogger.log('vgg-layer2', inputs)
         
-        inputs = [ self.vfeedbacknet_base.vgg16_layer3(inp, var_list=self.featurizer_variables) for inp in inputs ]
-        ModelLogger.log('vgg-layer3', inputs)
 
-        inputs = [ self.vfeedbacknet_base.vgg16_layer4(inp, var_list=self.featurizer_variables) for inp in inputs ]
-        ModelLogger.log('vgg-layer4', inputs)
-
-        
         ## main model ##
         logits = []
         featurizer_outputs = inputs
         feedback_outputs = None
-
-        # def feedback_block(_inputs, _inputs_sequence_length):
-                   
-
+        
         # feedback 1
+        inputs = featurizer_outputs
+        inputs = [ self.vfeedbacknet_base.vgg16_layer3(inp, var_list=self.featurizer_variables) for inp in inputs ]
+        ModelLogger.log('vgg-layer3', inputs)
+
         inputs = self.convLSTM_layer1(inputs, inputs_sequence_length, var_list=self.main_model_variables)
         ModelLogger.log('convLSTM1', inputs)
         feedback_outputs = inputs
+        
+        inputs = [ self.conv_layer(inp, var_list=self.main_model_variables) for inp in inputs ]
+        ModelLogger.log('conv', inputs)
+
+        inputs = [ self.vfeedbacknet_base.ave_pool(inp) for inp in inputs ]
+        ModelLogger.log('ave_pool', inputs)
+
+        inputs = [ self.vfeedbacknet_base.fc_layer(inp, var_list=self.fc_variables) for inp in inputs ]
+        ModelLogger.log('fc', inputs)
+        logits.append(tf.stack(inputs, axis=1))
+        
+        # feedback 2
+        inputs = [ self.dconv_layer(feedback_o, var_list=self.main_model_variables) for featurizer_o,feedback_o in zip(featurizer_outputs,feedback_outputs) ]
+        ModelLogger.log('dconv0', inputs)
+
+        inputs = [ self.vfeedbacknet_base.vgg16_layer3(inp, var_list=self.featurizer_variables) for inp in inputs ]
+        ModelLogger.log('vgg-layer3', inputs)
+
+        inputs = self.convLSTM_layer1(inputs, inputs_sequence_length, var_list=self.main_model_variables)
+        ModelLogger.log('convLSTM1', inputs)
+        feedback_outputs = inputs
+
+        inputs = [ self.conv_layer(inp, var_list=self.main_model_variables) for inp in inputs ]
+        ModelLogger.log('conv0', inputs)
         
         inputs = [ self.vfeedbacknet_base.ave_pool(inp) for inp in inputs ]
         ModelLogger.log('ave_pool', inputs)
@@ -178,96 +204,74 @@ class Model:
         inputs = [ self.vfeedbacknet_base.fc_layer(inp, var_list=self.fc_variables) for inp in inputs ]
         ModelLogger.log('fc', inputs)
         logits.append(tf.stack(inputs, axis=1))
+
+        # feedback 3
+        inputs = [ self.dconv_layer(feedback_o, var_list=self.main_model_variables) for featurizer_o,feedback_o in zip(featurizer_outputs,feedback_outputs) ]
+        ModelLogger.log('dconv0', inputs)
+
+        inputs = [ self.vfeedbacknet_base.vgg16_layer3(inp, var_list=self.featurizer_variables) for inp in inputs ]
+        ModelLogger.log('vgg-layer3', inputs)
+
+        inputs = self.convLSTM_layer1(inputs, inputs_sequence_length, var_list=self.main_model_variables)
+        ModelLogger.log('convLSTM1', inputs)
+        feedback_outputs = inputs
+
+        inputs = [ self.conv_layer(inp, var_list=self.main_model_variables) for inp in inputs ]
+        ModelLogger.log('conv0', inputs)
+
+        inputs = [ self.vfeedbacknet_base.ave_pool(inp) for inp in inputs ]
+        ModelLogger.log('ave_pool', inputs)
+
+        inputs = [ self.vfeedbacknet_base.fc_layer(inp, var_list=self.fc_variables) for inp in inputs ]
+        ModelLogger.log('fc', inputs)
         logits.append(tf.stack(inputs, axis=1))
-        
-        # feedback 2
-        #inputs = [ featurizer_o + self.dconv_layer(feedback_o, var_list=self.main_model_variables) for featurizer_o,feedback_o in zip(featurizer_outputs,feedback_outputs) ]
-        # inputs = [ self.dconv_layer(feedback_o, var_list=self.main_model_variables) for featurizer_o,feedback_o in zip(featurizer_outputs,feedback_outputs) ]
-        # ModelLogger.log('dconv0', inputs)
-
-        # inputs = [ self.vfeedbacknet_base.vgg16_layer3(inp, var_list=self.main_model_variables) for inp in inputs ]
-        # ModelLogger.log('vgg-layer3', inputs)
-
-        # inputs = self.convLSTM_layer1(inputs, inputs_sequence_length, var_list=self.main_model_variables)
-        # ModelLogger.log('convLSTM1', inputs)
-        # feedback_outputs = inputs
-
-        # inputs = [ self.conv_layer(inp, var_list=self.main_model_variables) for inp in inputs ]
-        # ModelLogger.log('conv0', inputs)
-        
-        # inputs = [ self.vfeedbacknet_base.ave_pool(inp) for inp in inputs ]
-        # ModelLogger.log('ave_pool', inputs)
-
-        # inputs = [ self.vfeedbacknet_base.fc_layer(inp, var_list=self.fc_variables) for inp in inputs ]
-        # ModelLogger.log('fc', inputs)
-        # logits.append(tf.stack(inputs, axis=1))
-
-        # # feedback 3
-        # inputs = [ featurizer_o + self.dconv_layer(feedback_o, var_list=self.main_model_variables) for featurizer_o,feedback_o in zip(featurizer_outputs,feedback_outputs) ]
-        # ModelLogger.log('dconvo', inputs)
-
-        # inputs = [ self.vfeedbacknet_base.vgg16_layer3(inp, var_list=self.featurizer_variables) for inp in inputs ]
-        # ModelLogger.log('vgg-layer3', inputs)
-
-        # inputs = self.convLSTM_layer1(inputs, inputs_sequence_length, var_list=self.main_model_variables)
-        # ModelLogger.log('convLSTM1', inputs)
-        # feedback_outputs = inputs
-
-        # inputs = [ self.conv_layer(inp, var_list=self.main_model_variables) for inp in inputs ]
-        # ModelLogger.log('conv0', inputs)
-
-        # inputs = [ self.vfeedbacknet_base.ave_pool(inp) for inp in inputs ]
-        # ModelLogger.log('ave_pool', inputs)
-
-        # inputs = [ self.vfeedbacknet_base.fc_layer(inp, var_list=self.fc_variables) for inp in inputs ]
-        # ModelLogger.log('fc', inputs)
-        # logits.append(tf.stack(inputs, axis=1))
 
         logits = tf.stack(logits, axis=1)
+        ModelLogger.log('combined-feedback-logits', logits)
         return logits
 
     
-    # def conv_layer(self, inputs, var_list=None):
+    def conv_layer(self, inputs, var_list=None):
 
-    #     with tf.variable_scope('vfeedbacknet_{}'.format(Model.model_name), reuse=True):
-    #         with tf.variable_scope('conv1'):
-    #             kernel = tf.get_variable('kernel')
-    #             biases = tf.get_variable('biases')
+        with tf.variable_scope('vfeedbacknet_{}'.format(Model.model_name), reuse=True):
+            with tf.variable_scope('conv1'):
+                kernel = tf.get_variable('kernel')
+                biases = tf.get_variable('biases')
 
-    #             inputs = tf.nn.conv2d(inputs, kernel, [1, 2, 2, 1], padding='SAME')
-    #             inputs = tf.nn.bias_add(inputs, biases)
-    #             inputs = tf.nn.relu(inputs)
+                inputs = tf.nn.conv2d(inputs, kernel, [1, 2, 2, 1], padding='SAME')
+                inputs = tf.nn.bias_add(inputs, biases)
+                inputs = tf.nn.relu(inputs)
 
-    #             # inputs = tf.nn.max_pool(inputs,
-    #             #                         ksize=[1, 2, 2, 1],
-    #             #                         strides=[1, 2, 2, 1],
-    #             #                         padding='VALID')
+                # inputs = tf.nn.max_pool(inputs,
+                #                         ksize=[1, 2, 2, 1],
+                #                         strides=[1, 2, 2, 1],
+                #                         padding='VALID')
                 
-    #             if var_list is not None and kernel not in var_list:
-    #                 var_list.append(kernel)
-    #             if var_list is not None and biases not in var_list:
-    #                 var_list.append(biases)
+                if var_list is not None and kernel not in var_list:
+                    var_list.append(kernel)
+                if var_list is not None and biases not in var_list:
+                    var_list.append(biases)
                 
-    #             return inputs
+                return inputs
 
 
-    # def dconv_layer(self, inputs, var_list=None):
+    def dconv_layer(self, inputs, var_list=None):
 
-    #     with tf.variable_scope('vfeedbacknet_{}'.format(Model.model_name), reuse=True):
-    #         with tf.variable_scope('dconv1'):
-    #             kernel = tf.get_variable('kernel')
-    #             biases = tf.get_variable('biases')
+        with tf.variable_scope('vfeedbacknet_{}'.format(Model.model_name), reuse=True):
+            with tf.variable_scope('dconv1'):
+                kernel = tf.get_variable('kernel')
+                biases = tf.get_variable('biases')
 
-    #             inputs = tf.nn.conv2d_transpose(inputs, kernel, tf.stack([self.batch_size, 28, 28, 128]), [1, 2, 2, 1], padding='SAME')
-    #             inputs = tf.nn.bias_add(inputs, biases)
-    #             inputs = tf.nn.relu(inputs)
+                inputs = tf.nn.conv2d_transpose(inputs, kernel, tf.stack([self.batch_size, 28, 28, 128]), [1, 2, 2, 1], padding='SAME')
+                inputs = tf.nn.bias_add(inputs, biases)
+                inputs = tf.nn.relu(inputs)
 
-    #             if var_list is not None and kernel not in var_list:
-    #                 var_list.append(kernel)
-    #             if var_list is not None and biases not in var_list:
-    #                 var_list.append(biases)
+                if var_list is not None and kernel not in var_list:
+                    var_list.append(kernel)
+                if var_list is not None and biases not in var_list:
+                    var_list.append(biases)
                 
-    #             return inputs
+                return inputs
                 
 
     def convLSTM_layer1(self, inputs, inputs_sequence_length, var_list=None):
@@ -294,23 +298,15 @@ class Model:
                             if var_list is not None and bias not in var_list:
                                 var_list.append(bias)
 
-                print(inputs)
-                inputs = tf.stack(inputs, axis=0),
-                print(inputs)
-                print(inputs.shape)
-                
+                            
                 inputs, state = tf.nn.dynamic_rnn(
                     self.convLSTMCell1,
-                    tf.stack(inputs, axis=0),
+                    tf.stack(inputs, axis=1),
                     dtype=tf.float32,
-                    sequence_length=inputs_sequence_length,
-                    swap_memory=True,
-                    time_major=True
+                    sequence_length=None,
                 )
-                print(inputs.shape)
 
-                inputs = tf.unstack(inputs, axis=0)
-                print(len(inputs), inputs[0].shape)
+                inputs = tf.unstack(inputs, axis=1)
                 
                 return inputs
 
@@ -319,21 +315,20 @@ if __name__ == '__main__':
 
     sess = tf.Session()
 
-    video_length = 20
-
+    video_length = 10
     x = tf.placeholder(tf.float32, [None, video_length, 112, 112], name='inputs')
     x_len = tf.placeholder(tf.float32, [None], name='inputs_len')
     zeros = tf.placeholder(tf.float32, [video_length], name='inputs_len')
     labels = tf.placeholder(tf.float32, [None], name='inputs_len')
 
-    vfeedbacknet_model = Model(sess, 27, 8, train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH', weights_filename='/home/jemmons/vfeedbacknet_base_weights.npz')
+    model = Model(sess, 27, 16, train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH', weights_filename='/home/jemmons/vfeedbacknet_base_weights.npz')
 
-    logits = vfeedbacknet_model(x, x_len)
+    logits = model(x, x_len)
     ModelLogger.log('logits', logits)
 
-    vfeedbacknet_model.initialize_variables()
-    vfeedbacknet_model.export_variables('/tmp/weights.npz')
-    vfeedbacknet_model.print_variables()
+    model.initialize_variables()
+    model.export_variables('/tmp/weights.npz')
+    model.print_variables()
     
     # print out the model
     # graph = tf.get_default_graph()    
