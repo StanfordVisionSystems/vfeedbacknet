@@ -22,7 +22,7 @@ mkdir -p $3
 
 TWENTYBN_ROOT=/mnt/scratch/jemmons/20bn-jester
 
-python3 -u $DIR/vfeedbacknet_train $TWENTYBN_ROOT/jester-v1-labels.csv \
+python3 -u -B $DIR/vfeedbacknet_train $TWENTYBN_ROOT/jester-v1-labels.csv \
         $TWENTYBN_ROOT/jester-v1-validation.csv \
         $TWENTYBN_ROOT/jester-v1-train.csv \
         $TWENTYBN_ROOT/20bn-jester-v1 \

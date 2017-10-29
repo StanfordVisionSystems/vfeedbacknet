@@ -22,7 +22,7 @@ mkdir -p $3
 
 UCF101_ROOT=/mnt/scratch/jemmons/UCF-101-dumpjpg
 
-python3 -u $DIR/vfeedbacknet_train $UCF101_ROOT/classInd.txt \
+python3 -u -B $DIR/vfeedbacknet_train $UCF101_ROOT/classInd.txt \
         $UCF101_ROOT/testlist01.txt \
         $UCF101_ROOT/trainlist01.txt \
         $UCF101_ROOT/ \

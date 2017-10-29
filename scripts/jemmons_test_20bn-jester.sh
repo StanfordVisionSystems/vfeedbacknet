@@ -11,7 +11,7 @@ export CUDA_VISIBLE_DEVICES=$1
 
 TWENTYBN_ROOT=/mnt/scratch/jemmons/20bn-jester
 
-python -u $DIR/vfeedbacknet_test $TWENTYBN_ROOT/jester-v1-labels.csv \
+python -u -B $DIR/vfeedbacknet_test $TWENTYBN_ROOT/jester-v1-labels.csv \
                                  $TWENTYBN_ROOT/jester-v1-validation.csv \
                                  $TWENTYBN_ROOT/20bn-jester-v1 \
                                  $2 --twentybn ${*:3}
