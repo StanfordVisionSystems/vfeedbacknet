@@ -211,7 +211,7 @@ class VFeedbackNetModel1:
                     self.convLSTMCell1,
                     tf.stack(inputs, axis=1),
                     dtype=tf.float32,
-                    sequence_length=inputs_sequence_length,
+                    #sequence_length=inputs_sequence_length,
                 )
 
                 inputs = tf.unstack(inputs, axis=1)
@@ -248,7 +248,7 @@ class VFeedbackNetModel1:
                     self.convLSTMCell2,
                     tf.stack(inputs, axis=1),
                     dtype=tf.float32,
-                    sequence_length=inputs_sequence_length,
+                    #sequence_length=inputs_sequence_length,
                 )
 
                 inputs = tf.unstack(inputs, axis=1)
