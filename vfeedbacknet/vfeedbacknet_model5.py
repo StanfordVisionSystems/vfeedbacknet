@@ -205,8 +205,8 @@ class Model:
         feedback_outputs = None
 
         # feedback 1
-        feedback_outputs = [ self.feedback_block1(inp, var_list=self.main_model_variables) for inp in featurizer_outputs ]
-        inputs = list(map(lambda x : x['hidden_state'], feedback_outputs))
+        feedback_outputs1 = [ self.feedback_block1(inp, var_list=self.main_model_variables) for inp in featurizer_outputs ]
+        inputs = list(map(lambda x : x['hidden_state'], feedback_outputs1))
         ModelLogger.log('feedback_block', inputs)
         
         inputs = self.convLSTM_layer1(inputs, inputs_sequence_length, var_list=self.main_model_variables)
@@ -221,8 +221,8 @@ class Model:
 
         
         # feedback 2
-        feedback_outputs = [ self.feedback_block1(inp, state=state, var_list=self.main_model_variables) for inp,state in zip(featurizer_outputs, feedback_outputs) ]
-        inputs = list(map(lambda x : x['hidden_state'], feedback_outputs))
+        feedback_outputs2 = [ self.feedback_block1(inp, state=state, var_list=self.main_model_variables) for inp,state in zip(featurizer_outputs, feedback_outputs1) ]
+        inputs = list(map(lambda x : x['hidden_state'], feedback_outputs2))
         ModelLogger.log('feedback_block', inputs)
         
         inputs = self.convLSTM_layer1(inputs, inputs_sequence_length, var_list=self.main_model_variables)
@@ -237,8 +237,8 @@ class Model:
 
 
         # feedback 3
-        feedback_outputs = [ self.feedback_block1(inp, state=state, var_list=self.main_model_variables) for inp,state in zip(featurizer_outputs, feedback_outputs) ]
-        inputs = list(map(lambda x : x['hidden_state'], feedback_outputs))
+        feedback_outputs3 = [ self.feedback_block1(inp, state=state, var_list=self.main_model_variables) for inp,state in zip(featurizer_outputs, feedback_outputs2) ]
+        inputs = list(map(lambda x : x['hidden_state'], feedback_outputs3))
         ModelLogger.log('feedback_block', inputs)
         
         inputs = self.convLSTM_layer1(inputs, inputs_sequence_length, var_list=self.main_model_variables)
