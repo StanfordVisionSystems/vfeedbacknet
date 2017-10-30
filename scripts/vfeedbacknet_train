@@ -173,8 +173,11 @@ def main(args):
 
     
         total_loss = 0
-        for output in outputs:
-            total_loss += output[1]
+        for i in range(len(outputs)):
+            output = outputs[i]
+            multipler = args.last_loss_multipler if i == len(outputs)-1 else 1
+            
+            total_loss += multipler * output[1]
         
         losses = tf.stack(list(map(lambda x: x[0], outputs)), axis=1, name='losses_agg')
         predictions = tf.stack(list(map(lambda x: x[2], outputs)), axis=1, name='predictions_agg')

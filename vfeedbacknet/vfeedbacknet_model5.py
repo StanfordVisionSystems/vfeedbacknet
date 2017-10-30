@@ -52,8 +52,8 @@ class Model:
                     regularizer = None # tf.contrib.layers.l2_regularizer(scale=0.25)
                     initializer = tf.contrib.layers.xavier_initializer()
 
-                    kernel = tf.get_variable('kernel', shape=[14, 14, 512, 64], dtype=tf.float32, regularizer=regularizer, initializer=initializer)
-                    biases = tf.get_variable('biases', shape=[64], dtype=tf.float32, regularizer=regularizer, initializer=initializer)
+                    kernel = tf.get_variable('kernel', shape=[14, 14, 512, 512], dtype=tf.float32, regularizer=regularizer, initializer=initializer)
+                    biases = tf.get_variable('biases', shape=[512], dtype=tf.float32, regularizer=regularizer, initializer=initializer)
 
 
             with tf.variable_scope('convlstm1'):
@@ -63,7 +63,7 @@ class Model:
                         regularizer = None # tf.contrib.layers.l2_regularizer(scale=0.25)
                         initializer = tf.contrib.layers.xavier_initializer()
 
-                        n = 64
+                        n = 512
                         m = 4*n
                         input_size = [7, 7, n]
                         kernel2d_size = [3, 3]
@@ -76,14 +76,14 @@ class Model:
                             W_co = tf.get_variable('W_co', input_size, initializer=initializer, regularizer=regularizer)
                             bias = tf.get_variable('bias', [m], initializer=tf.zeros_initializer(), regularizer=regularizer)
                             
-                self.convLSTMCell1 = ConvLSTMCell([7, 7], 64, [3, 3])
+                self.convLSTMCell1 = ConvLSTMCell([7, 7], 512, [3, 3])
 
             with tf.variable_scope('feedback_block1'): 
                     
                 regularizer = None # tf.contrib.layers.l2_regularizer(scale=0.25)
                 initializer = tf.contrib.layers.xavier_initializer()
 
-                kernel_size = [3, 3, 64, 64]
+                kernel_size = [3, 3, 512, 512]
 
                 W_xf = tf.get_variable('W_xf', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer)
                 W_xi = tf.get_variable('W_xi', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer)
@@ -95,9 +95,9 @@ class Model:
                 W_hc = tf.get_variable('W_hc', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer)
                 W_ho = tf.get_variable('W_ho', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer)
 
-                W_cf = tf.get_variable('W_cf', [7,7,64], dtype=tf.float32, initializer=initializer, regularizer=regularizer)
-                W_ci = tf.get_variable('W_ci', [7,7,64], dtype=tf.float32, initializer=initializer, regularizer=regularizer)
-                W_co = tf.get_variable('W_co', [7,7,64], dtype=tf.float32, initializer=initializer, regularizer=regularizer)
+                W_cf = tf.get_variable('W_cf', [7,7,kernel_size[-1]], dtype=tf.float32, initializer=initializer, regularizer=regularizer)
+                W_ci = tf.get_variable('W_ci', [7,7,kernel_size[-1]], dtype=tf.float32, initializer=initializer, regularizer=regularizer)
+                W_co = tf.get_variable('W_co', [7,7,kernel_size[-1]], dtype=tf.float32, initializer=initializer, regularizer=regularizer)
 
                 b_f = tf.get_variable('b_f', [kernel_size[-1]], dtype=tf.float32, initializer=tf.zeros_initializer(), regularizer=regularizer)
                 b_i = tf.get_variable('b_i', [kernel_size[-1]], dtype=tf.float32, initializer=tf.zeros_initializer(), regularizer=regularizer)
@@ -111,7 +111,7 @@ class Model:
 
                 trainable = False if self.train_fc == 'NO' else True
 
-                weight = tf.get_variable('weights', shape=[64, self.num_classes], dtype=tf.float32, initializer=initializer, regularizer=regularizer, trainable=trainable)
+                weight = tf.get_variable('weights', shape=[512, self.num_classes], dtype=tf.float32, initializer=initializer, regularizer=regularizer, trainable=trainable)
                 biases = tf.get_variable('biases', shape=[self.num_classes], dtype=tf.float32, initializer=initializer, regularizer=regularizer, trainable=trainable)
 
                 
