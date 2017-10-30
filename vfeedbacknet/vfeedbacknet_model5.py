@@ -45,6 +45,17 @@ class Model:
     def _declare_variables(self):
 
         with tf.variable_scope('vfeedbacknet_{}'.format(Model.model_name)):
+
+            with tf.variable_scope('process_featurizer_output'):
+                with tf.variable_scope('conv1'):
+
+                    regularizer = None # tf.contrib.layers.l2_regularizer(scale=0.25)
+                    initializer = tf.contrib.layers.xavier_initializer()
+
+                    kernel = tf.get_variable('kernel', shape=[14, 14, 512, 64], dtype=tf.float32, regularizer=regularizer, initializer=initializer)
+                    biases = tf.get_variable('biases', shape=[64], dtype=tf.float32, regularizer=regularizer, initializer=initializer)
+
+
             with tf.variable_scope('convlstm1'):
                 with tf.variable_scope('rnn'):
                     with tf.variable_scope('conv_lstm_cell'):
@@ -52,9 +63,9 @@ class Model:
                         regularizer = None # tf.contrib.layers.l2_regularizer(scale=0.25)
                         initializer = tf.contrib.layers.xavier_initializer()
 
-                        n = 256
+                        n = 64
                         m = 4*n
-                        input_size = [14, 14, n]
+                        input_size = [7, 7, n]
                         kernel2d_size = [3, 3]
                         kernel_size = kernel2d_size + [2*n] + [m] 
 
@@ -65,25 +76,45 @@ class Model:
                             W_co = tf.get_variable('W_co', input_size, initializer=initializer, regularizer=regularizer)
                             bias = tf.get_variable('bias', [m], initializer=tf.zeros_initializer(), regularizer=regularizer)
                             
-                self.convLSTMCell1 = ConvLSTMCell([14, 14], 256, [3, 3])
-                        
-            with tf.variable_scope('conv1'):
+                self.convLSTMCell1 = ConvLSTMCell([7, 7], 64, [3, 3])
+
+            with tf.variable_scope('feedback_block1'): 
+                    
+                regularizer = None # tf.contrib.layers.l2_regularizer(scale=0.25)
+                initializer = tf.contrib.layers.xavier_initializer()
+
+                kernel_size = [3, 3, 64, 64]
+
+                W_xf = tf.get_variable('W_xf', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer)
+                W_xi = tf.get_variable('W_xi', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer)
+                W_xc = tf.get_variable('W_xc', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer)
+                W_xo = tf.get_variable('W_xo', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer)
+
+                W_hf = tf.get_variable('W_hf', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer)
+                W_hi = tf.get_variable('W_hi', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer)
+                W_hc = tf.get_variable('W_hc', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer)
+                W_ho = tf.get_variable('W_ho', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer)
+
+                W_cf = tf.get_variable('W_cf', [7,7,64], dtype=tf.float32, initializer=initializer, regularizer=regularizer)
+                W_ci = tf.get_variable('W_ci', [7,7,64], dtype=tf.float32, initializer=initializer, regularizer=regularizer)
+                W_co = tf.get_variable('W_co', [7,7,64], dtype=tf.float32, initializer=initializer, regularizer=regularizer)
+
+                b_f = tf.get_variable('b_f', [kernel_size[-1]], dtype=tf.float32, initializer=tf.zeros_initializer(), regularizer=regularizer)
+                b_i = tf.get_variable('b_i', [kernel_size[-1]], dtype=tf.float32, initializer=tf.zeros_initializer(), regularizer=regularizer)
+                b_c = tf.get_variable('b_c', [kernel_size[-1]], dtype=tf.float32, initializer=tf.zeros_initializer(), regularizer=regularizer)
+                b_o = tf.get_variable('b_o', [kernel_size[-1]], dtype=tf.float32, initializer=tf.zeros_initializer(), regularizer=regularizer)
+             
+            with tf.variable_scope('fc'):
 
                 regularizer = None # tf.contrib.layers.l2_regularizer(scale=0.25)
                 initializer = tf.contrib.layers.xavier_initializer()
 
-                kernel = tf.get_variable('kernel', shape=[14, 14, 256, 512], dtype=tf.float32, regularizer=regularizer, initializer=initializer)
-                biases = tf.get_variable('biases', shape=[512], dtype=tf.float32, regularizer=regularizer, initializer=initializer)
+                trainable = False if self.train_fc == 'NO' else True
 
-            with tf.variable_scope('dconv1'):
+                weight = tf.get_variable('weights', shape=[64, self.num_classes], dtype=tf.float32, initializer=initializer, regularizer=regularizer, trainable=trainable)
+                biases = tf.get_variable('biases', shape=[self.num_classes], dtype=tf.float32, initializer=initializer, regularizer=regularizer, trainable=trainable)
 
-                regularizer = None # tf.contrib.layers.l2_regularizer(scale=0.25)
-                initializer = tf.contrib.layers.xavier_initializer()
-
-                kernel = tf.get_variable('kernel', [3, 3, 128, 256], initializer=initializer, regularizer=regularizer)
-                biases = tf.get_variable('biases', [128], initializer=initializer, regularizer=regularizer)
-
-
+                
     def get_variables(self):
 
         return self.featurizer_variables + self.main_model_variables + self.fc_variables
@@ -103,7 +134,7 @@ class Model:
         var_list = self.get_variables()
 
         self.print_variables()
-        logging.debug('Number of variables in model: {}'.format( len(var_list) ))
+        print('Number of variables in model: {}'.format( len(var_list) ))
         
         if self.train_featurizer == 'FROM_SCRATCH':
             logging.debug('vgg16:FROM_SCRATCH; using random initialization')
@@ -145,7 +176,7 @@ class Model:
 
     def __call__(self, inputs, inputs_sequence_length):
 
-        #assert inputs.shape[1:] == (20, 112, 112), 'expected input shape of (20, 112, 112) but got {}'.format(inputs.shape)
+        assert inputs.shape[1:] == (20, 112, 112), 'expected input shape of (20, 112, 112) but got {}'.format(inputs.shape)
 
         ModelLogger.log('raw_input', inputs)
 
@@ -159,121 +190,154 @@ class Model:
         inputs = [ self.vfeedbacknet_base.vgg16_layer2(inp, var_list=self.featurizer_variables) for inp in inputs ]
         ModelLogger.log('vgg-layer2', inputs)
         
+        inputs = [ self.vfeedbacknet_base.vgg16_layer3(inp, var_list=self.featurizer_variables) for inp in inputs ]
+        ModelLogger.log('vgg-layer3', inputs)
+
+        inputs = [ self.vfeedbacknet_base.vgg16_layer4(inp, var_list=self.featurizer_variables) for inp in inputs ]
+        ModelLogger.log('vgg-layer4', inputs)
+        
+        inputs = [ self.conv_layer(inp, var_list=self.main_model_variables) for inp in inputs ]
+        ModelLogger.log('conv', inputs)
 
         ## main model ##
         logits = []
         featurizer_outputs = inputs
         feedback_outputs = None
-        
-        # feedback 1
-        inputs = featurizer_outputs
-        inputs = [ self.vfeedbacknet_base.vgg16_layer3(inp, var_list=self.featurizer_variables) for inp in inputs ]
-        ModelLogger.log('vgg-layer3', inputs)
 
+        # feedback 1
+        feedback_outputs = [ self.feedback_block1(inp, var_list=self.main_model_variables) for inp in featurizer_outputs ]
+        inputs = list(map(lambda x : x['hidden_state'], feedback_outputs))
+        ModelLogger.log('feedback_block', inputs)
+        
         inputs = self.convLSTM_layer1(inputs, inputs_sequence_length, var_list=self.main_model_variables)
         ModelLogger.log('convLSTM1', inputs)
-        feedback_outputs = inputs
         
-        inputs = [ self.conv_layer(inp, var_list=self.main_model_variables) for inp in inputs ]
-        ModelLogger.log('conv', inputs)
-
         inputs = [ self.vfeedbacknet_base.ave_pool(inp) for inp in inputs ]
         ModelLogger.log('ave_pool', inputs)
 
-        inputs = [ self.vfeedbacknet_base.fc_layer(inp, var_list=self.fc_variables) for inp in inputs ]
+        inputs = [ self.fc_layer(inp, var_list=self.fc_variables) for inp in inputs ]
         ModelLogger.log('fc', inputs)
         logits.append(tf.stack(inputs, axis=1))
+
         
         # feedback 2
-        inputs = [ featurizer_o + self.dconv_layer(feedback_o, var_list=self.main_model_variables) for featurizer_o,feedback_o in zip(featurizer_outputs,feedback_outputs) ]
-        ModelLogger.log('dconv0', inputs)
-
-        inputs = [ self.vfeedbacknet_base.vgg16_layer3(inp, var_list=self.featurizer_variables) for inp in inputs ]
-        ModelLogger.log('vgg-layer3', inputs)
-
+        feedback_outputs = [ self.feedback_block1(inp, state=state, var_list=self.main_model_variables) for inp,state in zip(featurizer_outputs, feedback_outputs) ]
+        inputs = list(map(lambda x : x['hidden_state'], feedback_outputs))
+        ModelLogger.log('feedback_block', inputs)
+        
         inputs = self.convLSTM_layer1(inputs, inputs_sequence_length, var_list=self.main_model_variables)
         ModelLogger.log('convLSTM1', inputs)
-        feedback_outputs = inputs
-
-        inputs = [ self.conv_layer(inp, var_list=self.main_model_variables) for inp in inputs ]
-        ModelLogger.log('conv0', inputs)
         
         inputs = [ self.vfeedbacknet_base.ave_pool(inp) for inp in inputs ]
         ModelLogger.log('ave_pool', inputs)
 
-        inputs = [ self.vfeedbacknet_base.fc_layer(inp, var_list=self.fc_variables) for inp in inputs ]
+        inputs = [ self.fc_layer(inp, var_list=self.fc_variables) for inp in inputs ]
         ModelLogger.log('fc', inputs)
         logits.append(tf.stack(inputs, axis=1))
 
+
         # feedback 3
-        inputs = [ featurizer_o + self.dconv_layer(feedback_o, var_list=self.main_model_variables) for featurizer_o,feedback_o in zip(featurizer_outputs,feedback_outputs) ]
-        ModelLogger.log('dconvo', inputs)
-
-        inputs = [ self.vfeedbacknet_base.vgg16_layer3(inp, var_list=self.featurizer_variables) for inp in inputs ]
-        ModelLogger.log('vgg-layer3', inputs)
-
+        feedback_outputs = [ self.feedback_block1(inp, state=state, var_list=self.main_model_variables) for inp,state in zip(featurizer_outputs, feedback_outputs) ]
+        inputs = list(map(lambda x : x['hidden_state'], feedback_outputs))
+        ModelLogger.log('feedback_block', inputs)
+        
         inputs = self.convLSTM_layer1(inputs, inputs_sequence_length, var_list=self.main_model_variables)
         ModelLogger.log('convLSTM1', inputs)
-        feedback_outputs = inputs
-
-        inputs = [ self.conv_layer(inp, var_list=self.main_model_variables) for inp in inputs ]
-        ModelLogger.log('conv0', inputs)
-
+        
         inputs = [ self.vfeedbacknet_base.ave_pool(inp) for inp in inputs ]
         ModelLogger.log('ave_pool', inputs)
 
-        inputs = [ self.vfeedbacknet_base.fc_layer(inp, var_list=self.fc_variables) for inp in inputs ]
+        inputs = [ self.fc_layer(inp, var_list=self.fc_variables) for inp in inputs ]
         ModelLogger.log('fc', inputs)
         logits.append(tf.stack(inputs, axis=1))
 
+
+        # output
         logits = tf.stack(logits, axis=1)
         ModelLogger.log('combined-feedback-logits', logits)
         return logits
 
-    
-    def conv_layer(self, inputs, var_list=None):
+                       
+    def feedback_block1(self, inputs, state=None, var_list=None):
 
+        hidden_state = None
+        cell_state = None
+        
+        if state is not None:
+            hidden_state = state['hidden_state']
+            cell_state = state['cell_state']
+
+        assert (cell_state is None) == (hidden_state is None), 'cell_state and hidden_state must BOTH be supplied as arguments.'
+            
         with tf.variable_scope('vfeedbacknet_{}'.format(Model.model_name), reuse=True):
-            with tf.variable_scope('conv1'):
-                kernel = tf.get_variable('kernel')
-                biases = tf.get_variable('biases')
+            with tf.variable_scope('feedback_block1'):
+                W_xf = tf.get_variable('W_xf')
+                W_xi = tf.get_variable('W_xi')
+                W_xc = tf.get_variable('W_xc')
+                W_xo = tf.get_variable('W_xo')
 
-                inputs = tf.nn.conv2d(inputs, kernel, [1, 2, 2, 1], padding='SAME')
-                inputs = tf.nn.bias_add(inputs, biases)
-                inputs = tf.nn.relu(inputs)
+                W_hf = tf.get_variable('W_hf')
+                W_hi = tf.get_variable('W_hi')
+                W_hc = tf.get_variable('W_hc')
+                W_ho = tf.get_variable('W_ho')
 
-                # inputs = tf.nn.max_pool(inputs,
-                #                         ksize=[1, 2, 2, 1],
-                #                         strides=[1, 2, 2, 1],
-                #                         padding='VALID')
+                W_cf = tf.get_variable('W_cf')
+                W_ci = tf.get_variable('W_ci')
+                W_co = tf.get_variable('W_co')
+
+                b_f = tf.get_variable('b_f')
+                b_i = tf.get_variable('b_i')
+                b_c = tf.get_variable('b_c')
+                b_o = tf.get_variable('b_o')
+
+                i_t = tf.sigmoid(
+                    tf.nn.bias_add(
+                        tf.nn.conv2d(inputs, W_xi, [1, 1, 1, 1], padding='SAME')  +
+                        (tf.nn.conv2d(hidden_state, W_hi, [1, 1, 1, 1], padding='SAME') if hidden_state is not None else tf.to_float(0)) +
+                        (tf.multiply(cell_state, W_ci, name='element_wise_multipy') if cell_state is not None else tf.to_float(0)),
+                        b_i)
+                )
+
+                f_t = tf.sigmoid(
+                    tf.nn.bias_add(
+                        tf.nn.conv2d(inputs, W_xf, [1, 1, 1, 1], padding='SAME')  +
+                        (tf.nn.conv2d(hidden_state, W_hf, [1, 1, 1, 1], padding='SAME') if hidden_state is not None else tf.to_float(0)) +
+                        (tf.multiply(cell_state, W_cf, name='element_wise_multipy_ft') if cell_state is not None else tf.to_float(0)),
+                        b_f)
+                )
+
+                new_cell_state = (tf.multiply(f_t, cell_state, name='element_wise_multipy_ct1') if cell_state is not None else tf.to_float(0)) + \
+                                 tf.multiply(i_t, 
+                                             tf.tanh(
+                                                 tf.nn.bias_add(
+                                                     tf.nn.conv2d(inputs, W_xc, [1, 1, 1, 1], padding='SAME')  +
+                                                     (tf.nn.conv2d(hidden_state, W_hc, [1, 1, 1, 1], padding='SAME') if hidden_state is not None else tf.to_float(0)),
+                                                     b_c)
+                                             ), name='element_wise_multipy_ct2'
+                                 )
                 
-                if var_list is not None and kernel not in var_list:
-                    var_list.append(kernel)
-                if var_list is not None and biases not in var_list:
-                    var_list.append(biases)
-                
-                return inputs
+                o_t = tf.sigmoid(
+                    tf.nn.bias_add(
+                        tf.nn.conv2d(inputs, W_xo, [1, 1, 1, 1], padding='SAME')  +
+                        (tf.nn.conv2d(hidden_state, W_ho, [1, 1, 1, 1], padding='SAME') if hidden_state is not None else tf.to_float(0)) +
+                        tf.multiply(new_cell_state, W_co, name='element_wise_multipy_ot'), 
+                        b_o)
+                )
 
+                new_hidden_state = tf.multiply(o_t, tf.tanh(new_cell_state), name='element_wise_multipy_it')
 
-    def dconv_layer(self, inputs, var_list=None):
+                if var_list is not None:
+                    for var in [W_xf, W_xi, W_xc, W_xo,
+                                W_hf, W_hi, W_hc, W_ho,
+                                W_cf, W_ci, W_co,
+                                b_f, b_i, b_c, b_o]:
 
-        with tf.variable_scope('vfeedbacknet_{}'.format(Model.model_name), reuse=True):
-            with tf.variable_scope('dconv1'):
-                kernel = tf.get_variable('kernel')
-                biases = tf.get_variable('biases')
+                        if var not in var_list:
+                            var_list.append(var)
+                            
+                return { 'hidden_state' : new_hidden_state, 'cell_state' : new_cell_state } 
 
-                inputs = tf.nn.conv2d_transpose(inputs, kernel, tf.stack([self.batch_size, 28, 28, 128]), [1, 2, 2, 1], padding='SAME')
-                inputs = tf.nn.bias_add(inputs, biases)
-                inputs = tf.nn.relu(inputs)
-
-                if var_list is not None and kernel not in var_list:
-                    var_list.append(kernel)
-                if var_list is not None and biases not in var_list:
-                    var_list.append(biases)
-                
-                return inputs
-                
-
+        
     def convLSTM_layer1(self, inputs, inputs_sequence_length, var_list=None):
 
         with tf.variable_scope('vfeedbacknet_{}'.format(Model.model_name)):
@@ -310,12 +374,59 @@ class Model:
                 
                 return inputs
 
+    
+    def conv_layer(self, inputs, var_list=None):
+
+        with tf.variable_scope('vfeedbacknet_{}'.format(Model.model_name), reuse=True):
+            with tf.variable_scope('process_featurizer_output'):
+                with tf.variable_scope('conv1'):
+                    kernel = tf.get_variable('kernel')
+                    biases = tf.get_variable('biases')
+
+                    inputs = tf.nn.conv2d(inputs, kernel, [1, 1, 1, 1], padding='SAME')
+                    inputs = tf.nn.bias_add(inputs, biases)
+                    inputs = tf.nn.relu(inputs)
+
+                    # inputs = tf.nn.max_pool(inputs,
+                    #                         ksize=[1, 2, 2, 1],
+                    #                         strides=[1, 2, 2, 1],
+                    #                         padding='VALID')
+
+                    if var_list is not None and kernel not in var_list:
+                        var_list.append(kernel)
+                    if var_list is not None and biases not in var_list:
+                        var_list.append(biases)
+
+                    return inputs
+
+                
+    def fc_layer(self, inputs, var_list=None):
+        
+        with tf.variable_scope('vfeedbacknet_{}'.format(Model.model_name), reuse=True):
+            with tf.variable_scope('fc'):
+                
+                weights = tf.get_variable('weights')
+                biases = tf.get_variable('biases')
+
+                h, w, c, = inputs.shape[1:]
+                size = int(h) * int(w) * int(c)
+                inputs = tf.reshape(inputs, [-1, size])
+                inputs = tf.matmul(inputs, weights)
+                inputs = tf.nn.bias_add(inputs, biases)
+                
+                if var_list is not None and weights not in var_list:
+                    var_list.append(weights)
+                if var_list is not None and biases not in var_list:
+                    var_list.append(biases)
+                    
+                return inputs
+                
 
 if __name__ == '__main__':
 
     sess = tf.Session()
 
-    video_length = 10
+    video_length = 20
     x = tf.placeholder(tf.float32, [None, video_length, 112, 112], name='inputs')
     x_len = tf.placeholder(tf.float32, [None], name='inputs_len')
     zeros = tf.placeholder(tf.float32, [video_length], name='inputs_len')
