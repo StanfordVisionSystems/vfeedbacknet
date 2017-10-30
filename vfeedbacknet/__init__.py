@@ -12,8 +12,10 @@ import vfeedbacknet.vfeedbacknet_lossfunctions
 import vfeedbacknet.vfeedbacknet_model1 as vfeedbacknet_model1 # VGG16 + 2 x convLSTM
 import vfeedbacknet.vfeedbacknet_model2 as vfeedbacknet_model2 # VGG16 + deconv feedback (no fine tuning on pretrained VGG layers)
 import vfeedbacknet.vfeedbacknet_model3 as vfeedbacknet_model3 # VGG16 + deconv feedback (with some fine tuning on pretrained VGG layers)
-import vfeedbacknet.vfeedbacknet_model4 as vfeedbacknet_model4 # TODO(jemmons)
-import vfeedbacknet.vfeedbacknet_model5 as vfeedbacknet_model5 # Same as model2, but with three feedback layers instead of two
+import vfeedbacknet.vfeedbacknet_model4 as vfeedbacknet_model4 
+import vfeedbacknet.vfeedbacknet_model5 as vfeedbacknet_model5 
+import vfeedbacknet.vfeedbacknet_model6 as vfeedbacknet_model6 
+import vfeedbacknet.vfeedbacknet_model7 as vfeedbacknet_model7 
 
 # legacy models
 # import vfeedbacknet.legacy.convLSTM
