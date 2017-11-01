@@ -143,6 +143,9 @@ def main(args):
         'vfeedbacknet_model8' : lambda : v.vfeedbacknet_model8.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
                                                                      train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
                                                                      weights_filename='/home/jemmons/vfeedbacknet_base_weights.npz'),
+        'vfeedbacknet_model9' : lambda : v.vfeedbacknet_model8.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
+                                                                     train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
+                                                                     weights_filename='/home/jemmons/vfeedbacknet_base_weights.npz'),
     }
 
     model = None
