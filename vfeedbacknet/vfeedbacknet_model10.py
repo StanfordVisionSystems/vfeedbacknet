@@ -11,7 +11,7 @@ class Model:
     TODO(jremmons) add description
     '''
 
-    model_name = 'model9'
+    model_name = 'model10'
     
     def __init__(self, sess, num_classes, batch_size,
                  train_featurizer='FINE_TUNE', train_main_model='FINE_TUNE', train_fc='FINE_TUNE',
@@ -51,8 +51,8 @@ class Model:
                     regularizer = None # tf.contrib.layers.l2_regularizer(scale=0.25)
                     initializer = tf.contrib.layers.xavier_initializer()
 
-                    kernel = tf.get_variable('kernel', shape=[3, 3, 128, 128], dtype=tf.float32, regularizer=regularizer, initializer=initializer)
-                    biases = tf.get_variable('biases', shape=[128], dtype=tf.float32, regularizer=regularizer, initializer=initializer)
+                    kernel = tf.get_variable('kernel', shape=[3, 3, 512, 512], dtype=tf.float32, regularizer=regularizer, initializer=initializer)
+                    biases = tf.get_variable('biases', shape=[512], dtype=tf.float32, regularizer=regularizer, initializer=initializer)
 
 
             with tf.variable_scope('convlstm1'):
@@ -64,7 +64,7 @@ class Model:
 
                         n = 512
                         m = 4*n
-                        input_size = [7, 7, n]
+                        input_size = [3, 3, n]
                         kernel2d_size = [3, 3]
                         kernel_size = kernel2d_size + [2*n] + [m] 
 
@@ -75,7 +75,7 @@ class Model:
                             W_co = tf.get_variable('W_co', input_size, initializer=initializer, regularizer=regularizer)
                             bias = tf.get_variable('bias', [m], initializer=tf.zeros_initializer(), regularizer=regularizer)
                             
-                self.convLSTMCell1 = ConvLSTMCell([7, 7], n, [3, 3])
+                self.convLSTMCell1 = ConvLSTMCell(input_size[:2], n, [3, 3])
 
             with tf.variable_scope('convlstm2'):
                 with tf.variable_scope('rnn'):
@@ -86,7 +86,7 @@ class Model:
 
                         n = 512
                         m = 4*n
-                        input_size = [7, 7, n]
+                        input_size = [3, 3, n]
                         kernel2d_size = [3, 3]
                         kernel_size = kernel2d_size + [2*n] + [m] 
 
@@ -97,7 +97,7 @@ class Model:
                             W_co = tf.get_variable('W_co', input_size, initializer=initializer, regularizer=regularizer)
                             bias = tf.get_variable('bias', [m], initializer=tf.zeros_initializer(), regularizer=regularizer)
                             
-                self.convLSTMCell1 = ConvLSTMCell([7, 7], n, [3, 3])
+                self.convLSTMCell1 = ConvLSTMCell(input_size[:2], n, [3, 3])
                 
             with tf.variable_scope('feedback_block1'): 
                     
@@ -243,8 +243,8 @@ class Model:
         inputs = [ self.vfeedbacknet_base.vgg16_layer4(inp, var_list=self.featurizer_variables) for inp in inputs ]
         ModelLogger.log('vgg-layer4', inputs)
         
-        # inputs = [ self.conv_layer(inp, var_list=self.main_model_variables) for inp in inputs ]
-        # ModelLogger.log('conv', inputs)
+        inputs = [ self.conv_layer(inp, var_list=self.main_model_variables) for inp in inputs ]
+        ModelLogger.log('conv', inputs)
 
         ## main model ##
         logits = []

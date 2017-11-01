@@ -143,9 +143,18 @@ def main(args):
         'vfeedbacknet_model8' : lambda : v.vfeedbacknet_model8.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
                                                                      train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
                                                                      weights_filename='/home/jemmons/vfeedbacknet_base_weights.npz'),
-        'vfeedbacknet_model9' : lambda : v.vfeedbacknet_model8.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
+        'vfeedbacknet_model9' : lambda : v.vfeedbacknet_model9.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
                                                                      train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
                                                                      weights_filename='/home/jemmons/vfeedbacknet_base_weights.npz'),
+        'vfeedbacknet_model10' : lambda : v.vfeedbacknet_model10.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
+                                                                       train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
+                                                                       weights_filename='/home/jemmons/vfeedbacknet_base_weights.npz'),
+        'vfeedbacknet_model11' : lambda : v.vfeedbacknet_model11.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
+                                                                       train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
+                                                                       weights_filename='/home/jemmons/vfeedbacknet_base_weights.npz'),
+        'vfeedbacknet_model12' : lambda : v.vfeedbacknet_model12.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
+                                                                       train_featurizer='FINE_TUNE', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
+                                                                       weights_filename='/home/jemmons/vfeedbacknet_base_weights.npz'),
     }
 
     model = None

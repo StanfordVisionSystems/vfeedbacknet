@@ -11,7 +11,7 @@ class Model:
     TODO(jremmons) add description
     '''
 
-    model_name = 'model9'
+    model_name = 'model11'
     
     def __init__(self, sess, num_classes, batch_size,
                  train_featurizer='FINE_TUNE', train_main_model='FINE_TUNE', train_fc='FINE_TUNE',
@@ -51,8 +51,8 @@ class Model:
                     regularizer = None # tf.contrib.layers.l2_regularizer(scale=0.25)
                     initializer = tf.contrib.layers.xavier_initializer()
 
-                    kernel = tf.get_variable('kernel', shape=[3, 3, 128, 128], dtype=tf.float32, regularizer=regularizer, initializer=initializer)
-                    biases = tf.get_variable('biases', shape=[128], dtype=tf.float32, regularizer=regularizer, initializer=initializer)
+                    kernel = tf.get_variable('kernel', shape=[3, 3, 512, 512], dtype=tf.float32, regularizer=regularizer, initializer=initializer)
+                    biases = tf.get_variable('biases', shape=[512], dtype=tf.float32, regularizer=regularizer, initializer=initializer)
 
 
             with tf.variable_scope('convlstm1'):
@@ -75,7 +75,7 @@ class Model:
                             W_co = tf.get_variable('W_co', input_size, initializer=initializer, regularizer=regularizer)
                             bias = tf.get_variable('bias', [m], initializer=tf.zeros_initializer(), regularizer=regularizer)
                             
-                self.convLSTMCell1 = ConvLSTMCell([7, 7], n, [3, 3])
+                self.convLSTMCell1 = ConvLSTMCell(input_size[:2], n, [3, 3])
 
             with tf.variable_scope('convlstm2'):
                 with tf.variable_scope('rnn'):
@@ -97,14 +97,15 @@ class Model:
                             W_co = tf.get_variable('W_co', input_size, initializer=initializer, regularizer=regularizer)
                             bias = tf.get_variable('bias', [m], initializer=tf.zeros_initializer(), regularizer=regularizer)
                             
-                self.convLSTMCell1 = ConvLSTMCell([7, 7], n, [3, 3])
+                self.convLSTMCell1 = ConvLSTMCell(input_size[:2], n, [3, 3])
                 
             with tf.variable_scope('feedback_block1'): 
                     
                 regularizer = None # tf.contrib.layers.l2_regularizer(scale=0.25)
                 initializer = tf.contrib.layers.xavier_initializer()
 
-                kernel_size = [3, 3, 128, 128]
+                input_size = [7, 7]
+                kernel_size = [3, 3, 512, 512]
 
                 W_xf = tf.get_variable('W_xf', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer)
                 W_xi = tf.get_variable('W_xi', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer)
@@ -116,9 +117,9 @@ class Model:
                 W_hc = tf.get_variable('W_hc', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer)
                 W_ho = tf.get_variable('W_ho', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer)
 
-                W_cf = tf.get_variable('W_cf', [14,14,kernel_size[-1]], dtype=tf.float32, initializer=initializer, regularizer=regularizer)
-                W_ci = tf.get_variable('W_ci', [14,14,kernel_size[-1]], dtype=tf.float32, initializer=initializer, regularizer=regularizer)
-                W_co = tf.get_variable('W_co', [14,14,kernel_size[-1]], dtype=tf.float32, initializer=initializer, regularizer=regularizer)
+                W_cf = tf.get_variable('W_cf', [input_size[0],input_size[1],kernel_size[-1]], dtype=tf.float32, initializer=initializer, regularizer=regularizer)
+                W_ci = tf.get_variable('W_ci', [input_size[0],input_size[1],kernel_size[-1]], dtype=tf.float32, initializer=initializer, regularizer=regularizer)
+                W_co = tf.get_variable('W_co', [input_size[0],input_size[1],kernel_size[-1]], dtype=tf.float32, initializer=initializer, regularizer=regularizer)
 
                 b_f = tf.get_variable('b_f', [kernel_size[-1]], dtype=tf.float32, initializer=tf.zeros_initializer(), regularizer=regularizer)
                 b_i = tf.get_variable('b_i', [kernel_size[-1]], dtype=tf.float32, initializer=tf.zeros_initializer(), regularizer=regularizer)
@@ -130,7 +131,8 @@ class Model:
                 regularizer = None # tf.contrib.layers.l2_regularizer(scale=0.25)
                 initializer = tf.contrib.layers.xavier_initializer()
 
-                kernel_size = [3, 3, 128, 128]
+                input_size = [7, 7]
+                kernel_size = [3, 3, 512, 512]
 
                 W_xf = tf.get_variable('W_xf', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer)
                 W_xi = tf.get_variable('W_xi', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer)
@@ -142,9 +144,9 @@ class Model:
                 W_hc = tf.get_variable('W_hc', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer)
                 W_ho = tf.get_variable('W_ho', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer)
 
-                W_cf = tf.get_variable('W_cf', [14,14,kernel_size[-1]], dtype=tf.float32, initializer=initializer, regularizer=regularizer)
-                W_ci = tf.get_variable('W_ci', [14,14,kernel_size[-1]], dtype=tf.float32, initializer=initializer, regularizer=regularizer)
-                W_co = tf.get_variable('W_co', [14,14,kernel_size[-1]], dtype=tf.float32, initializer=initializer, regularizer=regularizer)
+                W_cf = tf.get_variable('W_cf', [input_size[0],input_size[1],kernel_size[-1]], dtype=tf.float32, initializer=initializer, regularizer=regularizer)
+                W_ci = tf.get_variable('W_ci', [input_size[0],input_size[1],kernel_size[-1]], dtype=tf.float32, initializer=initializer, regularizer=regularizer)
+                W_co = tf.get_variable('W_co', [input_size[0],input_size[1],kernel_size[-1]], dtype=tf.float32, initializer=initializer, regularizer=regularizer)
 
                 b_f = tf.get_variable('b_f', [kernel_size[-1]], dtype=tf.float32, initializer=tf.zeros_initializer(), regularizer=regularizer)
                 b_i = tf.get_variable('b_i', [kernel_size[-1]], dtype=tf.float32, initializer=tf.zeros_initializer(), regularizer=regularizer)
@@ -252,9 +254,9 @@ class Model:
         feedback_outputs = None
 
         # "feedback" 1
-        # feedback_outputs11 = [ self.feedback_block1(inp, var_list=self.main_model_variables) for inp in featurizer_outputs ]
-        # inputs = list(map(lambda x : x['hidden_state'], feedback_outputs11))
-        # ModelLogger.log('feedback_block1', inputs)
+        feedback_outputs11 = [ self.feedback_block1(inp, var_list=self.main_model_variables) for inp in featurizer_outputs ]
+        inputs = list(map(lambda x : x['hidden_state'], feedback_outputs11))
+        ModelLogger.log('feedback_block1', inputs)
 
         # feedback_outputs21 = [ self.feedback_block2(inp, var_list=self.main_model_variables) for inp in featurizer_outputs ]
         # inputs = list(map(lambda x : x['hidden_state'], feedback_outputs21))
@@ -266,7 +268,7 @@ class Model:
         #                           padding='VALID') for inp in inputs ]
         # ModelLogger.log('max_pool', inputs)                   
 
-        inputs = self.convLSTM_layer1(featurizer_outputs, inputs_sequence_length, var_list=self.main_model_variables)
+        inputs = self.convLSTM_layer1(inputs, inputs_sequence_length, var_list=self.main_model_variables)
         ModelLogger.log('convLSTM1', inputs)
         
         inputs = self.convLSTM_layer2(inputs, inputs_sequence_length, var_list=self.main_model_variables)
@@ -281,9 +283,9 @@ class Model:
 
         
         # "feedback" 2
-        # feedback_outputs12 = [ self.feedback_block1(inp, state=state, var_list=self.main_model_variables) for inp,state in zip(featurizer_outputs, feedback_outputs11) ]
-        # inputs = list(map(lambda x : x['hidden_state'], feedback_outputs12))
-        # ModelLogger.log('feedback_block1', inputs)
+        feedback_outputs12 = [ self.feedback_block1(inp, state=state, var_list=self.main_model_variables) for inp,state in zip(featurizer_outputs, feedback_outputs11) ]
+        inputs = list(map(lambda x : x['hidden_state'], feedback_outputs12))
+        ModelLogger.log('feedback_block1', inputs)
         
         # feedback_outputs22 = [ self.feedback_block2(inp, state=state, var_list=self.main_model_variables) for inp,state in zip(featurizer_outputs, feedback_outputs21) ]
         # inputs = list(map(lambda x : x['hidden_state'], feedback_outputs22))
@@ -295,7 +297,7 @@ class Model:
         #                           padding='VALID') for inp in inputs ]
         # ModelLogger.log('max_pool', inputs)                   
 
-        inputs = self.convLSTM_layer1(featurizer_outputs, inputs_sequence_length, var_list=self.main_model_variables)
+        inputs = self.convLSTM_layer1(inputs, inputs_sequence_length, var_list=self.main_model_variables)
         ModelLogger.log('convLSTM1', inputs)
         
         inputs = self.convLSTM_layer2(inputs, inputs_sequence_length, var_list=self.main_model_variables)
@@ -310,9 +312,9 @@ class Model:
 
 
         # "feedback" 3
-        # feedback_outputs13 = [ self.feedback_block1(inp, state=state, var_list=self.main_model_variables) for inp,state in zip(featurizer_outputs, feedback_outputs12) ]
-        # inputs = list(map(lambda x : x['hidden_state'], feedback_outputs13))
-        # ModelLogger.log('feedback_block1', inputs)
+        feedback_outputs13 = [ self.feedback_block1(inp, state=state, var_list=self.main_model_variables) for inp,state in zip(featurizer_outputs, feedback_outputs12) ]
+        inputs = list(map(lambda x : x['hidden_state'], feedback_outputs13))
+        ModelLogger.log('feedback_block1', inputs)
         
         # feedback_outputs23 = [ self.feedback_block2(inp, state=state, var_list=self.main_model_variables) for inp,state in zip(featurizer_outputs, feedback_outputs22) ]
         # inputs = list(map(lambda x : x['hidden_state'], feedback_outputs23))
@@ -324,7 +326,7 @@ class Model:
         #                           padding='VALID') for inp in inputs ]
         # ModelLogger.log('max_pool', inputs)                   
 
-        inputs = self.convLSTM_layer1(featurizer_outputs, inputs_sequence_length, var_list=self.main_model_variables)
+        inputs = self.convLSTM_layer1(inputs, inputs_sequence_length, var_list=self.main_model_variables)
         ModelLogger.log('convLSTM1', inputs)
         
         inputs = self.convLSTM_layer2(inputs, inputs_sequence_length, var_list=self.main_model_variables)
