@@ -105,16 +105,28 @@ def main(args):
     logging.info('building model: {}'.format(args.model_name))
     sess = tf.Session()
 
+    # x_input = tf.placeholder(tf.float32,
+    #                          [args.train_batch_size, args.video_length,
+    #                           args.video_height, args.video_width],
+    #                          name='x_input')
+    # x_length = tf.placeholder(tf.int32, [args.train_batch_size,], name='x_length')
+    
+    # logging.debug('creating model with {} outputs'.format(len(labels_num2str)))
+    # y_label = tf.placeholder(tf.float32, [args.train_batch_size, len(labels_num2str)], name='y_label')
+    
+    # y_zeros = tf.placeholder(tf.float32, [args.train_batch_size,],  name='y_zeros')
+    # zeros = np.zeros((args.train_batch_size,))
+
     x_input = tf.placeholder(tf.float32,
-                             [args.train_batch_size, args.video_length,
+                             [None, args.video_length,
                               args.video_height, args.video_width],
                              name='x_input')
-    x_length = tf.placeholder(tf.int32, [args.train_batch_size,], name='x_length')
+    x_length = tf.placeholder(tf.int32, [None,], name='x_length')
     
     logging.debug('creating model with {} outputs'.format(len(labels_num2str)))
-    y_label = tf.placeholder(tf.float32, [args.train_batch_size, len(labels_num2str)], name='y_label')
+    y_label = tf.placeholder(tf.float32, [None, len(labels_num2str)], name='y_label')
     
-    y_zeros = tf.placeholder(tf.float32, [args.train_batch_size,],  name='y_zeros')
+    y_zeros = tf.placeholder(tf.float32, [None,],  name='y_zeros')
     zeros = np.zeros((args.train_batch_size,))
 
     assert args.train_batch_size % args.num_gpus == 0, 'train_batch_size must be divisible by num_gpus'
@@ -156,6 +168,9 @@ def main(args):
                                                                        train_featurizer='FINE_TUNE', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
                                                                        weights_filename='/home/jemmons/vfeedbacknet_base_weights.npz'),
         'vfeedbacknet_model13' : lambda : v.vfeedbacknet_model13.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
+                                                                       train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
+                                                                       weights_filename='/home/jemmons/vfeedbacknet_base_weights.npz'),
+        'vfeedbacknet_model14' : lambda : v.vfeedbacknet_model14.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
                                                                        train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
                                                                        weights_filename='/home/jemmons/vfeedbacknet_base_weights.npz'),
     }

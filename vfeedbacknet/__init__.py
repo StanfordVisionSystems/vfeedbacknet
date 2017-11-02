@@ -22,6 +22,7 @@ import vfeedbacknet.vfeedbacknet_model10 as vfeedbacknet_model10
 import vfeedbacknet.vfeedbacknet_model11 as vfeedbacknet_model11
 import vfeedbacknet.vfeedbacknet_model12 as vfeedbacknet_model12
 import vfeedbacknet.vfeedbacknet_model13 as vfeedbacknet_model13
+import vfeedbacknet.vfeedbacknet_model14 as vfeedbacknet_model14
 
 # legacy models
 # import vfeedbacknet.legacy.convLSTM
