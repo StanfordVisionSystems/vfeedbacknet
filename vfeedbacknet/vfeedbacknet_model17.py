@@ -234,6 +234,11 @@ class Model:
         logging.debug('--- begin variable initialization (vfeedbacknet) ---')
         var_list = self.get_variables()
 
+        if self.weights is not None:
+            logging.debug('weights stored in weights file:')
+            for key in self.weights.keys():
+                logging.debug(key)
+        
         self.print_variables()
         print('Number of variables in model: {}'.format( len(var_list) ))
         
