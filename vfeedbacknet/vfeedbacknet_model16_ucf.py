@@ -207,7 +207,7 @@ class Model:
 
             with tf.variable_scope('fc'):
 
-                regularizer = None # tf.contrib.layers.l2_regularizer(scale=0.25)
+                regularizer = tf.contrib.layers.l2_regularizer(scale=0.5)
                 initializer = tf.contrib.layers.xavier_initializer()
 
                 trainable = False if self.train_fc == 'NO' else True

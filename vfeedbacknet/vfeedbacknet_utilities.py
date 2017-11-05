@@ -140,7 +140,7 @@ def pool_init(shared_mem_):
     shared_mem = shared_mem_
 
 def prepare_video(args):
-    data_root, video_path, video_width, video_height, video_length, video_downsample_ratio, video_index, batch_size, is_training = args
+    data_root, video_path, video_width, video_height, video_length, video_downsample_ratio, video_index, batch_size, is_training, is_ucf101 = args
 
     video_mem = np.frombuffer(shared_mem, np.ctypeslib.ctypes.c_float)
     video_mem = video_mem.reshape((batch_size, video_length, video_height, video_width))
@@ -149,7 +149,7 @@ def prepare_video(args):
     frames = sorted( os.listdir(pathgen('')) )
 
     flip_frames = bool(random.getrandbits(1)) and is_training and False # no fliping while training on 20bn
-    #flip_frames = bool(random.getrandbits(1)) and is_training
+    flip_frames = bool(random.getrandbits(1)) and is_ucf101
     crop_frames = is_training
     add_noise = bool(random.getrandbits(1)) and is_training
 
@@ -204,9 +204,9 @@ def prepare_video(args):
         
     return { 'num_frames' : num_frames, 'video_path' : video_path }
 
-def load_videos(pool, data_root, data_labels, video_paths, video_width, video_height, video_length, video_downsample_ratio, is_training, batch_size, shared_mem):
+def load_videos(pool, data_root, data_labels, video_paths, video_width, video_height, video_length, video_downsample_ratio, is_training, batch_size, shared_mem, is_ucf101=False):
 
-    prepare_video_jobs = [ (data_root, video_paths[i], video_width, video_height, video_length, video_downsample_ratio, i, batch_size, is_training) for i in range(batch_size) ]
+    prepare_video_jobs = [ (data_root, video_paths[i], video_width, video_height, video_length, video_downsample_ratio, i, batch_size, is_training,  is_ucf101) for i in range(batch_size) ]
     prepared_videos = pool.map(prepare_video, prepare_video_jobs)
 
     video_numframes = np.zeros((batch_size,), dtype=np.int32)
