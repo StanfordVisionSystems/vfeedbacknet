@@ -183,7 +183,7 @@ def main(args):
                                                                          train_featurizer='FINE_TUNE', train_main_model='NO', train_fc='NO',
                                                                          weights_filename='/mnt/data/jemmons/vfeedbacknet-results/20bn/vfeedbacknet_model16.gce/model_weights-epoch9-step8719.npz'),
         'vfeedbacknet_model16.ucf' : lambda : v.vfeedbacknet_model16.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
-                                                                         train_featurizer='NO', train_main_model='NO', train_fc='FINE_TUNE',
+                                                                         train_featurizer='NO', train_main_model='NO', train_fc='FROM_SCRATCH',
                                                                          weights_filename='/mnt/data/jemmons/vfeedbacknet-results/20bn/vfeedbacknet_model16.gce/model_weights-epoch9-step8719.npz'),
         'vfeedbacknet_model17' : lambda : v.vfeedbacknet_model17.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
                                                                        train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
@@ -573,31 +573,31 @@ if __name__ == '__main__':
                         default=False)
 
     parser.add_argument('--video_width', type=int, nargs=None,
-                        help='the width to rescale all videos (official run: 176)',
+                        help='the width to rescale all videos (official run: 112)',
                         default=112)
 
     parser.add_argument('--video_height', type=int, nargs=None,
-                        help='the height to rescale all videos (official run: XXXX)',
+                        help='the height to rescale all videos (official run: 112)',
                         default=112)
 
     parser.add_argument('--video_length', type=int, nargs=None,
-                        help='the num frames to truncate all videos (official run: XXXX)',
+                        help='the num frames to truncate all videos (official run: 20)',
                         default=20)
     
     parser.add_argument('--video_downsample_ratio', type=int, nargs=None,
-                        help='the temporal downsampling ratio to use all the videos (official run: XXXX)',
+                        help='the temporal downsampling ratio to use all the videos (official run: 5 for ucf-101, 2 for 20bn-jester)',
                         default=5)
     
     parser.add_argument('--num_epoch', type=int, nargs=None,
-                        help='number of training epochs over the whole dataset (official run: XXXX)',
+                        help='number of training epochs over the whole dataset (official run: 1024)',
                         default=1024)
 
     parser.add_argument('--last_loss_multipler', type=float, nargs=None,
-                        help='the multipler to apply to the loss on the last frame of the video (official run: XXXX)',
+                        help='the multipler to apply to the loss on the last frame of the video (official run: 10)',
                         default=10)
 
     parser.add_argument('--learning_rate_init', type=float, nargs=None,
-                        help='initial vlaue for learning rate for the optimization (official run: XXXX)',
+                        help='initial vlaue for learning rate for the optimization (official run: 0.1)',
                         default=1e-1)
 
     parser.add_argument('--learning_rate_decay', type=float, nargs=None,
@@ -605,23 +605,23 @@ if __name__ == '__main__':
                         default=0.995)
 
     parser.add_argument('--learning_rate_min', type=float, nargs=None,
-                        help='minimum learning rate for the optimization (official run: XXXX)',
-                        default=1e-3)
+                        help='minimum learning rate for the optimization (official run: 1e-4)',
+                        default=1e-4)
 
     parser.add_argument('--global_step_init', type=float, nargs=None,
-                        help='the initial global training step count (official run: XXXX)',
+                        help='the initial global training step count (official run: None)',
                         default=None)
     
     parser.add_argument('--train_batch_size', type=int, nargs=None,
-                        help='training batch size; num videos per batch (official run: XXXX)',
-                        default=16)
+                        help='training batch size; num videos per batch (official run: 32)',
+                        default=32)
 
     parser.add_argument('--prefetch_batch_size', type=int, nargs=None,
-                        help='number of videos to prefetch (official run: XXXX)',
+                        help='number of videos to prefetch (official run: 1024)',
                         default=1024)
 
     parser.add_argument('--validation_interval', type=int, nargs=None,
-                        help='number of training batches to process before printing validation error (official run: XXXX)',
+                        help='number of training batches to process before printing validation error (official run: 32)',
                         default=32)
 
     
