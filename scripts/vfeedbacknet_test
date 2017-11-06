@@ -298,6 +298,11 @@ if __name__ == '__main__':
                         action='store_true',
                         default=False)
 
+    parser.add_argument('--competition',
+                        help='output for 20bn competition',
+                        action='store_true',
+                        default=False)
+
     # tuning parameters
     parser.add_argument('--overfit',
                         help='overfit on a small chunk [64 data points] of data (official run: False)',
