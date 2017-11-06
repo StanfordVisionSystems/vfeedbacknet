@@ -162,7 +162,7 @@ def prepare_video(args):
         stride_offset = random.choice(range(video_downsample_ratio))
         
     num_frames = min(len(frames)//video_downsample_ratio, video_length)
-    assert(num_frames != 0)
+    assert num_frames != 0, 'num frames in video cannot be 0: {}'.format(video_path)
 
     x1 = random.choice(list(range(20)))
     y1 = random.choice(list(range(20)))
