@@ -27,6 +27,7 @@ import vfeedbacknet.vfeedbacknet_model15 as vfeedbacknet_model15
 import vfeedbacknet.vfeedbacknet_model16 as vfeedbacknet_model16
 import vfeedbacknet.vfeedbacknet_model17 as vfeedbacknet_model17
 import vfeedbacknet.vfeedbacknet_model16_ucf as vfeedbacknet_model16_ucf
+import vfeedbacknet.vfeedbacknet_model16_ucf1 as vfeedbacknet_model16_ucf1
 import vfeedbacknet.vfeedbacknet_model18 as vfeedbacknet_model18
 import vfeedbacknet.vfeedbacknet_model19 as vfeedbacknet_model19
 import vfeedbacknet.vfeedbacknet_model20 as vfeedbacknet_model20
