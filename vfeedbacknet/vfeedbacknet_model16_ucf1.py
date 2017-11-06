@@ -207,7 +207,7 @@ class Model:
 
             with tf.variable_scope('fc'):
 
-                regularizer = tf.contrib.layers.l2_regularizer(scale=0.5)
+                #regularizer = tf.contrib.layers.l2_regularizer(scale=0.5)
                 initializer = tf.contrib.layers.xavier_initializer()
 
                 trainable = False if self.train_fc == 'NO' else True
@@ -661,13 +661,13 @@ if __name__ == '__main__':
     logits = model(x, x_len)
     ModelLogger.log('logits', logits)
 
-    model.initialize_variables()
-    model.export_variables('/tmp/weights.npz')
+    # model.initialize_variables()
+    # model.export_variables('/tmp/weights.npz')
     #model.print_variables()
     
     # print out the model
-    # graph = tf.get_default_graph()    
-    # for op in graph.get_operations():
-    #     print((op.name))
+    graph = tf.get_default_graph()    
+    for op in graph.get_operations():
+        print((op.name))
 
     
