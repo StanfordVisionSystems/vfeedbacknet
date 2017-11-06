@@ -206,6 +206,9 @@ def main(args):
         'vfeedbacknet_model20.ucf' : lambda : v.vfeedbacknet_model20.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
                                                                            train_featurizer='NO', train_main_model='NO', train_fc='FROM_SCRATCH',
                                                                            weights_filename='/mnt/data/jemmons/vfeedbacknet-results/20bn/vfeedbacknet_model20.gce/model_weights-epoch4-step8207.npz'), # acheived 71.2% on 20bn
+        'vfeedbacknet_model21' : lambda : v.vfeedbacknet_model21.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
+                                                                       train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
+                                                                       weights_filename='/home/jemmons/vfeedbacknet_base_weights.npz'),
     }
 
     model = None

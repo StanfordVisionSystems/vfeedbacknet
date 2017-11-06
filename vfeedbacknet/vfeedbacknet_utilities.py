@@ -2,7 +2,8 @@ import numpy as np
 import multiprocessing as mp
 import os
 import random
-
+import sys
+                    
 import PIL
 from PIL import Image
 
@@ -45,7 +46,7 @@ class TrainingLogger:
     '''
 
     @staticmethod
-    def process_prediction(predictions, labels, lengths, losses=None):
+    def process_prediction(predictions, labels, lengths, losses=None, competition=False, competition_video_num=None, competition_labels=None):
 
         batch_size = predictions.shape[0]
         feedback_iterations = predictions.shape[1]
@@ -106,6 +107,10 @@ class TrainingLogger:
                 fmax5_str = list(map(lambda x: str(x).zfill(2), analysis['frame_labelmax5'][-1]))
                 tl = str(analysis['video_labelnum']).zfill(2)
 
+                if competition and feedback_idx == analysis_per_feedback_len-1:
+                    sys.stdout.write('{};{}\n'.format(competition_video_num[video_idx], competition_labels[analysis['frame_labelmax'][-1]]))
+                    sys.stdout.flush()
+                    
                 log_str = '{}                              ({}) {}'.format('T' if tl==fmax_str[-1] else 'F', fmax5_str, fmax_str)
                 if first:
                     log_str = '{} true_label,prediction: {},{} ({}) {}'.format('T' if tl==fmax_str[-1] else 'F', tl, fmax_str[-1], fmax5_str, fmax_str)

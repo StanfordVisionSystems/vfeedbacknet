@@ -30,6 +30,7 @@ import vfeedbacknet.vfeedbacknet_model16_ucf as vfeedbacknet_model16_ucf
 import vfeedbacknet.vfeedbacknet_model18 as vfeedbacknet_model18
 import vfeedbacknet.vfeedbacknet_model19 as vfeedbacknet_model19
 import vfeedbacknet.vfeedbacknet_model20 as vfeedbacknet_model20
+import vfeedbacknet.vfeedbacknet_model21 as vfeedbacknet_model21
 
 # legacy models
 # import vfeedbacknet.legacy.convLSTM
