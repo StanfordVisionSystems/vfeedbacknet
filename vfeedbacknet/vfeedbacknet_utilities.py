@@ -151,8 +151,13 @@ def prepare_video(args):
     video_mem = video_mem.reshape((batch_size, video_length, video_height, video_width))
 
     pathgen = lambda x : os.path.join(data_root, str(video_path), x)
-    frames = sorted( os.listdir(pathgen('')) )
-
+    
+    frames = None
+    if os.path.isdir(pathgen('')):
+        frames = sorted( os.listdir(pathgen('')) )
+    else:
+        frames = [ os.path.join(data_root, str(video_path)) ]
+        
     flip_frames = bool(random.getrandbits(1)) and is_training and False # no fliping while training on 20bn
     flip_frames = bool(random.getrandbits(1)) and is_ucf101
     crop_frames = is_training

@@ -31,7 +31,7 @@ def main(args):
     # open and parse the data and label files
     ############################################################################
     logging.info('loading input files')
-    assert args.ucf101 ^ args.twentybn, 'you must specify exactly one dataset to use for training (XOR)'
+    assert args.ucf101 ^ args.twentybn ^ args.imagenet, 'you must specify exactly one dataset to use for training (XOR)'
 
     with open(args.label_file, 'r') as csvfile:
         labels_num2str = None
@@ -45,6 +45,10 @@ def main(args):
             reader = csv.reader(csvfile, delimiter=';')
             labels_num2str = [ item[0].lower() for item in reader ]
             labels_str2num =  { label : idx  for idx,label in zip(range(len(labels_num2str)), labels_num2str) }
+        elif args.imagenet:
+            reader = csv.reader(csvfile, delimiter=' ')
+            labels_num2str = [ item[0].lower() for item in reader ]
+            labels_str2num =  { label : idx  for idx,label in zip(range(len(labels_num2str)), labels_num2str) }            
             
     with open(args.validation_file, 'r') as csvfile:
         validation_video_paths = None
@@ -56,8 +60,12 @@ def main(args):
             validation_labels = { item : labels_str2num[item.split('/')[0]] for item in validation_video_paths } 
         elif args.twentybn:
             reader = csv.reader(csvfile, delimiter=';')
-            validation_labels = { int(item[0]) : labels_str2num[item[1].lower()] for item in reader }; 
-            validation_video_paths = np.asarray( list(validation_labels.keys()) )
+            validation_labels = { int(item[0]) : labels_str2num[item[1].lower()] for item in reader }
+            validation_video_paths = np.asarray( list(validation_labels.keys()) ) 
+        elif args.imagenet:
+            reader = csv.reader(csvfile, delimiter=' ')
+            validation_labels = { item[0] : labels_str2num[item[0].split('/')[1].lower()] for item in reader }
+            validation_video_paths = np.asarray( list(validation_labels.keys()) )             
             
         random.seed(123) # shuffle with this particular seed to help with debugging
         random.shuffle(validation_video_paths)
@@ -81,8 +89,12 @@ def main(args):
             data_labels = { item : labels_str2num[item.split('/')[0]] for item in data_video_paths } 
         elif args.twentybn:
             reader = csv.reader(csvfile, delimiter=';')
-            data_labels = { int(item[0]) : labels_str2num[item[1].lower()] for item in reader }; 
+            data_labels = { int(item[0]) : labels_str2num[item[1].lower()] for item in reader }
             data_video_paths = np.asarray( list(data_labels.keys()) )
+        elif args.imagenet:
+            reader = csv.reader(csvfile, delimiter=' ')
+            data_labels = { item[0] : labels_str2num[item[0].split('/')[1].lower()] for item in reader } 
+            data_video_paths = np.asarray( list(data_labels.keys()) )             
 
         random.seed(123) # shuffle with this particular seed to help with debugging
         random.shuffle(data_video_paths)
@@ -93,7 +105,7 @@ def main(args):
         elif args.overfitt:
             logging.info('OVERFITTING!')
             data_video_paths = data_video_paths[:args.prefetch_batch_size] # force overfitting
-            
+
     # local_device_protos = device_lib.list_local_devices()
     # available_gpus = [x.name for x in local_device_protos if x.device_type == 'GPU']
     # num_gpus = len(available_gpus)
@@ -129,7 +141,8 @@ def main(args):
     y_zeros = tf.placeholder(tf.float32, [None,],  name='y_zeros')
     zeros = np.zeros((args.train_batch_size,))
 
-    assert args.train_batch_size % args.num_gpus == 0, 'train_batch_size must be divisible by num_gpus'
+    assert args.num_gpus == 0 or args.train_batch_size % args.num_gpus == 0, 'train_batch_size must be divisible by num_gpus'
+
     model_generator_dict = {
         'vfeedbacknet_model1' : lambda : v.vfeedbacknet_model1.VFeedbackNetModel1(sess, len(labels_num2str),
                                                                                   train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
@@ -212,14 +225,30 @@ def main(args):
         'vfeedbacknet_model21' : lambda : v.vfeedbacknet_model21.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
                                                                        train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
                                                                        weights_filename='/home/jemmons/vfeedbacknet_base_weights.npz'),
+        'vfeedbacknet_videoLSTM_1' : lambda : v.vfeedbacknet_videoLSTM_1.Model(sess, len(labels_num2str),
+                                                                               train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
+                                                                               weights_filename='/home/jemmons/vfeedbacknet_base_weights.npz'),
+        'vfeedbacknet_videoLSTM_2' : lambda : v.vfeedbacknet_videoLSTM_2.Model(sess, len(labels_num2str),
+                                                                               train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
+                                                                               weights_filename='/home/jemmons/vfeedbacknet_base_weights.npz'),
+        # 'vfeedbacknet_videoLSTM_2.ucf' : lambda : v.vfeedbacknet_videoLSTM_2.Model(sess, len(labels_num2str),
+        #                                                                            train_featurizer='NO', train_main_model='NO', train_fc='FROM_SCRATCH',
+        #                                                                            weights_filename='/mnt/data/jemmons/vfeedbacknet-results/20bn/vfeedbacknet_model1.recheck3/model_weights-epoch3-step24639.npz'),
+        'vfeedbacknet_model1.ucf' : lambda : v.vfeedbacknet_model1.VFeedbackNetModel1(sess, len(labels_num2str),
+                                                                                      train_featurizer='NO', train_main_model='NO', train_fc='FROM_SCRATCH',
+                                                                                      weights_filename='/mnt/data/jemmons/vfeedbacknet-results/20bn/vfeedbacknet_model1.recheck3/model_weights-epoch3-step24639.npz'),
     }
 
     model = None
     with tf.device('/cpu:0'):
         model = model_generator_dict[args.model_name]()
 
-        x_input_split = tf.split(x_input, num_or_size_splits=args.num_gpus, axis=0)
-        x_length_split = tf.split(x_length, num_or_size_splits=args.num_gpus, axis=0)
+        x_input_split = x_input
+        x_length_split = x_length
+
+        if args.num_gpus > 0:
+            x_input_split = tf.split(x_input, num_or_size_splits=args.num_gpus, axis=0)
+            x_length_split = tf.split(x_length, num_or_size_splits=args.num_gpus, axis=0)
         
     logits_ = []
     for gpu_num in range(args.num_gpus):
@@ -229,6 +258,13 @@ def main(args):
             tmp = model(x_input_split[gpu_num], x_length_split[gpu_num])
             logits_.append( tmp )
 
+    assert len(logits_) == 0 or args.num_gpus > 0, 'this is likely a bug in the code...'
+
+    # fallback if CPU training is requested
+    if len(logits_) == 0:
+        with tf.device('/cpu:0'):
+            logits_ = [ model(x_input_split, x_length_split) ]
+            
     with tf.device('/cpu:0'):
         logging.debug('-- placing ops on cpu:0 --')
 
@@ -338,15 +374,15 @@ def main(args):
                     t2 = timeit.default_timer()
                     logging.debug('done! (load videos): {})'.format(t2-t1))
 
-                    # print('out a video to make sure things are working')
-                    # print(video_batch['video_labelnums'][0], labels_num2str[video_batch['video_labelnums'][0]])
-                    # print(np.min(video_batch['video_rawframes'][0,0,:,:]), np.max(video_batch['video_rawframes'][0,0,:,:]))
-                    # print(video_batch['video_rawframes'][0,0,:,:].dtype)
-                    # for i in range(args.video_length):
-                    #     frame = (np.clip(video_batch['video_rawframes'][0,i,:,:] + 116, 0, 255)).astype(dtype=np.uint8)
-                    #     im = Image.fromarray(frame)
-                    #     im.save('/home/jemmons/frame{}.jpg'.format(i))
-                    # return 
+                    print('out a video to make sure things are working')
+                    print(video_batch['video_labelnums'][0], labels_num2str[video_batch['video_labelnums'][0]])
+                    print(np.min(video_batch['video_rawframes'][0,0,:,:]), np.max(video_batch['video_rawframes'][0,0,:,:]))
+                    print(video_batch['video_rawframes'][0,0,:,:].dtype)
+                    for i in range(args.video_length):
+                        frame = (np.clip(video_batch['video_rawframes'][0,i,:,:] + 116, 0, 255)).astype(dtype=np.uint8)
+                        im = Image.fromarray(frame)
+                        im.save('/home/jemmons/frame{}.jpg'.format(i))
+                    return 
 
                     assert(not np.any(np.isnan(video_batch['video_rawframes'])))
 
@@ -571,6 +607,11 @@ if __name__ == '__main__':
                         action='store_true',
                         default=False)
     
+    parser.add_argument('--imagenet',
+                        help='flag specifying the dataset being used',
+                        action='store_true',
+                        default=False)
+
     # tuning parameters (optional)
     parser.add_argument('--num_gpus', type=int, nargs=None,
                         help='number of gpus to use during training', 

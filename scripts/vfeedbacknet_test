@@ -190,133 +190,7 @@ def main(args):
                     logging.debug('VALIDATION batch loss: {}'.format(_total_loss_val))
 
                     cum_validation_loss += _total_loss_val
-
-                    # old code below
-                    # predict_analysis = []
-                    # for video_idx in range(args.eval_batch_size):
-                    #     video_labelnum = validation_batch['video_labelnums'][begin:end][video_idx]
-                    #     video_labelstr = labels_num2str[video_labelnum]
-                    #     video_length = validation_batch['video_numframes'][begin:end][video_idx]
-
-                    #     fvec = []
-                    #     fmax = []
-                    #     fmax5 = []
-                    #     fsum = []
-                    #     floss = []
-                    #     for frame_idx in range(video_length):
-                    #         predict = predict_vals[video_idx, frame_idx, :]
-                    #         fvec.append(predict)
-                    #         fsum.append(sum(predict))
-                    #         fmax.append(np.argmax(predict))
-
-                    #         predict_copy = predict.copy()
-                    #         fmax5.append(predict_copy.argsort()[-5:][::-1])
-
-                    #     predict_analysis.append({
-                    #         'frame_labelvec' : fvec,
-                    #         'frame_labelmax' : fmax,
-                    #         'frame_labelmax5' : fmax5,
-                    #         'frame_probsum' : fsum,
-                    #         'video_length' : video_length,
-                    #         'video_labelnum' : video_labelnum,
-                    #         'video_labelstr' : video_labelstr
-                    #     })
-
-                    # for analysis in predict_analysis:
-                    #     for a in analysis['frame_probsum']:
-                    #         assert( abs(a - 1) < 0.00001 )
-
-                    #     fmax_str = list(map(lambda x: str(x).zfill(2), analysis['frame_labelmax']))
-                    #     fmax5_str = list(map(lambda x: str(x).zfill(2), analysis['frame_labelmax5'][-1]))
-                    #     tl = str(analysis['video_labelnum']).zfill(2)
-                    #     logging.debug('{} true_label,prediction: {},{} ({}) {}'.format('T' if tl==fmax_str[-1] else 'F', tl, fmax_str[-1], fmax5_str, fmax_str))
-
-                    # predicted_vals = np.asarray([ p['frame_labelmax'][-1] for p in predict_analysis ])
-                    # correct_predictions = sum(validation_batch['video_labelnums'][begin:end] == predicted_vals)
-
-                    # predicted_vals3 = [ l in p['frame_labelmax5'][-1][:3] for l,p in zip(validation_batch['video_labelnums'][begin:end], predict_analysis) ]
-                    # correct_predictions3 = sum(predicted_vals3)
-
-                    # predicted_vals5 = [ l in p['frame_labelmax5'][-1] for l,p in zip(validation_batch['video_labelnums'][begin:end], predict_analysis) ]
-                    # correct_predictions5 = sum(predicted_vals5)
-
-                    # cum_validation_correct_predictions += correct_predictions
-                    # cum_validation_correct_predictions3 += correct_predictions3
-                    # cum_validation_correct_predictions5 += correct_predictions5
-                    # cum_validation_loss += total_loss_val
-
-                    # logging.debug('VALIDATION batch accuracy (top-1): {}'.format(correct_predictions / args.eval_batch_size))
-                    # logging.debug('VALIDATION batch accuracy (top-3): {}'.format(correct_predictions3 / args.eval_batch_size))
-                    # logging.debug('VALIDATION batch accuracy (top-5): {}'.format(correct_predictions5 / args.eval_batch_size))
-                    # logging.debug('VALIDATION batch loss: {}'.format(total_loss_val))
-
-
-
-                    # old code below
-                    # predict_analysis = []
-                    # for video_idx in range(args.eval_batch_size):
-                    #     video_labelnum = validation_batch['video_labelnums'][begin:end][video_idx]
-                    #     video_labelstr = labels_num2str[video_labelnum]
-                    #     video_length = validation_batch['video_numframes'][video_idx]
-
-                    #     fvec = []
-                    #     fmax = []
-                    #     fsum = []
-                    #     floss = []
-                    #     for frame_idx in range(validation_batch['video_numframes'][video_idx]):
-                    #         predict = _predict_vals[video_idx, frame_idx, :]
-                    #         fvec.append(predict)
-                    #         fsum.append(sum(predict))
-                    #         fmax.append(np.argmax(predict))
-
-                    #         floss.append(_loss_vals[video_idx, :])
-
-                    #     predict_analysis.append({
-                    #         'frame_labelvec' : fvec,
-                    #         'frame_labelmax' : fmax,
-                    #         'frame_probsum' : fsum,
-                    #         'frame_loss' : floss,
-                    #         'video_length' : video_length,
-                    #         'video_labelnum' : video_labelnum,
-                    #         'video_labelstr' : video_labelstr
-                    #     })
-
-                    # for analysis in predict_analysis:
-                    #     for a in analysis['frame_probsum']:
-                    #         assert( abs(a - 1) < 0.00001 )
-
-                    #     fmax_str = list(map(lambda x: str(x).zfill(2), analysis['frame_labelmax']))
-                    #     tl = str(analysis['video_labelnum']).zfill(2)
-                    #     logging.debug('{} true_label,prediction: {},{} {}'.format('T' if tl==fmax_str[-1] else 'F', tl, fmax_str[-1], fmax_str))
-                    #     #logging.debug('{}'.format(analysis['frame_loss']))
-
-                    # assert(not np.isnan(_total_loss_val))
-                    # assert(not np.any(np.isnan(_predict_vals)))
-
-                    # predicted_vals = np.asarray([ p['frame_labelmax'][-1] for p in predict_analysis ])
-                    # correct_predictions = sum(validation_batch['video_labelnums'][begin:end] == predicted_vals)
-
-                    # cum_validation_correct_predictions += correct_predictions
-                    # cum_validation_loss += _total_loss_val
-
-                    # # assert(not np.isnan(loss_val))
-                    # assert(not np.any(np.isnan(predict_vals)))
-                    # predict_vals = np.vstack([predict_vals[n-1,m,:] for n,m in zip(validation_batch['video_numframes'][begin:end],range(args.eval_batch_size))])
-
-                    # cum_validation_correct_predictions += sum(validation_batch['video_labelnums'][begin:end] == np.argmax(predict_vals, axis=1))
-                    # cum_validation_loss += loss_val
-
-                    # logging.info('BATCH\taccuracy (top-1): {}'.format(correct_predictions / args.eval_batch_size))
-                    # logging.info('BATCH\tloss: {}'.format(_total_loss_val))
-                    # logging.info('BATCH\tnum_examples: {}'.format(args.eval_batch_size))
-
                     validation_batch_count += 1
-
-                    # logging.info('BATCH\taccuracy (top-1): {}'.format(sum(validation_batch['video_labelnums'][begin:end] == np.argmax(predict_vals, axis=1)) / args.eval_batch_size))
-                    # logging.info('BATCH\tloss: {}'.format(loss_val))
-                    # logging.info('BATCH\tnum examples: {}'.format(args.eval_batch_size))
-                    # train_batch_count += 1
-
                 t2 = timeit.default_timer()
                 
         # print out the final accuracy and loss
@@ -325,15 +199,11 @@ def main(args):
             cum_validation_correct_predictions3 = sum(cum_validation_correct_predictions3_l[feedback_idx])
             cum_validation_correct_predictions5 = sum(cum_validation_correct_predictions5_l[feedback_idx])
 
-            logging.info('VALIDATION TOTAL\taccuracy (top-1) (feedback:{}): {}'.format(feedback_idx, cum_validation_correct_predictions / num_validation_videos))
-            logging.info('VALIDATION TOTAL\taccuracy (top-3) (feedback:{}): {}'.format(feedback_idx, cum_validation_correct_predictions3 / num_validation_videos))
-            logging.info('VALIDATION TOTAL\taccuracy (top-5) (feedback:{}): {}'.format(feedback_idx, cum_validation_correct_predictions5 / num_validation_videos))
+            logging.info('VALIDATION TOTAL\taccuracy (top-1) (feedback:{}): {}'.format(feedback_idx, cum_validation_correct_predictions / num_data_videos))
+            logging.info('VALIDATION TOTAL\taccuracy (top-3) (feedback:{}): {}'.format(feedback_idx, cum_validation_correct_predictions3 / num_data_videos))
+            logging.info('VALIDATION TOTAL\taccuracy (top-5) (feedback:{}): {}'.format(feedback_idx, cum_validation_correct_predictions5 / num_data_videos))
             logging.info('VALIDATION TOTAL\tloss: {}'.format(cum_validation_loss))
-                            
-        # sys.stdout.write('final loss: {}\n'.format(cum_validation_loss))
-        # sys.stdout.write('final accuracy (top-1): {}\n'.format(cum_validation_correct_predictions/num_data_videos))
-        # sys.stdout.write('final accuracy (top-3): {}\n'.format(cum_validation_correct_predictions3/num_data_videos))
-        # sys.stdout.write('final accuracy (top-5): {}\n'.format(cum_validation_correct_predictions5/num_data_videos))
+
         sys.stdout.flush()
 
 if __name__ == '__main__':

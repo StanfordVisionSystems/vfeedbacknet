@@ -9,6 +9,9 @@ from vfeedbacknet.vfeedbacknet_utilities import load_videos
 import vfeedbacknet.vfeedbacknet_lossfunctions
 
 # models
+import vfeedbacknet.vfeedbacknet_videoLSTM_1 as vfeedbacknet_videoLSTM_1
+import vfeedbacknet.vfeedbacknet_videoLSTM_2 as vfeedbacknet_videoLSTM_2
+
 import vfeedbacknet.vfeedbacknet_model1 as vfeedbacknet_model1 # VGG16 + 2 x convLSTM
 import vfeedbacknet.vfeedbacknet_model2 as vfeedbacknet_model2 # VGG16 + deconv feedback (no fine tuning on pretrained VGG layers)
 import vfeedbacknet.vfeedbacknet_model3 as vfeedbacknet_model3 # VGG16 + deconv feedback (with some fine tuning on pretrained VGG layers)
