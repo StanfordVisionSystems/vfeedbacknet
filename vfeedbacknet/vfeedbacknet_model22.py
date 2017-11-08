@@ -40,7 +40,7 @@ class Model:
         self.fc_variables = []
         
         #self.vfeedbacknet_base = VFeedbackNetBase(sess, num_classes, train_vgg16=train_featurizer, is_training=is_training)
-        self.vfeedbacknet_fb_base = VFeedbackNetFBBase(sess, num_classes, batch_size, is_training=is_training)
+        self.vfeedbacknet_fb_base = VFeedbackNetFBBase(sess, num_classes, batch_size, train_featurizer='NO', train_main_model='NO', is_training=True, trainable=False)
         self._declare_variables()
 
 

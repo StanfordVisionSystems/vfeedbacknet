@@ -15,7 +15,7 @@ class Model:
     
     def __init__(self, sess, num_classes, batch_size,
                  train_featurizer='FINE_TUNE', train_main_model='FINE_TUNE', train_fc='FINE_TUNE',
-                 weights_filename=None, is_training=True):
+                 weights_filename=None, is_training=True, trainable=True):
 
         self.sess = sess
         self.weights = np.load(weights_filename) if weights_filename is not None else None
@@ -31,6 +31,7 @@ class Model:
         assert train_fc in ['NO', 'FINE_TUNE', 'FROM_SCRATCH'], 'train_fc must be either: NO, FINE_TUNE, or FROM_SCRATCH'
         self.train_fc = train_fc if is_training else 'NO'
 
+        self.trainable = trainable
         self.is_training = is_training
 
         self.featurizer_variables = []
@@ -51,8 +52,8 @@ class Model:
             #         regularizer = None # tf.contrib.layers.l2_regularizer(scale=0.25)
             #         initializer = tf.contrib.layers.xavier_initializer()
 
-            #         kernel = tf.get_variable('kernel', shape=[3, 3, 512, 512], dtype=tf.float32, regularizer=regularizer, initializer=initializer)
-            #         biases = tf.get_variable('biases', shape=[512], dtype=tf.float32, regularizer=regularizer, initializer=initializer)
+            #         kernel = tf.get_variable('kernel', shape=[3, 3, 512, 512], dtype=tf.float32, regularizer=regularizer, trainable=self.trainable, initializer=initializer)
+            #         biases = tf.get_variable('biases', shape=[512], dtype=tf.float32, regularizer=regularizer, trainable=self.trainable, initializer=initializer)
 
 
             with tf.variable_scope('convlstm1'):
@@ -69,11 +70,11 @@ class Model:
                         kernel_size = kernel2d_size + [2*n] + [m] 
 
                         with tf.variable_scope('convlstm'):
-                            kernel = tf.get_variable('kernel', kernel_size, initializer=initializer, regularizer=regularizer)
-                            W_ci = tf.get_variable('W_ci', input_size, initializer=initializer, regularizer=regularizer)
-                            W_cf = tf.get_variable('W_cf', input_size, initializer=initializer, regularizer=regularizer)
-                            W_co = tf.get_variable('W_co', input_size, initializer=initializer, regularizer=regularizer)
-                            bias = tf.get_variable('bias', [m], initializer=tf.zeros_initializer(), regularizer=regularizer)
+                            kernel = tf.get_variable('kernel', kernel_size, initializer=initializer, regularizer=regularizer, trainable=self.trainable)
+                            W_ci = tf.get_variable('W_ci', input_size, initializer=initializer, regularizer=regularizer, trainable=self.trainable)
+                            W_cf = tf.get_variable('W_cf', input_size, initializer=initializer, regularizer=regularizer, trainable=self.trainable)
+                            W_co = tf.get_variable('W_co', input_size, initializer=initializer, regularizer=regularizer, trainable=self.trainable)
+                            bias = tf.get_variable('bias', [m], initializer=tf.zeros_initializer(), regularizer=regularizer, trainable=self.trainable)
                             
                 self.convLSTMCell1 = ConvLSTMCell(input_size[:2], n, [3, 3])
 
@@ -91,11 +92,11 @@ class Model:
                         kernel_size = kernel2d_size + [2*n] + [m] 
 
                         with tf.variable_scope('convlstm'):
-                            kernel = tf.get_variable('kernel', kernel_size, initializer=initializer, regularizer=regularizer)
-                            W_ci = tf.get_variable('W_ci', input_size, initializer=initializer, regularizer=regularizer)
-                            W_cf = tf.get_variable('W_cf', input_size, initializer=initializer, regularizer=regularizer)
-                            W_co = tf.get_variable('W_co', input_size, initializer=initializer, regularizer=regularizer)
-                            bias = tf.get_variable('bias', [m], initializer=tf.zeros_initializer(), regularizer=regularizer)
+                            kernel = tf.get_variable('kernel', kernel_size, initializer=initializer, regularizer=regularizer, trainable=self.trainable)
+                            W_ci = tf.get_variable('W_ci', input_size, initializer=initializer, regularizer=regularizer, trainable=self.trainable)
+                            W_cf = tf.get_variable('W_cf', input_size, initializer=initializer, regularizer=regularizer, trainable=self.trainable)
+                            W_co = tf.get_variable('W_co', input_size, initializer=initializer, regularizer=regularizer, trainable=self.trainable)
+                            bias = tf.get_variable('bias', [m], initializer=tf.zeros_initializer(), regularizer=regularizer, trainable=self.trainable)
                             
                 self.convLSTMCell2 = ConvLSTMCell(input_size[:2], n, [3, 3])
                 
@@ -113,11 +114,11 @@ class Model:
                         kernel_size = kernel2d_size + [2*n] + [m] 
 
                         with tf.variable_scope('convlstm'):
-                            kernel = tf.get_variable('kernel', kernel_size, initializer=initializer, regularizer=regularizer)
-                            W_ci = tf.get_variable('W_ci', input_size, initializer=initializer, regularizer=regularizer)
-                            W_cf = tf.get_variable('W_cf', input_size, initializer=initializer, regularizer=regularizer)
-                            W_co = tf.get_variable('W_co', input_size, initializer=initializer, regularizer=regularizer)
-                            bias = tf.get_variable('bias', [m], initializer=tf.zeros_initializer(), regularizer=regularizer)
+                            kernel = tf.get_variable('kernel', kernel_size, initializer=initializer, regularizer=regularizer, trainable=self.trainable)
+                            W_ci = tf.get_variable('W_ci', input_size, initializer=initializer, regularizer=regularizer, trainable=self.trainable)
+                            W_cf = tf.get_variable('W_cf', input_size, initializer=initializer, regularizer=regularizer, trainable=self.trainable)
+                            W_co = tf.get_variable('W_co', input_size, initializer=initializer, regularizer=regularizer, trainable=self.trainable)
+                            bias = tf.get_variable('bias', [m], initializer=tf.zeros_initializer(), regularizer=regularizer, trainable=self.trainable)
                             
                 self.convLSTMCell3 = ConvLSTMCell(input_size[:2], n, [3, 3])
                 
@@ -127,24 +128,24 @@ class Model:
                     regularizer = None # tf.contrib.layers.l2_regularizer(scale=0.25)
                     initializer = tf.contrib.layers.xavier_initializer()
 
-                    kernel = tf.get_variable('kernel', shape=[3, 3, 256, 512], dtype=tf.float32, regularizer=regularizer, initializer=initializer)
-                    biases = tf.get_variable('biases', shape=[512], dtype=tf.float32, regularizer=regularizer, initializer=initializer)
+                    kernel = tf.get_variable('kernel', shape=[3, 3, 256, 512], dtype=tf.float32, regularizer=regularizer, trainable=self.trainable, initializer=initializer)
+                    biases = tf.get_variable('biases', shape=[512], dtype=tf.float32, regularizer=regularizer, trainable=self.trainable, initializer=initializer)
 
                 with tf.variable_scope('conv2'):
 
                     regularizer = None # tf.contrib.layers.l2_regularizer(scale=0.25)
                     initializer = tf.contrib.layers.xavier_initializer()
 
-                    kernel = tf.get_variable('kernel', shape=[3, 3, 512, 1024], dtype=tf.float32, regularizer=regularizer, initializer=initializer)
-                    biases = tf.get_variable('biases', shape=[1024], dtype=tf.float32, regularizer=regularizer, initializer=initializer)
+                    kernel = tf.get_variable('kernel', shape=[3, 3, 512, 1024], dtype=tf.float32, regularizer=regularizer, trainable=self.trainable, initializer=initializer)
+                    biases = tf.get_variable('biases', shape=[1024], dtype=tf.float32, regularizer=regularizer, trainable=self.trainable, initializer=initializer)
 
                 # with tf.variable_scope('conv3'):
 
                 #     regularizer = None # tf.contrib.layers.l2_regularizer(scale=0.25)
                 #     initializer = tf.contrib.layers.xavier_initializer()
 
-                #     kernel = tf.get_variable('kernel', shape=[3, 3, 512, 1024], dtype=tf.float32, regularizer=regularizer, initializer=initializer)
-                #     biases = tf.get_variable('biases', shape=[1024], dtype=tf.float32, regularizer=regularizer, initializer=initializer)
+                #     kernel = tf.get_variable('kernel', shape=[3, 3, 512, 1024], dtype=tf.float32, regularizer=regularizer, trainable=self.trainable, initializer=initializer)
+                #     biases = tf.get_variable('biases', shape=[1024], dtype=tf.float32, regularizer=regularizer, trainable=self.trainable, initializer=initializer)
                     
             with tf.variable_scope('feedback_block1'): 
                     
@@ -154,24 +155,24 @@ class Model:
                 input_size = [28, 28]
                 kernel_size = [3, 3, 256, 256]
 
-                W_xf = tf.get_variable('W_xf', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer)
-                W_xi = tf.get_variable('W_xi', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer)
-                W_xc = tf.get_variable('W_xc', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer)
-                W_xo = tf.get_variable('W_xo', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer)
+                W_xf = tf.get_variable('W_xf', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer, trainable=self.trainable)
+                W_xi = tf.get_variable('W_xi', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer, trainable=self.trainable)
+                W_xc = tf.get_variable('W_xc', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer, trainable=self.trainable)
+                W_xo = tf.get_variable('W_xo', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer, trainable=self.trainable)
 
-                W_hf = tf.get_variable('W_hf', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer)
-                W_hi = tf.get_variable('W_hi', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer)
-                W_hc = tf.get_variable('W_hc', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer)
-                W_ho = tf.get_variable('W_ho', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer)
+                W_hf = tf.get_variable('W_hf', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer, trainable=self.trainable)
+                W_hi = tf.get_variable('W_hi', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer, trainable=self.trainable)
+                W_hc = tf.get_variable('W_hc', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer, trainable=self.trainable)
+                W_ho = tf.get_variable('W_ho', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer, trainable=self.trainable)
 
-                W_cf = tf.get_variable('W_cf', [input_size[0],input_size[1],kernel_size[-1]], dtype=tf.float32, initializer=initializer, regularizer=regularizer)
-                W_ci = tf.get_variable('W_ci', [input_size[0],input_size[1],kernel_size[-1]], dtype=tf.float32, initializer=initializer, regularizer=regularizer)
-                W_co = tf.get_variable('W_co', [input_size[0],input_size[1],kernel_size[-1]], dtype=tf.float32, initializer=initializer, regularizer=regularizer)
+                W_cf = tf.get_variable('W_cf', [input_size[0],input_size[1],kernel_size[-1]], dtype=tf.float32, initializer=initializer, regularizer=regularizer, trainable=self.trainable)
+                W_ci = tf.get_variable('W_ci', [input_size[0],input_size[1],kernel_size[-1]], dtype=tf.float32, initializer=initializer, regularizer=regularizer, trainable=self.trainable)
+                W_co = tf.get_variable('W_co', [input_size[0],input_size[1],kernel_size[-1]], dtype=tf.float32, initializer=initializer, regularizer=regularizer, trainable=self.trainable)
 
-                b_f = tf.get_variable('b_f', [kernel_size[-1]], dtype=tf.float32, initializer=tf.zeros_initializer(), regularizer=regularizer)
-                b_i = tf.get_variable('b_i', [kernel_size[-1]], dtype=tf.float32, initializer=tf.zeros_initializer(), regularizer=regularizer)
-                b_c = tf.get_variable('b_c', [kernel_size[-1]], dtype=tf.float32, initializer=tf.zeros_initializer(), regularizer=regularizer)
-                b_o = tf.get_variable('b_o', [kernel_size[-1]], dtype=tf.float32, initializer=tf.zeros_initializer(), regularizer=regularizer)
+                b_f = tf.get_variable('b_f', [kernel_size[-1]], dtype=tf.float32, initializer=tf.zeros_initializer(), regularizer=regularizer, trainable=self.trainable)
+                b_i = tf.get_variable('b_i', [kernel_size[-1]], dtype=tf.float32, initializer=tf.zeros_initializer(), regularizer=regularizer, trainable=self.trainable)
+                b_c = tf.get_variable('b_c', [kernel_size[-1]], dtype=tf.float32, initializer=tf.zeros_initializer(), regularizer=regularizer, trainable=self.trainable)
+                b_o = tf.get_variable('b_o', [kernel_size[-1]], dtype=tf.float32, initializer=tf.zeros_initializer(), regularizer=regularizer, trainable=self.trainable)
              
             with tf.variable_scope('feedback_block2'): 
                     
@@ -181,24 +182,24 @@ class Model:
                 input_size = [14, 14]
                 kernel_size = [3, 3, 512, 512]
 
-                W_xf = tf.get_variable('W_xf', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer)
-                W_xi = tf.get_variable('W_xi', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer)
-                W_xc = tf.get_variable('W_xc', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer)
-                W_xo = tf.get_variable('W_xo', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer)
+                W_xf = tf.get_variable('W_xf', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer, trainable=self.trainable)
+                W_xi = tf.get_variable('W_xi', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer, trainable=self.trainable)
+                W_xc = tf.get_variable('W_xc', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer, trainable=self.trainable)
+                W_xo = tf.get_variable('W_xo', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer, trainable=self.trainable)
 
-                W_hf = tf.get_variable('W_hf', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer)
-                W_hi = tf.get_variable('W_hi', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer)
-                W_hc = tf.get_variable('W_hc', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer)
-                W_ho = tf.get_variable('W_ho', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer)
+                W_hf = tf.get_variable('W_hf', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer, trainable=self.trainable)
+                W_hi = tf.get_variable('W_hi', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer, trainable=self.trainable)
+                W_hc = tf.get_variable('W_hc', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer, trainable=self.trainable)
+                W_ho = tf.get_variable('W_ho', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer, trainable=self.trainable)
 
-                W_cf = tf.get_variable('W_cf', [input_size[0],input_size[1],kernel_size[-1]], dtype=tf.float32, initializer=initializer, regularizer=regularizer)
-                W_ci = tf.get_variable('W_ci', [input_size[0],input_size[1],kernel_size[-1]], dtype=tf.float32, initializer=initializer, regularizer=regularizer)
-                W_co = tf.get_variable('W_co', [input_size[0],input_size[1],kernel_size[-1]], dtype=tf.float32, initializer=initializer, regularizer=regularizer)
+                W_cf = tf.get_variable('W_cf', [input_size[0],input_size[1],kernel_size[-1]], dtype=tf.float32, initializer=initializer, regularizer=regularizer, trainable=self.trainable)
+                W_ci = tf.get_variable('W_ci', [input_size[0],input_size[1],kernel_size[-1]], dtype=tf.float32, initializer=initializer, regularizer=regularizer, trainable=self.trainable)
+                W_co = tf.get_variable('W_co', [input_size[0],input_size[1],kernel_size[-1]], dtype=tf.float32, initializer=initializer, regularizer=regularizer, trainable=self.trainable)
 
-                b_f = tf.get_variable('b_f', [kernel_size[-1]], dtype=tf.float32, initializer=tf.zeros_initializer(), regularizer=regularizer)
-                b_i = tf.get_variable('b_i', [kernel_size[-1]], dtype=tf.float32, initializer=tf.zeros_initializer(), regularizer=regularizer)
-                b_c = tf.get_variable('b_c', [kernel_size[-1]], dtype=tf.float32, initializer=tf.zeros_initializer(), regularizer=regularizer)
-                b_o = tf.get_variable('b_o', [kernel_size[-1]], dtype=tf.float32, initializer=tf.zeros_initializer(), regularizer=regularizer)
+                b_f = tf.get_variable('b_f', [kernel_size[-1]], dtype=tf.float32, initializer=tf.zeros_initializer(), regularizer=regularizer, trainable=self.trainable)
+                b_i = tf.get_variable('b_i', [kernel_size[-1]], dtype=tf.float32, initializer=tf.zeros_initializer(), regularizer=regularizer, trainable=self.trainable)
+                b_c = tf.get_variable('b_c', [kernel_size[-1]], dtype=tf.float32, initializer=tf.zeros_initializer(), regularizer=regularizer, trainable=self.trainable)
+                b_o = tf.get_variable('b_o', [kernel_size[-1]], dtype=tf.float32, initializer=tf.zeros_initializer(), regularizer=regularizer, trainable=self.trainable)
 
             # with tf.variable_scope('feedback_block3'): 
                     
@@ -208,24 +209,24 @@ class Model:
             #     input_size = [7, 7]
             #     kernel_size = [3, 3, 1024, 1024]
 
-            #     W_xf = tf.get_variable('W_xf', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer)
-            #     W_xi = tf.get_variable('W_xi', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer)
-            #     W_xc = tf.get_variable('W_xc', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer)
-            #     W_xo = tf.get_variable('W_xo', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer)
+            #     W_xf = tf.get_variable('W_xf', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer, trainable=self.trainable)
+            #     W_xi = tf.get_variable('W_xi', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer, trainable=self.trainable)
+            #     W_xc = tf.get_variable('W_xc', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer, trainable=self.trainable)
+            #     W_xo = tf.get_variable('W_xo', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer, trainable=self.trainable)
 
-            #     W_hf = tf.get_variable('W_hf', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer)
-            #     W_hi = tf.get_variable('W_hi', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer)
-            #     W_hc = tf.get_variable('W_hc', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer)
-            #     W_ho = tf.get_variable('W_ho', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer)
+            #     W_hf = tf.get_variable('W_hf', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer, trainable=self.trainable)
+            #     W_hi = tf.get_variable('W_hi', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer, trainable=self.trainable)
+            #     W_hc = tf.get_variable('W_hc', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer, trainable=self.trainable)
+            #     W_ho = tf.get_variable('W_ho', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer, trainable=self.trainable)
 
-            #     W_cf = tf.get_variable('W_cf', [input_size[0],input_size[1],kernel_size[-1]], dtype=tf.float32, initializer=initializer, regularizer=regularizer)
-            #     W_ci = tf.get_variable('W_ci', [input_size[0],input_size[1],kernel_size[-1]], dtype=tf.float32, initializer=initializer, regularizer=regularizer)
-            #     W_co = tf.get_variable('W_co', [input_size[0],input_size[1],kernel_size[-1]], dtype=tf.float32, initializer=initializer, regularizer=regularizer)
+            #     W_cf = tf.get_variable('W_cf', [input_size[0],input_size[1],kernel_size[-1]], dtype=tf.float32, initializer=initializer, regularizer=regularizer, trainable=self.trainable)
+            #     W_ci = tf.get_variable('W_ci', [input_size[0],input_size[1],kernel_size[-1]], dtype=tf.float32, initializer=initializer, regularizer=regularizer, trainable=self.trainable)
+            #     W_co = tf.get_variable('W_co', [input_size[0],input_size[1],kernel_size[-1]], dtype=tf.float32, initializer=initializer, regularizer=regularizer, trainable=self.trainable)
 
-            #     b_f = tf.get_variable('b_f', [kernel_size[-1]], dtype=tf.float32, initializer=tf.zeros_initializer(), regularizer=regularizer)
-            #     b_i = tf.get_variable('b_i', [kernel_size[-1]], dtype=tf.float32, initializer=tf.zeros_initializer(), regularizer=regularizer)
-            #     b_c = tf.get_variable('b_c', [kernel_size[-1]], dtype=tf.float32, initializer=tf.zeros_initializer(), regularizer=regularizer)
-            #     b_o = tf.get_variable('b_o', [kernel_size[-1]], dtype=tf.float32, initializer=tf.zeros_initializer(), regularizer=regularizer)
+            #     b_f = tf.get_variable('b_f', [kernel_size[-1]], dtype=tf.float32, initializer=tf.zeros_initializer(), regularizer=regularizer, trainable=self.trainable)
+            #     b_i = tf.get_variable('b_i', [kernel_size[-1]], dtype=tf.float32, initializer=tf.zeros_initializer(), regularizer=regularizer, trainable=self.trainable)
+            #     b_c = tf.get_variable('b_c', [kernel_size[-1]], dtype=tf.float32, initializer=tf.zeros_initializer(), regularizer=regularizer, trainable=self.trainable)
+            #     b_o = tf.get_variable('b_o', [kernel_size[-1]], dtype=tf.float32, initializer=tf.zeros_initializer(), regularizer=regularizer, trainable=self.trainable)
 
             with tf.variable_scope('fc1'):
 
@@ -234,8 +235,8 @@ class Model:
 
                 trainable = False if self.train_fc == 'NO' else True
 
-                weight = tf.get_variable('weights', shape=[1024, 4096], dtype=tf.float32, initializer=initializer, regularizer=regularizer, trainable=trainable)
-                biases = tf.get_variable('biases', shape=[4096], dtype=tf.float32, initializer=initializer, regularizer=regularizer, trainable=trainable)
+                weight = tf.get_variable('weights', shape=[1024, 4096], dtype=tf.float32, initializer=initializer, regularizer=regularizer, trainable=self.trainable)
+                biases = tf.get_variable('biases', shape=[4096], dtype=tf.float32, initializer=initializer, regularizer=regularizer, trainable=self.trainable)
 
             # with tf.variable_scope('fc2'):
 
@@ -254,8 +255,8 @@ class Model:
 
                 trainable = False if self.train_fc == 'NO' else True
 
-                weight = tf.get_variable('weights', shape=[4096, self.num_classes], dtype=tf.float32, initializer=initializer, regularizer=regularizer, trainable=trainable)
-                biases = tf.get_variable('biases', shape=[self.num_classes], dtype=tf.float32, initializer=initializer, regularizer=regularizer, trainable=trainable)
+                weight = tf.get_variable('weights', shape=[4096, self.num_classes], dtype=tf.float32, initializer=initializer, regularizer=regularizer, trainable=self.trainable)
+                biases = tf.get_variable('biases', shape=[self.num_classes], dtype=tf.float32, initializer=initializer, regularizer=regularizer, trainable=self.trainable)
 
                 
     def get_variables(self):
