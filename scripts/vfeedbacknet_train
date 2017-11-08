@@ -239,6 +239,9 @@ def main(args):
         'vfeedbacknet_model1.ucf' : lambda : v.vfeedbacknet_model1.VFeedbackNetModel1(sess, len(labels_num2str),
                                                                                       train_featurizer='NO', train_main_model='NO', train_fc='FROM_SCRATCH',
                                                                                       weights_filename='/mnt/data/jemmons/vfeedbacknet-results/20bn/vfeedbacknet_model1.recheck3/model_weights-epoch3-step24639.npz'),
+        'vfeedbacknet_fb_base' : lambda : v.vfeedbacknet_fb_base.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
+                                                                       train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
+                                                                       weights_filename='/home/jemmons/vfeedbacknet_base_weights.npz'),
     }
 
     model = None
