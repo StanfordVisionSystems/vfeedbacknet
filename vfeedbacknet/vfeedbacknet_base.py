@@ -169,7 +169,7 @@ class VFeedbackNetBase:
         
         d = { var.name : sess.run(var) for var in variables }
         np.savez(export_filename, **d)
-            
+
     def split_video(self, inputs):
 
         with tf.variable_scope('vfeedbacknet_base', reuse=True):
@@ -183,7 +183,22 @@ class VFeedbackNetBase:
             inputs = [ tf.tile(inp, [1, 1, 1, 3]) for inp in inputs ]
             ModelLogger.log('preprocess3', inputs)
             return inputs
+
+    @staticmethod
+    def split_video(inputs):
+
+        with tf.variable_scope('vfeedbacknet_base', reuse=True):
+
+            inputs = tf.expand_dims(inputs, axis=4)
+            ModelLogger.log('preprocess1', inputs)
             
+            inputs = tf.unstack(inputs, axis=1)
+            ModelLogger.log('preprocess2', inputs)
+
+            inputs = [ tf.tile(inp, [1, 1, 1, 3]) for inp in inputs ]
+            ModelLogger.log('preprocess3', inputs)
+            return inputs
+
     def vgg16_layer1(self, inputs, var_list=None):
         
         with tf.variable_scope('vfeedbacknet_base', reuse=True):
