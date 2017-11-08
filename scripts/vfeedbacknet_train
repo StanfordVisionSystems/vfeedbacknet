@@ -242,6 +242,9 @@ def main(args):
         'vfeedbacknet_fb_base' : lambda : v.vfeedbacknet_fb_base.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
                                                                        train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
                                                                        weights_filename='/home/jemmons/vfeedbacknet_base_weights.npz'),
+        'vfeedbacknet_fb_base1' : lambda : v.vfeedbacknet_fb_base1.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
+                                                                         train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
+                                                                         weights_filename='/home/jemmons/vfeedbacknet_base_weights.npz'),
     }
 
     model = None
