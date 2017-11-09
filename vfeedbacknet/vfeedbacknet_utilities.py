@@ -109,7 +109,7 @@ class TrainingLogger:
 
                 if competition and feedback_idx == analysis_per_feedback_len-1:
                     sys.stdout.write('{};{}\n'.format(competition_video_num[video_idx], competition_labels[analysis['frame_labelmax'][-1]]))
-                    sys.stdout.flush()
+                    #sys.stdout.flush()
                     
                 log_str = '{}                              ({}) {}'.format('T' if tl==fmax_str[-1] else 'F', fmax5_str, fmax_str)
                 if first:

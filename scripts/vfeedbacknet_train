@@ -362,7 +362,7 @@ def main(args):
             logfile.write('# model_name:{} data_size:{} validation_size:{} prefetch_batch_size:{} train_batch_size:{} num_labels:{} initial_learning_rate:{} learning_rate_decay:{} minimum_learning_rate:{} overfit:{}\n'.format(args.model_name, num_data_videos, num_validation_videos, args.prefetch_batch_size, args.train_batch_size, len(labels_num2str), args.learning_rate_init, args.learning_rate_decay, args.learning_rate_min, args.overfit or args.overfitt))
             logfile.write('# video_width:{} video_height:{} video_length:{} video_downsample_ratio:{} \n'.format(args.video_width, args.video_height, args.video_length, args.video_downsample_ratio))
             logfile.write('batch_num, epoch, global_step, learning_rate, feedback_iteration, train_acc_top1, train_acc_top3, train_acc_top5, train_loss, valid_acc_top1, valid_acc_top3, valid_acc_top5, valid_loss, checkpoint_path, model_export_path\n')
-            logfile.flush()
+            #logfile.flush()
 
         with mp.Pool(processes=mp.cpu_count(), initializer=pool_init, initargs=(shared_mem,)) as pool:
             
@@ -478,7 +478,7 @@ def main(args):
                         cum_data_correct_predictions5 = sum(cum_data_correct_predictions5_l[feedback_idx])
                     
                         logfile.write('{}, {}, {}, {}, {}, {}, {}, {}, {}, , , , , ,\n'.format(train_batch_count, epoch, _step, _learn_rate, feedback_idx, cum_data_correct_predictions/args.prefetch_batch_size, cum_data_correct_predictions3/args.prefetch_batch_size, cum_data_correct_predictions5/args.prefetch_batch_size, cum_data_loss))
-                    logfile.flush()
+                    #logfile.flush()
                                         
                     logging.debug('begin load videos complete-future')
                     t1 = timeit.default_timer() 
@@ -490,6 +490,7 @@ def main(args):
                     t2_train = timeit.default_timer()
                     logging.debug('done! (train batch: {})'.format(t2_train-t1_train))
 
+                    logfile.flush()
                     ########################################################
                     # save the model and compute validation accuracy/loss
                     ########################################################
@@ -605,7 +606,7 @@ def main(args):
                             logging.info('VALIDATION TOTAL\taccuracy (top-5) (feedback:{}): {}'.format(feedback_idx, cum_validation_correct_predictions5 / num_validation_videos))
                             logging.info('VALIDATION TOTAL\tloss: {}'.format(cum_validation_loss))
                     
-                        logfile.flush()
+                        #logfile.flush()
                         logging.info('VALIDATION TOTAL\tnum_examples: {}'.format(num_validation_videos))
                         
 
@@ -616,6 +617,7 @@ def main(args):
                         # restore model to the state prior to computing validation accuracy/loss
                         ####################################################
                         saver.restore(sess, checkpoint_path)
+                        logfile.flush()
 
                     validation_count += 1
                     train_batch_count += 1
