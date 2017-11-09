@@ -517,10 +517,10 @@ def main(args):
                         cum_validation_correct_predictions3_l = []
                         cum_validation_correct_predictions5_l = []
 
-                        validation_batch_f = load_videos(pool, args.data_root, validation_labels, validation_video_paths[valid_base_idx:valid_base_idx+args.prefetch_batch_size], args.video_width, args.video_height, args.video_length, args.video_downsample_ratio, False, args.prefetch_batch_size, shared_mem)
+                        validation_batch_f = load_videos(pool, args.data_root, validation_labels, validation_video_paths[0:args.prefetch_batch_size], args.video_width, args.video_height, args.video_length, args.video_downsample_ratio, False, args.prefetch_batch_size, shared_mem)
                         validation_batch = validation_batch_f()
 
-                        for valid_base_idx in range(0, num_validation_videos, args.prefetch_batch_size):
+                        for valid_base_idx in range(args.prefetch_batch_size, num_validation_videos, args.prefetch_batch_size):
                             validation_batch_f = load_videos(pool, args.data_root, validation_labels, validation_video_paths[valid_base_idx:valid_base_idx+args.prefetch_batch_size], args.video_width, args.video_height, args.video_length, args.video_downsample_ratio, False, args.prefetch_batch_size, shared_mem)
                             
                             # print('out a video to make sure things are working')
