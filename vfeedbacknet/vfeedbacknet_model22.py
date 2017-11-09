@@ -297,7 +297,7 @@ class Model:
 
     def export_variables(self, export_filename):
 
-        self.vfeedbacknet_fb_base.export_variables(self.sess, self.get_variables(), export_filename)
+        self.vfeedbacknet_fb_base.vfeedbacknet_base.export_variables(self.sess, self.get_variables(), export_filename)
             
 
     def __call__(self, inputs, inputs_sequence_length):

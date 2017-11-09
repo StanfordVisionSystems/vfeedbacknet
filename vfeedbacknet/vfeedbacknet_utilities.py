@@ -217,23 +217,28 @@ def prepare_video(args):
 def load_videos(pool, data_root, data_labels, video_paths, video_width, video_height, video_length, video_downsample_ratio, is_training, batch_size, shared_mem, is_ucf101=False):
 
     prepare_video_jobs = [ (data_root, video_paths[i], video_width, video_height, video_length, video_downsample_ratio, i, batch_size, is_training,  is_ucf101) for i in range(batch_size) ]
-    prepared_videos = pool.map(prepare_video, prepare_video_jobs)
+    prepared_videos_f = pool.map_async(prepare_video, prepare_video_jobs)
 
-    video_numframes = np.zeros((batch_size,), dtype=np.int32)
-    video_labelnums = np.zeros((batch_size,), dtype=np.int32)
+    def future()
+        prepared_videos = prepared_videos_f.get()
+        
+        video_numframes = np.zeros((batch_size,), dtype=np.int32)
+        video_labelnums = np.zeros((batch_size,), dtype=np.int32)
 
-    for i in range(batch_size):
-        video_numframes[i] = prepared_videos[i]['num_frames']
-        video_labelnums[i] = data_labels[ prepared_videos[i]['video_path'] ]
+        for i in range(batch_size):
+            video_numframes[i] = prepared_videos[i]['num_frames']
+            video_labelnums[i] = data_labels[ prepared_videos[i]['video_path'] ]
 
-    video_mem = np.frombuffer(shared_mem, np.ctypeslib.ctypes.c_float)
-    video_mem = video_mem.reshape((batch_size, video_length, video_height, video_width))
+        video_mem = np.frombuffer(shared_mem, np.ctypeslib.ctypes.c_float)
+        video_mem = video_mem.reshape((batch_size, video_length, video_height, video_width))
 
-    batch = {
-        'num_videos' : batch_size,
-        'video_rawframes' : video_mem,
-        'video_numframes' : video_numframes,
-        'video_labelnums' : video_labelnums,
-    }
+        batch = {
+            'num_videos' : batch_size,
+            'video_rawframes' : video_mem,
+            'video_numframes' : video_numframes,
+            'video_labelnums' : video_labelnums,
+        }
 
-    return batch
+        return batch
+
+    return future
