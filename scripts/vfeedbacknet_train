@@ -25,8 +25,8 @@ from vfeedbacknet import pool_init, prepare_video, load_videos
 
 from PIL import Image
 
-#logging.basicConfig(level=logging.INFO)
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
+#logging.basicConfig(level=logging.DEBUG)
 
 def main(args):
     ############################################################################
@@ -371,6 +371,12 @@ def main(args):
             else:
                 sess.run(tf.global_variables_initializer()) # initialize all variables
                 model.initialize_variables() # set any model specific variables
+
+                
+            video_paths_tmp = data_video_paths.copy()
+            random.shuffle(video_paths_tmp)
+            video_batch_f = load_videos(pool, args.data_root, data_labels, video_paths_tmp[0:args.prefetch_batch_size], args.video_width, args.video_height, args.video_length, args.video_downsample_ratio, True, args.prefetch_batch_size, shared_mem, is_ucf101=args.ucf101)
+            video_batch = video_batch_f()
                 
             for epoch in range(args.num_epoch):
                 video_paths = data_video_paths.copy()
@@ -382,12 +388,11 @@ def main(args):
                 for batch_base_idx in range(0, num_data_videos, args.prefetch_batch_size):
                     video_paths_batch = video_paths[batch_base_idx:batch_base_idx+args.prefetch_batch_size]
 
-                    logging.debug('begin load videos')
+                    logging.debug('begin load videos future')
                     t1 = timeit.default_timer() 
                     video_batch_f = load_videos(pool, args.data_root, data_labels, video_paths_batch, args.video_width, args.video_height, args.video_length, args.video_downsample_ratio, True, args.prefetch_batch_size, shared_mem, is_ucf101=args.ucf101)
-                    video_batch = video_batch_f()
                     t2 = timeit.default_timer()
-                    logging.debug('done! (load videos): {})'.format(t2-t1))
+                    logging.debug('done! (load videos future): {})'.format(t2-t1))
 
                     # print('print out a video to make sure things are working')
                     # print(video_batch['video_labelnums'][0], labels_num2str[video_batch['video_labelnums'][0]])
@@ -430,47 +435,53 @@ def main(args):
                         t2_trainstep = timeit.default_timer()
 
                         t1_log = timeit.default_timer()
-                        analysis = TrainingLogger.process_prediction(_predict_vals, video_batch['video_labelnums'][begin:end], video_batch['video_numframes'][begin:end])
+                    #     analysis = TrainingLogger.process_prediction(_predict_vals, video_batch['video_labelnums'][begin:end], video_batch['video_numframes'][begin:end])
 
-                        if len(cum_data_correct_predictions_l) == 0:
-                            for feedback_idx in range(_predict_vals.shape[1]):
-                                cum_data_correct_predictions_l.append([])
-                                cum_data_correct_predictions3_l.append([])
-                                cum_data_correct_predictions5_l.append([])
+                    #     if len(cum_data_correct_predictions_l) == 0:
+                    #         for feedback_idx in range(_predict_vals.shape[1]):
+                    #             cum_data_correct_predictions_l.append([])
+                    #             cum_data_correct_predictions3_l.append([])
+                    #             cum_data_correct_predictions5_l.append([])
                             
-                        for feedback_idx in range(_predict_vals.shape[1]):
-                            correct_predictions = analysis[feedback_idx]['correct_predictions']
-                            correct_predictions3 = analysis[feedback_idx]['correct_predictions3']
-                            correct_predictions5 = analysis[feedback_idx]['correct_predictions5']
+                    #     for feedback_idx in range(_predict_vals.shape[1]):
+                    #         correct_predictions = analysis[feedback_idx]['correct_predictions']
+                    #         correct_predictions3 = analysis[feedback_idx]['correct_predictions3']
+                    #         correct_predictions5 = analysis[feedback_idx]['correct_predictions5']
 
-                            cum_data_correct_predictions_l[feedback_idx].append(correct_predictions)
-                            cum_data_correct_predictions3_l[feedback_idx].append(correct_predictions3)
-                            cum_data_correct_predictions5_l[feedback_idx].append(correct_predictions5)
+                    #         cum_data_correct_predictions_l[feedback_idx].append(correct_predictions)
+                    #         cum_data_correct_predictions3_l[feedback_idx].append(correct_predictions3)
+                    #         cum_data_correct_predictions5_l[feedback_idx].append(correct_predictions5)
 
-                            logging.info('TRAINING BATCH\taccuracy (top-1) (feedback:{}): {}'.format(feedback_idx, correct_predictions / args.train_batch_size))
-                            logging.info('TRAINING BATCH\taccuracy (top-3) (feedback:{}): {}'.format(feedback_idx, correct_predictions3 / args.train_batch_size))
-                            logging.info('TRAINING BATCH\taccuracy (top-5) (feedback:{}): {}'.format(feedback_idx, correct_predictions5 / args.train_batch_size))
+                    #         logging.info('TRAINING BATCH\taccuracy (top-1) (feedback:{}): {}'.format(feedback_idx, correct_predictions / args.train_batch_size))
+                    #         logging.info('TRAINING BATCH\taccuracy (top-3) (feedback:{}): {}'.format(feedback_idx, correct_predictions3 / args.train_batch_size))
+                    #         logging.info('TRAINING BATCH\taccuracy (top-5) (feedback:{}): {}'.format(feedback_idx, correct_predictions5 / args.train_batch_size))
 
-                        logging.info('TRAINING BATCH\tloss: {}'.format(_total_loss_val))
-                        logging.info('TRAINING BATCH\tlearning_rate: {}'.format(_learn_rate))
-                        logging.info('TRAINING BATCH\tnum_examples: {}'.format(args.train_batch_size))
+                    #     logging.info('TRAINING BATCH\tloss: {}'.format(_total_loss_val))
+                    #     logging.info('TRAINING BATCH\tlearning_rate: {}'.format(_learn_rate))
+                    #     logging.info('TRAINING BATCH\tnum_examples: {}'.format(args.train_batch_size))
                             
-                        cum_data_loss += _total_loss_val
+                    #     cum_data_loss += _total_loss_val
 
-                        train_minibatch_count += 1
+                    #     train_minibatch_count += 1
 
-                        t2_log = timeit.default_timer()
-                        logging.debug('done! (train step: {})'.format(t2_trainstep-t1_trainstep))
-                        logging.debug('done! (train log: {})'.format(t2_log-t1_log))
+                    #     t2_log = timeit.default_timer()
+                    #     logging.debug('done! (train step: {})'.format(t2_trainstep-t1_trainstep))
+                    #     logging.debug('done! (train log: {})'.format(t2_log-t1_log))
                         
-                    for feedback_idx in range(len(cum_data_correct_predictions_l)):
-                        cum_data_correct_predictions = sum(cum_data_correct_predictions_l[feedback_idx])
-                        cum_data_correct_predictions3 = sum(cum_data_correct_predictions3_l[feedback_idx])
-                        cum_data_correct_predictions5 = sum(cum_data_correct_predictions5_l[feedback_idx])
+                    # for feedback_idx in range(len(cum_data_correct_predictions_l)):
+                    #     cum_data_correct_predictions = sum(cum_data_correct_predictions_l[feedback_idx])
+                    #     cum_data_correct_predictions3 = sum(cum_data_correct_predictions3_l[feedback_idx])
+                    #     cum_data_correct_predictions5 = sum(cum_data_correct_predictions5_l[feedback_idx])
                     
-                        logfile.write('{}, {}, {}, {}, {}, {}, {}, {}, {}, , , , , ,\n'.format(train_batch_count, epoch, _step, _learn_rate, feedback_idx, cum_data_correct_predictions/args.prefetch_batch_size, cum_data_correct_predictions3/args.prefetch_batch_size, cum_data_correct_predictions5/args.prefetch_batch_size, cum_data_loss))
-                    logfile.flush()
+                    #     logfile.write('{}, {}, {}, {}, {}, {}, {}, {}, {}, , , , , ,\n'.format(train_batch_count, epoch, _step, _learn_rate, feedback_idx, cum_data_correct_predictions/args.prefetch_batch_size, cum_data_correct_predictions3/args.prefetch_batch_size, cum_data_correct_predictions5/args.prefetch_batch_size, cum_data_loss))
+                    # logfile.flush()
                                         
+                    logging.debug('begin load videos complete-future')
+                    t1 = timeit.default_timer() 
+                    video_batch = video_batch_f()
+                    t2 = timeit.default_timer()
+                    logging.debug('done! (load videos complete-future): {})'.format(t2-t1))
+
                     t2_train = timeit.default_timer()
                     logging.debug('done! (train batch: {})'.format(t2_train-t1_train))
 
