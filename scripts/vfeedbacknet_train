@@ -324,7 +324,8 @@ def main(args):
     logging.info('allocating memory')
     logging.debug('begin allocate memory buffers')
     t1 = timeit.default_timer()
-    shared_mem = sm.empty(args.prefetch_batch_size*args.video_length*args.video_height*args.video_width, dtype='f')
+    shared_mem_idx = 0
+    shared_mem = [ sm.empty(args.prefetch_batch_size*args.video_length*args.video_height*args.video_width, dtype='f') for _ in range(2) ]
     t2 = timeit.default_timer()
     logging.debug('done! (allocate memory buffers: {})'.format(t2-t1))
 
@@ -375,7 +376,7 @@ def main(args):
                 
             video_paths_tmp = data_video_paths.copy()
             random.shuffle(video_paths_tmp)
-            video_batch_f = load_videos(pool, args.data_root, data_labels, video_paths_tmp[0:args.prefetch_batch_size], args.video_width, args.video_height, args.video_length, args.video_downsample_ratio, True, args.prefetch_batch_size, shared_mem, is_ucf101=args.ucf101)
+            video_batch_f = load_videos(pool, args.data_root, data_labels, video_paths_tmp[0:args.prefetch_batch_size], args.video_width, args.video_height, args.video_length, args.video_downsample_ratio, True, args.prefetch_batch_size, shared_mem, shared_mem_idx, is_ucf101=args.ucf101)
             video_batch = video_batch_f()
                 
             for epoch in range(args.num_epoch):
@@ -390,7 +391,8 @@ def main(args):
 
                     logging.debug('begin load videos future')
                     t1 = timeit.default_timer() 
-                    video_batch_f = load_videos(pool, args.data_root, data_labels, video_paths_batch, args.video_width, args.video_height, args.video_length, args.video_downsample_ratio, True, args.prefetch_batch_size, shared_mem, is_ucf101=args.ucf101)
+                    next_shared_mem_idx = (shared_mem_idx + 1) % 2
+                    video_batch_f = load_videos(pool, args.data_root, data_labels, video_paths_batch, args.video_width, args.video_height, args.video_length, args.video_downsample_ratio, True, args.prefetch_batch_size, shared_mem, next_shared_mem_idx, is_ucf101=args.ucf101)
                     t2 = timeit.default_timer()
                     logging.debug('done! (load videos future): {})'.format(t2-t1))
 
@@ -479,6 +481,7 @@ def main(args):
                     logging.debug('begin load videos complete-future')
                     t1 = timeit.default_timer() 
                     video_batch = video_batch_f()
+                    shared_mem_idx = next_shared_mem_idx
                     t2 = timeit.default_timer()
                     logging.debug('done! (load videos complete-future): {})'.format(t2-t1))
 
@@ -521,7 +524,8 @@ def main(args):
                         validation_batch = validation_batch_f()
 
                         for valid_base_idx in range(args.prefetch_batch_size, num_validation_videos, args.prefetch_batch_size):
-                            validation_batch_f = load_videos(pool, args.data_root, validation_labels, validation_video_paths[valid_base_idx:valid_base_idx+args.prefetch_batch_size], args.video_width, args.video_height, args.video_length, args.video_downsample_ratio, False, args.prefetch_batch_size, shared_mem)
+                            next_shared_mem_idx = (shared_mem_idx + 1) % 2
+                            validation_batch_f = load_videos(pool, args.data_root, validation_labels, validation_video_paths[valid_base_idx:valid_base_idx+args.prefetch_batch_size], args.video_width, args.video_height, args.video_length, args.video_downsample_ratio, False, args.prefetch_batch_size, shared_mem, next_shared_mem_idx)
                             
                             # print('out a video to make sure things are working')
                             # print(validation_batch['video_labelnums'][0], labels_num2str[validation_batch['video_labelnums'][0]])
@@ -575,6 +579,7 @@ def main(args):
                                 logging.debug('begin load videos complete-future')
                                 t1 = timeit.default_timer() 
                                 validation_batch = validation_batch_f()                        
+                                shared_mem_idx = next_shared_mem_idx
                                 t2 = timeit.default_timer()
                                 logging.debug('done! (load videos complete-future): {})'.format(t2-t1))
 

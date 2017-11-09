@@ -143,11 +143,11 @@ class TrainingLogger:
 def pool_init(shared_mem_):
     global shared_mem
     shared_mem = shared_mem_
-
+    
 def prepare_video(args):
-    data_root, video_path, video_width, video_height, video_length, video_downsample_ratio, video_index, batch_size, is_training, is_ucf101 = args
+    data_root, video_path, video_width, video_height, video_length, video_downsample_ratio, video_index, batch_size, shared_mem_idx, is_training, is_ucf101 = args
 
-    video_mem = np.frombuffer(shared_mem, np.ctypeslib.ctypes.c_float)
+    video_mem = np.frombuffer(shared_mem[shared_mem_counter], np.ctypeslib.ctypes.c_float)
     video_mem = video_mem.reshape((batch_size, video_length, video_height, video_width))
 
     pathgen = lambda x : os.path.join(data_root, str(video_path), x)
@@ -214,9 +214,9 @@ def prepare_video(args):
         
     return { 'num_frames' : num_frames, 'video_path' : video_path }
 
-def load_videos(pool, data_root, data_labels, video_paths, video_width, video_height, video_length, video_downsample_ratio, is_training, batch_size, shared_mem, is_ucf101=False):
+def load_videos(pool, data_root, data_labels, video_paths, video_width, video_height, video_length, video_downsample_ratio, is_training, batch_size, shared_mem, shared_mem_idx, is_ucf101=False):
 
-    prepare_video_jobs = [ (data_root, video_paths[i], video_width, video_height, video_length, video_downsample_ratio, i, batch_size, is_training,  is_ucf101) for i in range(batch_size) ]
+    prepare_video_jobs = [ (data_root, video_paths[i], video_width, video_height, video_length, video_downsample_ratio, i, batch_size, shared_mem_idx, is_training, is_ucf101) for i in range(batch_size) ]
     prepared_videos_f = pool.map_async(prepare_video, prepare_video_jobs)
 
     def future():
@@ -229,7 +229,7 @@ def load_videos(pool, data_root, data_labels, video_paths, video_width, video_he
             video_numframes[i] = prepared_videos[i]['num_frames']
             video_labelnums[i] = data_labels[ prepared_videos[i]['video_path'] ]
 
-        video_mem = np.frombuffer(shared_mem, np.ctypeslib.ctypes.c_float)
+        video_mem = np.frombuffer(shared_mem[shared_mem_idx], np.ctypeslib.ctypes.c_float)
         video_mem = video_mem.reshape((batch_size, video_length, video_height, video_width))
 
         batch = {
