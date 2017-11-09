@@ -435,6 +435,7 @@ def main(args):
                                                                                                                 y_label : batch_labels,
                                                                                                                 y_zeros : zeros})
 
+                        logging.debug('learning_rate: {}'.format(_learn_rate))
                         assert(not np.isnan(_total_loss_val))
                         assert(not np.any(np.isnan(_predict_vals)))
                         t2_trainstep = timeit.default_timer()
