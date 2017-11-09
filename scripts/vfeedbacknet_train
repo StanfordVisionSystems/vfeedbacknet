@@ -251,7 +251,10 @@ def main(args):
                                                                          weights_filename='/home/jemmons/vfeedbacknet_base_weights.npz'),
         'vfeedbacknet_model22' : lambda : v.vfeedbacknet_model22.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
                                                                        train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
-                                                                       weights_filename='/mnt/data/jemmons/vfeedbacknet-results/imagenet/vfeedbacknet_fb_base1/model_weights-epoch1-step4103.npz'),
+                                                                       weights_filename='/mnt/data/jemmons/vfeedbacknet-results/imagenet/vfeedbacknet_fb_base1/model_weights-epoch1-step4103.npz'),# pretrained on imagenet (17%)
+        'vfeedbacknet_model22.1' : lambda : v.vfeedbacknet_model22.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
+                                                                        train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
+                                                                        weights_filename='/mnt/data/jemmons/vfeedbacknet-results/imagenet/vfeedbacknet_fb_base1/model_weights-epoch8-step335.npz'),# pretrained on imagenet (26%)
     }
 
     model = None
