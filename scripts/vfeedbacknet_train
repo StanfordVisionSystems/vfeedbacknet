@@ -440,7 +440,7 @@ def main(args):
                         t2_trainstep = timeit.default_timer()
 
                         t1_log = timeit.default_timer()
-                        if train_batch_count % 128 == 0:
+                        if train_batch_count % args.validation_interval == 0:
                             analysis = TrainingLogger.process_prediction(_predict_vals, video_batch['video_labelnums'][begin:end], video_batch['video_numframes'][begin:end])
 
                             if len(cum_data_correct_predictions_l) == 0:
@@ -474,7 +474,7 @@ def main(args):
                         logging.debug('done! (train step: {})'.format(t2_trainstep-t1_trainstep))
                         logging.debug('done! (train log: {})'.format(t2_log-t1_log))
                         
-                    if train_batch_count % 128 == 0:
+                    if train_batch_count % args.validation_interval == 0:
                         for feedback_idx in range(len(cum_data_correct_predictions_l)):
                             cum_data_correct_predictions = sum(cum_data_correct_predictions_l[feedback_idx])
                             cum_data_correct_predictions3 = sum(cum_data_correct_predictions3_l[feedback_idx])
