@@ -517,9 +517,11 @@ def main(args):
                         cum_validation_correct_predictions3_l = []
                         cum_validation_correct_predictions5_l = []
 
+                        validation_batch_f = load_videos(pool, args.data_root, validation_labels, validation_video_paths[valid_base_idx:valid_base_idx+args.prefetch_batch_size], args.video_width, args.video_height, args.video_length, args.video_downsample_ratio, False, args.prefetch_batch_size, shared_mem)
+                        validation_batch = validation_batch_f()
+
                         for valid_base_idx in range(0, num_validation_videos, args.prefetch_batch_size):
                             validation_batch_f = load_videos(pool, args.data_root, validation_labels, validation_video_paths[valid_base_idx:valid_base_idx+args.prefetch_batch_size], args.video_width, args.video_height, args.video_length, args.video_downsample_ratio, False, args.prefetch_batch_size, shared_mem)
-                            validation_batch = validation_batch_f()
                             
                             # print('out a video to make sure things are working')
                             # print(validation_batch['video_labelnums'][0], labels_num2str[validation_batch['video_labelnums'][0]])
@@ -587,7 +589,13 @@ def main(args):
                     
                         logfile.flush()
                         logging.info('VALIDATION TOTAL\tnum_examples: {}'.format(num_validation_videos))
-                            
+
+                        logging.debug('begin load videos complete-future')
+                        t1 = timeit.default_timer() 
+                        validation_batch = validation_batch_f()                        
+                        t2 = timeit.default_timer()
+                        logging.debug('done! (load videos complete-future): {})'.format(t2-t1))
+
                         t2 = timeit.default_timer()
                         logging.debug('done! (validation accuracy computation): {})'.format(t2 - t1))
 
