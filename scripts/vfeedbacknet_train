@@ -572,6 +572,11 @@ def main(args):
                                     logging.debug('VALIDATION batch accuracy (top-5) (feedback:{}): {}'.format(feedback_idx, correct_predictions5 / args.train_batch_size))
 
                                 logging.debug('VALIDATION batch loss: {}'.format(total_loss_val))
+                                logging.debug('begin load videos complete-future')
+                                t1 = timeit.default_timer() 
+                                validation_batch = validation_batch_f()                        
+                                t2 = timeit.default_timer()
+                                logging.debug('done! (load videos complete-future): {})'.format(t2-t1))
 
                                 cum_validation_loss += _total_loss_val
 
@@ -589,12 +594,7 @@ def main(args):
                     
                         logfile.flush()
                         logging.info('VALIDATION TOTAL\tnum_examples: {}'.format(num_validation_videos))
-
-                        logging.debug('begin load videos complete-future')
-                        t1 = timeit.default_timer() 
-                        validation_batch = validation_batch_f()                        
-                        t2 = timeit.default_timer()
-                        logging.debug('done! (load videos complete-future): {})'.format(t2-t1))
+                        
 
                         t2 = timeit.default_timer()
                         logging.debug('done! (validation accuracy computation): {})'.format(t2 - t1))
