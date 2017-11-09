@@ -75,6 +75,7 @@ def main(args):
         if args.overfit:
             logging.info('OVERFITTING!')
             args.prefetch_batch_size = 16
+            args.train_batch_size = 16
             validation_video_paths = validation_video_paths[:args.prefetch_batch_size] # force overfitting
         elif args.overfitt:
             logging.info('OVERFITTING!')
@@ -325,6 +326,7 @@ def main(args):
     logging.debug('begin allocate memory buffers')
     t1 = timeit.default_timer()
     shared_mem_idx = 0
+    next_shared_mem_idx = 1
     shared_mem = [ sm.empty(args.prefetch_batch_size*args.video_length*args.video_height*args.video_width, dtype='f') for _ in range(2) ]
     t2 = timeit.default_timer()
     logging.debug('done! (allocate memory buffers: {})'.format(t2-t1))
@@ -333,7 +335,7 @@ def main(args):
     num_data_videos = round2num(len(data_video_paths), args.prefetch_batch_size)
     num_validation_videos = round2num(len(validation_video_paths), args.prefetch_batch_size)
     num_batch_videos = round2num(args.prefetch_batch_size, args.train_batch_size)
-    assert(num_batch_videos == args.prefetch_batch_size) # make `prefetch_batch_size` a multiple of `train_batch_size`
+    assert num_batch_videos == args.prefetch_batch_size, 'num_batch_videos:{}, args.train_batch_size:{} args.prefetch_batch_size:{}'.format(num_batch_videos, args.train_batch_size, args.prefetch_batch_size) # make `prefetch_batch_size` a multiple of `train_batch_size`
 
     ############################################################################
     # begin the training process
@@ -373,26 +375,26 @@ def main(args):
                 sess.run(tf.global_variables_initializer()) # initialize all variables
                 model.initialize_variables() # set any model specific variables
 
-                
-            video_paths_tmp = data_video_paths.copy()
-            random.shuffle(video_paths_tmp)
-            video_batch_f = load_videos(pool, args.data_root, data_labels, video_paths_tmp[0:args.prefetch_batch_size], args.video_width, args.video_height, args.video_length, args.video_downsample_ratio, True, args.prefetch_batch_size, shared_mem, shared_mem_idx, is_ucf101=args.ucf101)
-            video_batch = video_batch_f()
-                
+                        
             for epoch in range(args.num_epoch):
                 video_paths = data_video_paths.copy()
                 random.shuffle(video_paths)
+
+                video_batch_f = load_videos(pool, args.data_root, data_labels, video_paths[0:args.prefetch_batch_size], args.video_width, args.video_height, args.video_length, args.video_downsample_ratio, True, args.prefetch_batch_size, shared_mem, shared_mem_idx, is_ucf101=args.ucf101)
+                video_batch = video_batch_f()
 
                 ############################################################
                 # loop over all the videos in a random order
                 ############################################################
                 for batch_base_idx in range(0, num_data_videos, args.prefetch_batch_size):
-                    video_paths_batch = video_paths[batch_base_idx:batch_base_idx+args.prefetch_batch_size]
 
                     logging.debug('begin load videos future')
                     t1 = timeit.default_timer() 
-                    next_shared_mem_idx = (shared_mem_idx + 1) % 2
-                    video_batch_f = load_videos(pool, args.data_root, data_labels, video_paths_batch, args.video_width, args.video_height, args.video_length, args.video_downsample_ratio, True, args.prefetch_batch_size, shared_mem, next_shared_mem_idx, is_ucf101=args.ucf101)
+                    # prefetch the batch ahead of the index (therefore, we must skip loading on the last loop iteration to avoid array overrun)
+                    if batch_base_idx+args.prefetch_batch_size < num_data_videos:
+                        video_paths_batch = video_paths[batch_base_idx+args.prefetch_batch_size:batch_base_idx+2*args.prefetch_batch_size]
+                        next_shared_mem_idx = (shared_mem_idx + 1) % 2
+                        video_batch_f = load_videos(pool, args.data_root, data_labels, video_paths_batch, args.video_width, args.video_height, args.video_length, args.video_downsample_ratio, True, args.prefetch_batch_size, shared_mem, next_shared_mem_idx, is_ucf101=args.ucf101)
                     t2 = timeit.default_timer()
                     logging.debug('done! (load videos future): {})'.format(t2-t1))
 
@@ -520,13 +522,19 @@ def main(args):
                         cum_validation_correct_predictions3_l = []
                         cum_validation_correct_predictions5_l = []
 
-                        validation_batch_f = load_videos(pool, args.data_root, validation_labels, validation_video_paths[0:args.prefetch_batch_size], args.video_width, args.video_height, args.video_length, args.video_downsample_ratio, False, args.prefetch_batch_size, shared_mem)
+                        validation_batch_f = load_videos(pool, args.data_root, validation_labels, validation_video_paths[0:args.prefetch_batch_size], args.video_width, args.video_height, args.video_length, args.video_downsample_ratio, False, args.prefetch_batch_size, shared_mem, shared_mem_idx)
                         validation_batch = validation_batch_f()
+                        # print('min: {} max:{}'.format(0, num_validation_videos))
+                        # print('loaded {} to {}'.format(0, args.prefetch_batch_size))
+                         
+                        for valid_base_idx in range(0, num_validation_videos, args.prefetch_batch_size):
 
-                        for valid_base_idx in range(args.prefetch_batch_size, num_validation_videos, args.prefetch_batch_size):
-                            next_shared_mem_idx = (shared_mem_idx + 1) % 2
-                            validation_batch_f = load_videos(pool, args.data_root, validation_labels, validation_video_paths[valid_base_idx:valid_base_idx+args.prefetch_batch_size], args.video_width, args.video_height, args.video_length, args.video_downsample_ratio, False, args.prefetch_batch_size, shared_mem, next_shared_mem_idx)
-                            
+                            # prefetch the batch ahead of the index (therefore, we must skip loading on the last loop iteration to avoid array overrun)
+                            if valid_base_idx+args.prefetch_batch_size < num_validation_videos:
+                                next_shared_mem_idx = (shared_mem_idx + 1) % 2
+                                validation_batch_f = load_videos(pool, args.data_root, validation_labels, validation_video_paths[valid_base_idx+args.prefetch_batch_size:valid_base_idx+2*args.prefetch_batch_size], args.video_width, args.video_height, args.video_length, args.video_downsample_ratio, False, args.prefetch_batch_size, shared_mem, next_shared_mem_idx)
+                                # print('loaded {} to {}'.format(valid_base_idx+args.prefetch_batch_size, valid_base_idx+2*args.prefetch_batch_size))
+
                             # print('out a video to make sure things are working')
                             # print(validation_batch['video_labelnums'][0], labels_num2str[validation_batch['video_labelnums'][0]])
                             # print(np.min(validation_batch['video_rawframes'][0,0,:,:]), np.max(validation_batch['video_rawframes'][0,0,:,:]))

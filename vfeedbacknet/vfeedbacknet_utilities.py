@@ -147,7 +147,7 @@ def pool_init(shared_mem_):
 def prepare_video(args):
     data_root, video_path, video_width, video_height, video_length, video_downsample_ratio, video_index, batch_size, shared_mem_idx, is_training, is_ucf101 = args
 
-    video_mem = np.frombuffer(shared_mem[shared_mem_counter], np.ctypeslib.ctypes.c_float)
+    video_mem = np.frombuffer(shared_mem[shared_mem_idx], np.ctypeslib.ctypes.c_float)
     video_mem = video_mem.reshape((batch_size, video_length, video_height, video_width))
 
     pathgen = lambda x : os.path.join(data_root, str(video_path), x)
