@@ -219,7 +219,7 @@ def load_videos(pool, data_root, data_labels, video_paths, video_width, video_he
     prepare_video_jobs = [ (data_root, video_paths[i], video_width, video_height, video_length, video_downsample_ratio, i, batch_size, is_training,  is_ucf101) for i in range(batch_size) ]
     prepared_videos_f = pool.map_async(prepare_video, prepare_video_jobs)
 
-    def future()
+    def future():
         prepared_videos = prepared_videos_f.get()
         
         video_numframes = np.zeros((batch_size,), dtype=np.int32)
