@@ -20,6 +20,8 @@ class Model:
                  weights_filename=None, is_training=True):
 
         self.sess = sess
+        if weights_filename is not None:
+            print('loading weights from: {}'.format(weights_filename))
         self.weights = np.load(weights_filename) if weights_filename is not None else None
         self.num_classes = num_classes
         self.batch_size = batch_size
