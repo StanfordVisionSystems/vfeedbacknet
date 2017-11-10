@@ -255,6 +255,9 @@ def main(args):
         'vfeedbacknet_model22.1' : lambda : v.vfeedbacknet_model22.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
                                                                         train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
                                                                         weights_filename='/mnt/data/jemmons/vfeedbacknet-results/imagenet/vfeedbacknet_fb_base1/model_weights-epoch8-step335.npz'),# pretrained on imagenet (26%)
+        'vfeedbacknet_model22.2' : lambda : v.vfeedbacknet_model22.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
+                                                                        train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
+                                                                        weights_filename='/mnt/data/jemmons/vfeedbacknet-results/imagenet/vfeedbacknet_fb_base1/model_weights-epoch10-step423.npz'),# pretrained on imagenet (36%)
     }
 
     model = None
@@ -444,7 +447,7 @@ def main(args):
                         t2_trainstep = timeit.default_timer()
 
                         t1_log = timeit.default_timer()
-                        if train_batch_count % args.validation_interval == 0:
+                        if train_batch_count % max((args.validation_interval//2),1) == 0:
                             analysis = TrainingLogger.process_prediction(_predict_vals, video_batch['video_labelnums'][begin:end], video_batch['video_numframes'][begin:end])
 
                             if len(cum_data_correct_predictions_l) == 0:
