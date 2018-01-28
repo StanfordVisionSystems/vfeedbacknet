@@ -97,7 +97,20 @@ class VFeedbackNetBase:
                 with tf.variable_scope('conv5_3'):
                     kernel = tf.get_variable('weights', shape=[3, 3, 512, 512], dtype=tf.float32, trainable=trainable, regularizer=regularizer, initializer=initializer)
                     biases = tf.get_variable('biases', shape=[512], dtype=tf.float32, trainable=trainable, regularizer=regularizer, initializer=initializer)
-            
+
+                with tf.variable_scope('fc6'):
+                    kernel = tf.get_variable('weights', shape=[7*7*512, 4096], dtype=tf.float32, trainable=trainable, regularizer=regularizer, initializer=initializer)
+                    biases = tf.get_variable('biases', shape=[4096], dtype=tf.float32, trainable=trainable, regularizer=regularizer, initializer=initializer)
+
+                with tf.variable_scope('fc7'):
+                    kernel = tf.get_variable('weights', shape=[4096, 4096], dtype=tf.float32, trainable=trainable, regularizer=regularizer, initializer=initializer)
+                    biases = tf.get_variable('biases', shape=[4096], dtype=tf.float32, trainable=trainable, regularizer=regularizer, initializer=initializer)
+
+                with tf.variable_scope('fc8'):
+                    kernel = tf.get_variable('weights', shape=[4096, 1000], dtype=tf.float32, trainable=trainable, regularizer=regularizer, initializer=initializer)
+                    biases = tf.get_variable('biases', shape=[1000], dtype=tf.float32, trainable=trainable, regularizer=regularizer, initializer=initializer)
+
+                    
             with tf.variable_scope('feedback'):
 
                 regularizer = None # tf.contrib.layers.l2_regularizer(scale=0.25)
@@ -533,7 +546,88 @@ class VFeedbackNetBase:
             
             return inputs
 
-            
+
+    def vgg16_fc_layer1(self, inputs, var_list=None):
+        
+        with tf.variable_scope('vfeedbacknet_base', reuse=True):
+            with tf.variable_scope('vgg16'):
+                
+                with tf.variable_scope('fc6'):
+                    weights = tf.get_variable('weights')
+                    biases = tf.get_variable('biases')
+
+                    h, w, c, = inputs.shape[1:]
+                    size = int(h) * int(w) * int(c)
+                    inputs = tf.reshape(inputs, [-1, size])
+                    inputs = tf.matmul(inputs, weights)
+                    inputs = tf.nn.bias_add(inputs, biases)
+
+                    if weights not in var_list:
+                        var_list += [weights]
+                    if biases not in var_list:
+                        var_list += [biases]
+
+                    if var_list is not None and weights not in var_list:
+                        var_list.append(weights)
+                    if var_list is not None and biases not in var_list:
+                        var_list.append(biases)
+
+                    return inputs
+
+    def vgg16_fc_layer2(self, inputs, var_list=None):
+        
+        with tf.variable_scope('vfeedbacknet_base', reuse=True):
+            with tf.variable_scope('vgg16'):
+                
+                with tf.variable_scope('fc7'):
+                    weights = tf.get_variable('weights')
+                    biases = tf.get_variable('biases')
+
+                    # h, w, c, = inputs.shape[1:]
+                    # size = int(h) * int(w) * int(c)
+                    # inputs = tf.reshape(inputs, [-1, size])
+                    inputs = tf.matmul(inputs, weights)
+                    inputs = tf.nn.bias_add(inputs, biases)
+
+                    if weights not in var_list:
+                        var_list += [weights]
+                    if biases not in var_list:
+                        var_list += [biases]
+
+                    if var_list is not None and weights not in var_list:
+                        var_list.append(weights)
+                    if var_list is not None and biases not in var_list:
+                        var_list.append(biases)
+
+                    return inputs
+
+    def vgg16_fc_layer3(self, inputs, var_list=None):
+        
+        with tf.variable_scope('vfeedbacknet_base', reuse=True):
+            with tf.variable_scope('vgg16'):
+                
+                with tf.variable_scope('fc8'):
+                    weights = tf.get_variable('weights')
+                    biases = tf.get_variable('biases')
+
+                    # h, w, c, = inputs.shape[1:]
+                    # size = int(h) * int(w) * int(c)
+                    # inputs = tf.reshape(inputs, [-1, size])
+                    inputs = tf.matmul(inputs, weights)
+                    inputs = tf.nn.bias_add(inputs, biases)
+
+                    if weights not in var_list:
+                        var_list += [weights]
+                    if biases not in var_list:
+                        var_list += [biases]
+
+                    if var_list is not None and weights not in var_list:
+                        var_list.append(weights)
+                    if var_list is not None and biases not in var_list:
+                        var_list.append(biases)
+
+                    return inputs
+
     def fc_layer(self, inputs, var_list=None):
         
         with tf.variable_scope('vfeedbacknet_base', reuse=True):

@@ -1,0 +1,17 @@
+Things to debug/try
+
+This weekend!
+- restore full RGB inputs
+- try to train VGG16 (only fc layers) to 70% top-1
+- try to train VGG16 full to 70% top-1
+- try training the basic feedback net to a reasonable accruacy on imagenet (hopefully 65-70%)
+- transfer weights to ucf-101 and hmdb-51 (see how it does, is it even close to competitive?)
+
+Future...
+- try other variants of the network architecture that have more interesting temporal properties
+    * early prediction
+    * taxonomic classification
+    * taking advantage of temporal information for faster analysis
+
+- figure out what other tasks besides action recognition could benefit from this approach
+    * 

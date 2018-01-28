@@ -9,6 +9,8 @@ from vfeedbacknet.vfeedbacknet_utilities import load_videos
 import vfeedbacknet.vfeedbacknet_lossfunctions
 
 # models
+import vfeedbacknet.vfeedbacknet_vgg16 as vfeedbacknet_vgg
+
 import vfeedbacknet.vfeedbacknet_videoLSTM_1 as vfeedbacknet_videoLSTM_1
 import vfeedbacknet.vfeedbacknet_videoLSTM_2 as vfeedbacknet_videoLSTM_2
 
