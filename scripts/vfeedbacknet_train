@@ -268,7 +268,7 @@ def main(args):
                                                                         train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
                                                                         weights_filename='/mnt/data/jemmons/vfeedbacknet-results/imagenet/vfeedbacknet_fb_base1/model_weights-epoch110-step8607.npz'),# pretrained on imagenet (54.6%)
         'vfeedbacknet_vgg' : lambda : v.vfeedbacknet_vgg.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
-                                                               train_featurizer='NO', train_main_model='NO', train_fc='FROM_SCRATCH',
+                                                               train_featurizer='FROM_SCRATCH', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
                                                                weights_filename='/home/jemmons/data/vfeedbacknet_base_weights.npz'),
         'vfeedbacknet_vgg.f' : lambda : v.vfeedbacknet_vgg.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
                                                                train_featurizer='FINE_TUNE', train_main_model='FINE_TUNE', train_fc='FINE_TUNE',
