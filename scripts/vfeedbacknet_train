@@ -134,7 +134,7 @@ def main(args):
 
     x_input = tf.placeholder(tf.float32,
                              [None, args.video_length,
-                              args.video_height, args.video_width],
+                              args.video_height, args.video_width, 3],
                              name='x_input')
     x_length = tf.placeholder(tf.int32, [None,], name='x_length')
     
@@ -272,6 +272,9 @@ def main(args):
                                                                weights_filename='/home/jemmons/data/vfeedbacknet_base_weights.npz'),
         'vfeedbacknet_vgg.f' : lambda : v.vfeedbacknet_vgg.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
                                                                train_featurizer='FINE_TUNE', train_main_model='FINE_TUNE', train_fc='FINE_TUNE',
+                                                               weights_filename='/home/jemmons/data/vfeedbacknet_base_weights.npz'),
+        'vfeedbacknet_vgg.ff' : lambda : v.vfeedbacknet_vgg.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
+                                                               train_featurizer='FINE_TUNE', train_main_model='FINE_TUNE', train_fc='FINE_TUNE',
                                                                weights_filename='/mnt/data/jemmons/vfeedbacknet-results/imagenet/vgg16.test2/model_weights-epoch2-step767.npz'),
     }
 
@@ -348,7 +351,7 @@ def main(args):
     t1 = timeit.default_timer()
     shared_mem_idx = 0
     next_shared_mem_idx = 1
-    shared_mem = [ sm.empty(args.prefetch_batch_size*args.video_length*args.video_height*args.video_width, dtype='f') for _ in range(2) ]
+    shared_mem = [ sm.empty(args.prefetch_batch_size*args.video_length*args.video_height*args.video_width*3, dtype='f') for _ in range(2) ]
     t2 = timeit.default_timer()
     logging.debug('done! (allocate memory buffers: {})'.format(t2-t1))
 

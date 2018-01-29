@@ -148,7 +148,7 @@ def prepare_video(args):
     data_root, video_path, video_width, video_height, video_length, video_downsample_ratio, video_index, batch_size, shared_mem_idx, is_training, is_ucf101 = args
 
     video_mem = np.frombuffer(shared_mem[shared_mem_idx], np.ctypeslib.ctypes.c_float)
-    video_mem = video_mem.reshape((batch_size, video_length, video_height, video_width))
+    video_mem = video_mem.reshape((batch_size, video_length, video_height, video_width, 3))
 
     pathgen = lambda x : os.path.join(data_root, str(video_path), x)
     
@@ -186,8 +186,9 @@ def prepare_video(args):
         image_idx = video_downsample_ratio * (i + t_offset)
         image_idx = min(image_idx + stride_offset, len(frames))
         image = Image.open(pathgen(frames[image_idx])) # in RGB order by default
-        image = image.convert('L') # convert to YUV and grab Y-component
-
+        image = image.convert('RGB')
+        #image = image.convert('L') # convert to YUV and grab Y-component
+        
         image = image.resize((video_width, video_height), PIL.Image.BICUBIC)
         
         if flip_frames:
@@ -206,11 +207,11 @@ def prepare_video(args):
         image = np.clip(image, -128, 128)
 
         if add_noise:
-            noise = np.random.normal(loc=0, scale=5, size=(video_height, video_width))
-            image = image #+ noise
+            noise = np.random.normal(loc=0, scale=5, size=(video_height, video_width, 3))
+            image = image + noise
             image = np.clip(image, -128, 128)
 
-        video_mem[video_index,i,:,:] = image
+        video_mem[video_index,i,:,:,:] = image
         
     return { 'num_frames' : num_frames, 'video_path' : video_path }
 
@@ -230,7 +231,7 @@ def load_videos(pool, data_root, data_labels, video_paths, video_width, video_he
             video_labelnums[i] = data_labels[ prepared_videos[i]['video_path'] ]
 
         video_mem = np.frombuffer(shared_mem[shared_mem_idx], np.ctypeslib.ctypes.c_float)
-        video_mem = video_mem.reshape((batch_size, video_length, video_height, video_width))
+        video_mem = video_mem.reshape((batch_size, video_length, video_height, video_width, 3))
 
         batch = {
             'num_videos' : batch_size,
