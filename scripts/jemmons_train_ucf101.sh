@@ -20,7 +20,7 @@ fi
 export CUDA_VISIBLE_DEVICES=$1
 mkdir -p $3
 
-UCF101_ROOT=/mnt/scratch/jemmons/UCF-101-dumpjpg
+UCF101_ROOT=/mnt/scratch/jemmons/UCF-101
 
 python3 -u -B $DIR/vfeedbacknet_train $UCF101_ROOT/classInd.txt \
         $UCF101_ROOT/testlist01.txt \
