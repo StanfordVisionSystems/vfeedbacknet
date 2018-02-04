@@ -738,8 +738,8 @@ if __name__ == '__main__':
                         default=1024)
 
     parser.add_argument('--last_loss_multipler', type=float, nargs=None,
-                        help='the multipler to apply to the loss on the last frame of the video (official run: 10)',
-                        default=10)
+                        help='the multipler to apply to the loss on the last frame of the video (official run: 1)',
+                        default=1)
 
     parser.add_argument('--learning_rate_init', type=float, nargs=None,
                         help='initial vlaue for learning rate for the optimization (official run: 0.1)',

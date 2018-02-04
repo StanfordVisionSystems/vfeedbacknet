@@ -6,7 +6,8 @@ from vfeedbacknet.vfeedbacknet_utilities import pool_init
 from vfeedbacknet.vfeedbacknet_utilities import prepare_video
 from vfeedbacknet.vfeedbacknet_utilities import load_videos
 
-import vfeedbacknet.vfeedbacknet_lossfunctions
+#import vfeedbacknet.vfeedbacknet_lossfunctions
+#import vfeedbacknet_feedbackConvLSTM as vfeedbacknet_feedbackConvLSTM
 
 # models
 import vfeedbacknet.vfeedbacknet_vgg16 as vfeedbacknet_vgg
