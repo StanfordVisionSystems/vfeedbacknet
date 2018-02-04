@@ -278,6 +278,9 @@ def main(args):
         'vfeedbacknet_vgg.ff' : lambda : v.vfeedbacknet_vgg.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
                                                                train_featurizer='FINE_TUNE', train_main_model='FINE_TUNE', train_fc='FINE_TUNE',
                                                                weights_filename='/mnt/data/jemmons/vfeedbacknet-results/imagenet/vgg16.test2/model_weights-epoch2-step767.npz'),
+        'vfeedbacknet_model23' : lambda : v.vfeedbacknet_model23.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
+                                                                       train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
+                                                                       weights_filename='/home/jemmons/data/vfeedbacknet_base_weights.npz'),
     }
 
     model = None
@@ -390,16 +393,22 @@ def main(args):
             logfile.write('batch_num, epoch, global_step, learning_rate, feedback_iteration, train_acc_top1, train_acc_top3, train_acc_top5, train_loss, valid_acc_top1, valid_acc_top3, valid_acc_top5, valid_loss, checkpoint_path, model_export_path\n')
             #logfile.flush()
 
+        logging.info('starting mutiprocessing pool')
         with mp.Pool(processes=mp.cpu_count(), initializer=pool_init, initargs=(shared_mem,)) as pool:
+            logging.info('Done! starting mutiprocessing pool')
             
             if args.continue_training:                    
+                logging.info('restoring variables')
                 saver.restore(sess, tf.train.latest_checkpoint(args.checkpoint_dir))
                 if args.global_step_init is not None:
-                    sess.run([learning_rate], feed_dict={step : args.global_step_init})
-                    
+                    sess.run([learning_rate], feed_dict={step : args.global_step_init}) 
+                logging.info('Done! restoring variables')
+                   
             else:
+                logging.info('initializing variables')
                 sess.run(tf.global_variables_initializer()) # initialize all variables
                 model.initialize_variables() # set any model specific variables
+                logging.info('Done! initializing variables')
 
                         
             for epoch in range(args.num_epoch):
@@ -698,7 +707,7 @@ if __name__ == '__main__':
                         default=1)
 
     parser.add_argument('--overfit',
-                        help='overfit on a small chunk [64 data points] of data (official run: False)',
+                        help='overfit on a small chunk [16 data points] of data (official run: False)',
                         action='store_true',
                         default=False)
 

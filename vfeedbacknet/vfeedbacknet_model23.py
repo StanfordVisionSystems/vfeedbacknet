@@ -57,7 +57,7 @@ class Model:
                         regularizer = None # tf.contrib.layers.l2_regularizer(scale=0.25)
                         initializer = tf.contrib.layers.xavier_initializer()
 
-                        n = 512
+                        n = 256
                         m = 4*n
                         input_size = [14, 14, n]
                         kernel2d_size = [3, 3]
@@ -79,7 +79,7 @@ class Model:
                         regularizer = None # tf.contrib.layers.l2_regularizer(scale=0.25)
                         initializer = tf.contrib.layers.xavier_initializer()
 
-                        n = 1024
+                        n = 512
                         m = 4*n
                         input_size = [7, 7, n]
                         kernel2d_size = [3, 3]
@@ -146,15 +146,15 @@ class Model:
                     regularizer = None # tf.contrib.layers.l2_regularizer(scale=0.25)
                     initializer = tf.contrib.layers.xavier_initializer()
 
-                    kernel = tf.get_variable('kernel', shape=[3, 3, 512, 1024], dtype=tf.float32, regularizer=regularizer, initializer=initializer)
-                    biases = tf.get_variable('biases', shape=[1024], dtype=tf.float32, regularizer=regularizer, initializer=initializer)
+                    kernel = tf.get_variable('kernel', shape=[3, 3, 256, 512], dtype=tf.float32, regularizer=regularizer, initializer=initializer)
+                    biases = tf.get_variable('biases', shape=[512], dtype=tf.float32, regularizer=regularizer, initializer=initializer)
 
             with tf.variable_scope('feedback_block1'): 
                     
                 regularizer = None # tf.contrib.layers.l2_regularizer(scale=0.25)
                 initializer = tf.contrib.layers.xavier_initializer()
 
-                input_size = [112, 112]
+                input_size = [56, 56]
                 kernel_size = [3, 3, 64, 64]
 
                 W_xf = tf.get_variable('W_xf', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer)
@@ -181,7 +181,7 @@ class Model:
                 regularizer = None # tf.contrib.layers.l2_regularizer(scale=0.25)
                 initializer = tf.contrib.layers.xavier_initializer()
 
-                input_size = [56, 56]
+                input_size = [28, 28]
                 kernel_size = [3, 3, 128, 128]
 
                 W_xf = tf.get_variable('W_xf', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer)
@@ -237,8 +237,8 @@ class Model:
 
                 trainable = False if self.train_fc == 'NO' else True
 
-                weight = tf.get_variable('weights', shape=[7*7*1024, 2048], dtype=tf.float32, initializer=initializer, regularizer=regularizer, trainable=trainable)
-                biases = tf.get_variable('biases', shape=[2048], dtype=tf.float32, initializer=initializer, regularizer=regularizer, trainable=trainable)
+                weight = tf.get_variable('weights', shape=[7*7*512, 256], dtype=tf.float32, initializer=initializer, regularizer=regularizer, trainable=trainable)
+                biases = tf.get_variable('biases', shape=[256], dtype=tf.float32, initializer=initializer, regularizer=regularizer, trainable=trainable)
 
             with tf.variable_scope('fc2'):
 
@@ -247,7 +247,7 @@ class Model:
 
                 trainable = False if self.train_fc == 'NO' else True
 
-                weight = tf.get_variable('weights', shape=[2048, self.num_classes], dtype=tf.float32, initializer=initializer, regularizer=regularizer, trainable=trainable)
+                weight = tf.get_variable('weights', shape=[256, self.num_classes], dtype=tf.float32, initializer=initializer, regularizer=regularizer, trainable=trainable)
                 biases = tf.get_variable('biases', shape=[self.num_classes], dtype=tf.float32, initializer=initializer, regularizer=regularizer, trainable=trainable)
 
 
@@ -351,12 +351,12 @@ class Model:
         ModelLogger.log('reshape_conv_layer2', inputs)
 
         
-        feedback_outputs31 = [ self.feedback_block3(inp, var_list=self.main_model_variables) for inp in inputs ]
-        inputs = list(map(lambda x : x['hidden_state'], feedback_outputs31))
-        ModelLogger.log('feedback_block3', inputs)
+        # feedback_outputs31 = [ self.feedback_block3(inp, var_list=self.main_model_variables) for inp in inputs ]
+        # inputs = list(map(lambda x : x['hidden_state'], feedback_outputs31))
+        # ModelLogger.log('feedback_block3', inputs)
         
-        inputs = [ self.reshape_conv_layer(inp, 3, var_list=self.main_model_variables) for inp in inputs ]
-        ModelLogger.log('reshape_conv_layer3', inputs)
+        # inputs = [ self.reshape_conv_layer(inp, 3, var_list=self.main_model_variables) for inp in inputs ]
+        # ModelLogger.log('reshape_conv_layer3', inputs)
 
         # add outputs to sequence
         sequence += inputs
@@ -379,12 +379,12 @@ class Model:
         ModelLogger.log('reshape_conv_layer2', inputs)
 
 
-        feedback_outputs32 = [ self.feedback_block3(inp, state=state, var_list=self.main_model_variables) for inp,state in zip(inputs, feedback_outputs31) ]
-        inputs = list(map(lambda x : x['hidden_state'], feedback_outputs32))
-        ModelLogger.log('feedback_block3', inputs)
+        # feedback_outputs32 = [ self.feedback_block3(inp, state=state, var_list=self.main_model_variables) for inp,state in zip(inputs, feedback_outputs31) ]
+        # inputs = list(map(lambda x : x['hidden_state'], feedback_outputs32))
+        # ModelLogger.log('feedback_block3', inputs)
         
-        inputs = [ self.reshape_conv_layer(inp, 3, var_list=self.main_model_variables) for inp in inputs ]
-        ModelLogger.log('reshape_conv_layer3', inputs)
+        # inputs = [ self.reshape_conv_layer(inp, 3, var_list=self.main_model_variables) for inp in inputs ]
+        # ModelLogger.log('reshape_conv_layer3', inputs)
 
         # add outputs to sequence
         sequence += inputs
@@ -407,12 +407,12 @@ class Model:
         ModelLogger.log('reshape_conv_layer2', inputs)
 
 
-        feedback_outputs32 = [ self.feedback_block3(inp, state=state, var_list=self.main_model_variables) for inp,state in zip(inputs, feedback_outputs31) ]
-        inputs = list(map(lambda x : x['hidden_state'], feedback_outputs32))
-        ModelLogger.log('feedback_block3', inputs)
+        # feedback_outputs33 = [ self.feedback_block3(inp, state=state, var_list=self.main_model_variables) for inp,state in zip(inputs, feedback_outputs32) ]
+        # inputs = list(map(lambda x : x['hidden_state'], feedback_outputs33))
+        # ModelLogger.log('feedback_block3', inputs)
         
-        inputs = [ self.reshape_conv_layer(inp, 3, var_list=self.main_model_variables) for inp in inputs ]
-        ModelLogger.log('reshape_conv_layer3', inputs)
+        # inputs = [ self.reshape_conv_layer(inp, 3, var_list=self.main_model_variables) for inp in inputs ]
+        # ModelLogger.log('reshape_conv_layer3', inputs)
 
         # add outputs to sequence
         sequence += inputs
@@ -424,8 +424,8 @@ class Model:
         inputs = [ self.reshape_conv_layer(inp, 4, var_list=self.main_model_variables) for inp in inputs ]
         ModelLogger.log('reshape_conv_layer3', inputs)
 
-        inputs = self.convLSTM_layer2(inputs, 60, var_list=self.main_model_variables)
-        ModelLogger.log('convLSTM2', inputs)
+        # inputs = self.convLSTM_layer2(inputs, 60, var_list=self.main_model_variables)
+        # ModelLogger.log('convLSTM2', inputs)
         
         inputs = [ self.fc_layer(inp, 1, var_list=self.fc_variables) for inp in inputs ]
         ModelLogger.log('fc1', inputs)
