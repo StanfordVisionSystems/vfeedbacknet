@@ -443,6 +443,9 @@ def main(args):
                     #     im.save('/home/jemmons/data/frame{}.jpg'.format(i))
                     # return 
 
+                    for i in range(len(video_batch['video_numframes'])):
+                        video_batch['video_numframes'][i] = args.video_length
+
                     assert(not np.any(np.isnan(video_batch['video_rawframes'])))
 
                     ########################################################
@@ -461,7 +464,6 @@ def main(args):
                         begin = i
                         end = i + args.train_batch_size
                         batch_labels = keras.utils.to_categorical(video_batch['video_labelnums'][begin:end], len(labels_num2str))
-
                         
                         t1_trainstep = timeit.default_timer()
                         _, _step, _learn_rate, _total_loss_val, _loss_vals, _predict_vals = sess.run([train_step, step, learning_rate, total_loss, losses, predictions],
