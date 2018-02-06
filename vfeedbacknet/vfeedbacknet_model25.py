@@ -57,7 +57,7 @@ class Model:
                         regularizer = None # tf.contrib.layers.l2_regularizer(scale=0.25)
                         initializer = tf.contrib.layers.xavier_initializer()
 
-                        n = 128
+                        n = 256
                         m = 4*n
                         input_size = [28, 28, n]
                         kernel2d_size = [3, 3]
@@ -146,16 +146,16 @@ class Model:
                     regularizer = None # tf.contrib.layers.l2_regularizer(scale=0.25)
                     initializer = tf.contrib.layers.xavier_initializer()
 
-                    kernel = tf.get_variable('kernel', shape=[3, 3, 64, 128], dtype=tf.float32, regularizer=regularizer, initializer=initializer)
-                    biases = tf.get_variable('biases', shape=[128], dtype=tf.float32, regularizer=regularizer, initializer=initializer)
+                    kernel = tf.get_variable('kernel', shape=[3, 3, 128, 256], dtype=tf.float32, regularizer=regularizer, initializer=initializer)
+                    biases = tf.get_variable('biases', shape=[256], dtype=tf.float32, regularizer=regularizer, initializer=initializer)
 
                 with tf.variable_scope('conv5'):
 
                     regularizer = None # tf.contrib.layers.l2_regularizer(scale=0.25)
                     initializer = tf.contrib.layers.xavier_initializer()
 
-                    kernel = tf.get_variable('kernel', shape=[3, 3, 128, 256], dtype=tf.float32, regularizer=regularizer, initializer=initializer)
-                    biases = tf.get_variable('biases', shape=[256], dtype=tf.float32, regularizer=regularizer, initializer=initializer)
+                    kernel = tf.get_variable('kernel', shape=[3, 3, 256, 512], dtype=tf.float32, regularizer=regularizer, initializer=initializer)
+                    biases = tf.get_variable('biases', shape=[512], dtype=tf.float32, regularizer=regularizer, initializer=initializer)
 
             with tf.variable_scope('feedback_block1'): 
                     
@@ -217,7 +217,7 @@ class Model:
                 initializer = tf.contrib.layers.xavier_initializer()
 
                 input_size = [56, 56]
-                kernel_size = [7, 7, 64, 64]
+                kernel_size = [3, 3, 128, 128]
 
                 W_xf = tf.get_variable('W_xf', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer)
                 W_xi = tf.get_variable('W_xi', kernel_size, dtype=tf.float32, initializer=initializer, regularizer=regularizer)
@@ -245,7 +245,7 @@ class Model:
 
                 trainable = False if self.train_fc == 'NO' else True
 
-                weight = tf.get_variable('weights', shape=[14*14*256, 256], dtype=tf.float32, initializer=initializer, regularizer=regularizer, trainable=trainable)
+                weight = tf.get_variable('weights', shape=[14*14*512, 256], dtype=tf.float32, initializer=initializer, regularizer=regularizer, trainable=trainable)
                 biases = tf.get_variable('biases', shape=[256], dtype=tf.float32, initializer=initializer, regularizer=regularizer, trainable=trainable)
 
             with tf.variable_scope('fc2'):
@@ -355,8 +355,8 @@ class Model:
         # inputs = list(map(lambda x : x['hidden_state'], feedback_outputs21))
         # ModelLogger.log('feedback_block2', inputs)
         
-        # inputs = [ self.reshape_conv_layer(inp, 2, var_list=self.main_model_variables) for inp in inputs ]
-        # ModelLogger.log('reshape_conv_layer2', inputs)
+        inputs = [ self.reshape_conv_layer(inp, 2, var_list=self.main_model_variables) for inp in inputs ]
+        ModelLogger.log('reshape_conv_layer2', inputs)
 
         
         feedback_outputs31 = [ self.feedback_block3(inp, var_list=self.main_model_variables) for inp in inputs ]
@@ -383,8 +383,8 @@ class Model:
         # inputs = list(map(lambda x : x['hidden_state'], feedback_outputs22))
         # ModelLogger.log('feedback_block2', inputs)
         
-        # inputs = [ self.reshape_conv_layer(inp, 2, var_list=self.main_model_variables) for inp in inputs ]
-        # ModelLogger.log('reshape_conv_layer2', inputs)
+        inputs = [ self.reshape_conv_layer(inp, 2, var_list=self.main_model_variables) for inp in inputs ]
+        ModelLogger.log('reshape_conv_layer2', inputs)
 
 
         feedback_outputs32 = [ self.feedback_block3(inp, state=state, var_list=self.main_model_variables) for inp,state in zip(inputs, feedback_outputs31) ]
@@ -411,8 +411,8 @@ class Model:
         # inputs = list(map(lambda x : x['hidden_state'], feedback_outputs23))
         # ModelLogger.log('feedback_block2', inputs)
         
-        # inputs = [ self.reshape_conv_layer(inp, 2, var_list=self.main_model_variables) for inp in inputs ]
-        # ModelLogger.log('reshape_conv_layer2', inputs)
+        inputs = [ self.reshape_conv_layer(inp, 2, var_list=self.main_model_variables) for inp in inputs ]
+        ModelLogger.log('reshape_conv_layer2', inputs)
 
 
         feedback_outputs33 = [ self.feedback_block3(inp, state=state, var_list=self.main_model_variables) for inp,state in zip(inputs, feedback_outputs32) ]
@@ -738,7 +738,7 @@ if __name__ == '__main__':
     sess = tf.Session()
 
     video_length = 20
-    x = tf.placeholder(tf.float32, [None, video_length, 112, 112, 3], name='inputs')
+    x = tf.placeholder(tf.float32, [None, video_length, 224, 224, 3], name='inputs')
     x_len = tf.placeholder(tf.float32, [None], name='inputs_len')
     zeros = tf.placeholder(tf.float32, [video_length], name='inputs_len')
     labels = tf.placeholder(tf.float32, [None], name='inputs_len')
