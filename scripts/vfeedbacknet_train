@@ -284,6 +284,9 @@ def main(args):
         'vfeedbacknet_model24' : lambda : v.vfeedbacknet_model24.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
                                                                        train_featurizer='FROM_SCRATCH', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
                                                                        weights_filename='/home/jemmons/data/vfeedbacknet_base_weights.npz'),
+        'vfeedbacknet_model25' : lambda : v.vfeedbacknet_model25.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
+                                                                       train_featurizer='FROM_SCRATCH', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
+                                                                       weights_filename='/home/jemmons/data/vfeedbacknet_base_weights.npz'),
     }
 
     model = None
@@ -330,13 +333,20 @@ def main(args):
                                                                  args.video_length,
                                                                  y_label,
                                                                  y_zeros,
-                                                                 last_loss_multiple=args.last_loss_multipler) for logits in logits_ ]
+                                                                 last_loss_multiple=1) for logits in logits_[:-1] ]
 
+        outputs += [ v.vfeedbacknet_lossfunctions.basic_loss_pred(logits,
+                                                                 x_length,
+                                                                 args.video_length,
+                                                                 y_label,
+                                                                 y_zeros,
+                                                                 last_loss_multiple=args.last_loss_multipler) for logits in [logits_[-1]] ]
     
         total_loss = 0
         for i in range(len(outputs)):
             output = outputs[i]
-            multipler = args.last_loss_multipler if i == len(outputs)-1 else 1
+            multipler = 1
+            # multipler = args.last_loss_multipler if i == len(outputs)-1 else 1
             
             total_loss += multipler * output[1]
         
