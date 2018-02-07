@@ -342,7 +342,91 @@ class Model:
         featurizer_outputs = inputs
         feedback_outputs = None
 
-        inputs = [ self.reshape_conv_layer(inp, 4, var_list=self.main_model_variables) for inp in featurizer_outputs ]
+        ## feedback 1 ##
+        # feedback_outputs11 = [ self.feedback_block1(inp, var_list=self.main_model_variables) for inp in featurizer_outputs ]
+        # inputs = list(map(lambda x : x['hidden_state'], feedback_outputs11))
+        # ModelLogger.log('feedback_block1', inputs)
+
+        # inputs = [ self.reshape_conv_layer(inp, 1, var_list=self.main_model_variables) for inp in featurizer_outputs ]
+        # ModelLogger.log('reshape_conv_layer1', inputs)
+        
+
+        # feedback_outputs21 = [ self.feedback_block2(inp, var_list=self.main_model_variables) for inp in inputs ]
+        # inputs = list(map(lambda x : x['hidden_state'], feedback_outputs21))
+        # ModelLogger.log('feedback_block2', inputs)
+        
+        # inputs = [ self.reshape_conv_layer(inp, 2, var_list=self.main_model_variables) for inp in inputs ]
+        # ModelLogger.log('reshape_conv_layer2', inputs)
+
+        
+        feedback_outputs31 = [ self.feedback_block3(inp, var_list=self.main_model_variables) for inp in inputs ]
+        inputs = list(map(lambda x : x['hidden_state'], feedback_outputs31))
+        ModelLogger.log('feedback_block3', inputs)
+        
+        # inputs = [ self.reshape_conv_layer(inp, 3, var_list=self.main_model_variables) for inp in inputs ]
+        # ModelLogger.log('reshape_conv_layer3', inputs)
+
+        # add outputs to sequence
+        sequence += inputs
+
+        
+        ## feedback 2 ##
+        # feedback_outputs12 = [ self.feedback_block1(inp, state=state, var_list=self.main_model_variables) for inp,state in zip(featurizer_outputs, feedback_outputs11) ]
+        # inputs = list(map(lambda x : x['hidden_state'], feedback_outputs12))
+        # ModelLogger.log('feedback_block1', inputs)
+
+        # inputs = [ self.reshape_conv_layer(inp, 1, var_list=self.main_model_variables) for inp in featurizer_outputs ]
+        # ModelLogger.log('reshape_conv_layer1', inputs)
+        
+
+        # feedback_outputs22 = [ self.feedback_block2(inp, state=state, var_list=self.main_model_variables) for inp,state in zip(inputs, feedback_outputs21) ]
+        # inputs = list(map(lambda x : x['hidden_state'], feedback_outputs22))
+        # ModelLogger.log('feedback_block2', inputs)
+        
+        # inputs = [ self.reshape_conv_layer(inp, 2, var_list=self.main_model_variables) for inp in inputs ]
+        # ModelLogger.log('reshape_conv_layer2', inputs)
+
+
+        feedback_outputs32 = [ self.feedback_block3(inp, state=state, var_list=self.main_model_variables) for inp,state in zip(inputs, feedback_outputs31) ]
+        inputs = list(map(lambda x : x['hidden_state'], feedback_outputs32))
+        ModelLogger.log('feedback_block3', inputs)
+        
+        # inputs = [ self.reshape_conv_layer(inp, 3, var_list=self.main_model_variables) for inp in inputs ]
+        # ModelLogger.log('reshape_conv_layer3', inputs)
+
+        # add outputs to sequence
+        sequence += inputs
+
+        
+        ## feedback 3 ##
+        # feedback_outputs13 = [ self.feedback_block1(inp, state=state, var_list=self.main_model_variables) for inp,state in zip(featurizer_outputs, feedback_outputs12) ]
+        # inputs = list(map(lambda x : x['hidden_state'], feedback_outputs13))
+        # ModelLogger.log('feedback_block1', inputs)
+
+        # inputs = [ self.reshape_conv_layer(inp, 1, var_list=self.main_model_variables) for inp in featurizer_outputs ]
+        # ModelLogger.log('reshape_conv_layer1', inputs)
+        
+
+        # feedback_outputs23 = [ self.feedback_block2(inp, state=state, var_list=self.main_model_variables) for inp,state in zip(inputs, feedback_outputs22) ]
+        # inputs = list(map(lambda x : x['hidden_state'], feedback_outputs23))
+        # ModelLogger.log('feedback_block2', inputs)
+        
+        # inputs = [ self.reshape_conv_layer(inp, 2, var_list=self.main_model_variables) for inp in inputs ]
+        # ModelLogger.log('reshape_conv_layer2', inputs)
+
+
+        feedback_outputs33 = [ self.feedback_block3(inp, state=state, var_list=self.main_model_variables) for inp,state in zip(inputs, feedback_outputs32) ]
+        inputs = list(map(lambda x : x['hidden_state'], feedback_outputs33))
+        ModelLogger.log('feedback_block3', inputs)
+        
+        # inputs = [ self.reshape_conv_layer(inp, 3, var_list=self.main_model_variables) for inp in inputs ]
+        # ModelLogger.log('reshape_conv_layer3', inputs)
+
+        # add outputs to sequence
+        sequence += inputs
+
+
+        inputs = [ self.reshape_conv_layer(inp, 4, var_list=self.main_model_variables) for inp in sequence ]
         ModelLogger.log('reshape_conv_layer4', inputs)
 
         inputs = self.convLSTM_layer1(inputs, 60, var_list=self.main_model_variables)
@@ -360,9 +444,13 @@ class Model:
         inputs = [ self.fc_layer(inp, 2, var_list=self.fc_variables) for inp in inputs ]
         ModelLogger.log('fc2', inputs)
 
+        seq1 = tf.stack(inputs[0:20], axis=1)
+        seq2 = tf.stack(inputs[20:40], axis=1)
+        seq3 = tf.stack(inputs[40:60], axis=1)
+
         # output
-        logits = tf.stack(inputs, axis=1)
-        logits = tf.expand_dims(logits, axis=1)
+        logits = [seq1, seq2, seq3]
+        logits = tf.stack(logits, axis=1)
         ModelLogger.log('combined-feedback-logits', logits) 
        
         return logits
