@@ -134,9 +134,9 @@ def main(args):
                 validation_batch = validation_batch_f()
 
                 # hack to get Y value from rgb frames
-                rgb = (validation_batch['video_rawframes'] * 128) + 116
-                y = ((0.299*rgb[:,:,:,:,0] + 0.587*rgb[:,:,:,:,1] + 0.144*rgb[:,:,:,:,2]).astype(np.float32) - 116) / 128
-                validation_batch['video_rawframes'] = y
+                # rgb = (validation_batch['video_rawframes'] * 128) + 116
+                # y = ((0.299*rgb[:,:,:,:,0] + 0.587*rgb[:,:,:,:,1] + 0.144*rgb[:,:,:,:,2]).astype(np.float32) - 116) / 128
+                # validation_batch['video_rawframes'] = y
 
                 t2 = timeit.default_timer()
                 logging.debug('done! (load videos): {})'.format(t2-t1))

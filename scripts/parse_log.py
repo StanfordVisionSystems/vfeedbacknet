@@ -2,6 +2,7 @@
 
 import json
 import numpy as np
+import sys
 
 taxonomy = {
     0: 0,
@@ -62,9 +63,9 @@ taxonomy = {
 #     25: 'No gesture',
 #     26: 'Doing other things'
 # }
-    
-with open('feedbacknet_20bn_jester.log', 'r') as f:
-#with open('feedbacknet_ucf101.log', 'r') as f:
+
+with open(sys.argv[1], 'r') as f:
+    print('processing file: {}'.format(sys.argv[1]))
     lines = list(filter(lambda x: '[' in x, f.read().strip().split('\n')))
 
     assert len(lines) % 3 == 0, 'number of lines must be multiple of 3'
@@ -258,62 +259,62 @@ with open('feedbacknet_20bn_jester.log', 'r') as f:
         'comment' : 'the median percentage of the video that needed to be watched to become correct until the end of the clip'    
     }        
 
-    # def taxonomic_classification(key):
+    def taxonomic_classification(key):
 
-    #     percentage_in_class = []
-    #     for d in data:
-    #         true_class = taxonomy[d['true_label']]
+        percentage_in_class = []
+        for d in data:
+            true_class = taxonomy[d['true_label']]
 
-    #         count = 0
-    #         for item in d['{}_top5'.format(key)]:
-    #             if taxonomy[item] == true_class:
-    #                 count += 1
+            count = 0
+            for item in d['{}_top5'.format(key)]:
+                if taxonomy[item] == true_class:
+                    count += 1
 
-    #         percentage_in_class.append(count / 5)
+            percentage_in_class.append(count / 5)
 
-    #     mean = np.mean(percentage_in_class)
-    #     median = np.median(percentage_in_class)
+        mean = np.mean(percentage_in_class)
+        median = np.median(percentage_in_class)
 
-    #     return {
-    #         'mean' : mean,
-    #         'median' : median
-    #     }
+        return {
+            'mean' : mean,
+            'median' : median
+        }
 
-    # tr1 = taxonomic_classification('fb1')
-    # tr2 = taxonomic_classification('fb2')
-    # tr3 = taxonomic_classification('fb3')
+    tr1 = taxonomic_classification('fb1')
+    tr2 = taxonomic_classification('fb2')
+    tr3 = taxonomic_classification('fb3')
 
-    # # results['mean_taxonomy'] = {
-    # #     'fb1' : tr1['mean'],
-    # #     'fb2' : tr2['mean'],
-    # #     'fb3' : tr3['mean']
-    # # }
-    # # results['median_taxonomy'] = {
-    # #     'fb1' : tr1['median'],
-    # #     'fb2' : tr2['median'],
-    # #     'fb3' : tr3['median']
-    # # }
-
-    # def taxonomic_compliance(key):
-
-    #     correct = 0
-    #     for d in data:
-    #         true_class = taxonomy[d['true_label']]
-
-    #         if true_class == taxonomy[d['{}_top5'.format(key)][0]]:
-    #             correct += 1
-            
-    #     return correct / len(data)
-    
-    # tc1 = taxonomic_compliance('fb1')
-    # tc2 = taxonomic_compliance('fb2')
-    # tc3 = taxonomic_compliance('fb3')
-
-    # results['top1_taxonomy_compliance'] = {
-    #     'fb1' : tc1,
-    #     'fb2' : tc2,
-    #     'fb3' : tc3,
-    #     'comment' : 'using high order classes to compute accuracy, what is the top-1 compliance/accuracy of the NN after watching the whole video'
+    # results['mean_taxonomy'] = {
+    #     'fb1' : tr1['mean'],
+    #     'fb2' : tr2['mean'],
+    #     'fb3' : tr3['mean']
     # }
+    # results['median_taxonomy'] = {
+    #     'fb1' : tr1['median'],
+    #     'fb2' : tr2['median'],
+    #     'fb3' : tr3['median']
+    # }
+
+    def taxonomic_compliance(key):
+
+        correct = 0
+        for d in data:
+            true_class = taxonomy[d['true_label']]
+
+            if true_class == taxonomy[d['{}_top5'.format(key)][0]]:
+                correct += 1
+            
+        return correct / len(data)
+    
+    tc1 = taxonomic_compliance('fb1')
+    tc2 = taxonomic_compliance('fb2')
+    tc3 = taxonomic_compliance('fb3')
+
+    results['top1_taxonomy_compliance'] = {
+        'fb1' : tc1,
+        'fb2' : tc2,
+        'fb3' : tc3,
+        'comment' : 'using high order classes to compute accuracy, what is the top-1 compliance/accuracy of the NN after watching the whole video'
+    }
     
     print(json.dumps(results, indent=4, sort_keys=True))
