@@ -437,7 +437,7 @@ class Model:
 
         # inputs = self.convLSTM_layer2(inputs, 60, var_list=self.main_model_variables)
         # ModelLogger.log('convLSTM2', inputs)
-        
+       
         inputs = [ self.fc_layer(inp, 1, var_list=self.fc_variables) for inp in inputs ]
         ModelLogger.log('fc1', inputs)
 
