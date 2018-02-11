@@ -1,17 +1,13 @@
-Things to debug/try
+Things we know:
+- you cannot train directly on the something-something, ucf-101, or hmdb-51 datasets (will overfit)
+- you CAN train directly on imagenet and jester datasets
 
-This weekend!
-- restore full RGB inputs
-- try to train VGG16 (only fc layers) to 70% top-1
-- try to train VGG16 full to 70% top-1
-- try training the basic feedback net to a reasonable accruacy on imagenet (hopefully 65-70%)
-- transfer weights to ucf-101 and hmdb-51 (see how it does, is it even close to competitive?)
+Things to do:
 
-Future...
-- try other variants of the network architecture that have more interesting temporal properties
-    * early prediction
-    * taxonomic classification
-    * taking advantage of temporal information for faster analysis
+- rerun models with something-something dataset
+[] model24 ("short LSTM" model where the outputs of fb iterations aren't combined, separate LSTM for each sequence.)
+[] model26 ("long LSTM" model where the outputs of the 3 fb iterations are concatenated then fed into an LSTM.)
+[] model28 ("long LSTM" model where the frist fb iteration is fed into the LSTM three time.)
 
-- figure out what other tasks besides action recognition could benefit from this approach
-    * 
+- new model architectures
+[] simple convRNN in spatial iterations with convLSTM in time

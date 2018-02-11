@@ -34,35 +34,35 @@ taxonomy = {
     26: 11
 }
 
-# label = {
-#     0:  'Swiping Left',
-#     1:  'Swiping Right',
-#     2:  'Swiping Down',
-#     3:  'Swiping Up',
-#     4:  'Pushing Hand Away',
-#     5:  'Pulling Hand In',
-#     6:  'Sliding Two Fingers Left',
-#     7:  'Sliding Two Fingers Right',
-#     8:  'Sliding Two Fingers Down',
-#     9:  'Sliding Two Fingers Up',
-#     10: 'Pushing Two Fingers Away',
-#     11: 'Pulling Two Fingers In',
-#     12: 'Rolling Hand Forward',
-#     13: 'Rolling Hand Backward',
-#     14: 'Turning Hand Clockwise',
-#     15: 'Turning Hand Counterclockwise',
-#     16: 'Zooming In With Full Hand',
-#     17: 'Zooming Out With Full Hand',
-#     18: 'Zooming In With Two Fingers',
-#     19: 'Zooming Out With Two Fingers',
-#     20: 'Thumb Up',
-#     21: 'Thumb Down',
-#     22: 'Shaking Hand',
-#     23: 'Stop Sign',
-#     24: 'Drumming Fingers',
-#     25: 'No gesture',
-#     26: 'Doing other things'
-# }
+label = {
+    0:  'Swiping Left',
+    1:  'Swiping Right',
+    2:  'Swiping Down',
+    3:  'Swiping Up',
+    4:  'Pushing Hand Away',
+    5:  'Pulling Hand In',
+    6:  'Sliding Two Fingers Left',
+    7:  'Sliding Two Fingers Right',
+    8:  'Sliding Two Fingers Down',
+    9:  'Sliding Two Fingers Up',
+    10: 'Pushing Two Fingers Away',
+    11: 'Pulling Two Fingers In',
+    12: 'Rolling Hand Forward',
+    13: 'Rolling Hand Backward',
+    14: 'Turning Hand Clockwise',
+    15: 'Turning Hand Counterclockwise',
+    16: 'Zooming In With Full Hand',
+    17: 'Zooming Out With Full Hand',
+    18: 'Zooming In With Two Fingers',
+    19: 'Zooming Out With Two Fingers',
+    20: 'Thumb Up',
+    21: 'Thumb Down',
+    22: 'Shaking Hand',
+    23: 'Stop Sign',
+    24: 'Drumming Fingers',
+    25: 'No gesture',
+    26: 'Doing other things'
+}
 
 with open(sys.argv[1], 'r') as f:
     print('processing file: {}'.format(sys.argv[1]))
@@ -193,6 +193,42 @@ with open(sys.argv[1], 'r') as f:
         'comment' : 'the top-5 accuracy after watching the whole video'
     }
 
+    def topNlabel(key, label):
+        
+        top1_count = 0 
+        top3_count = 0 
+        top5_count = 0
+        count = 0
+        for d in data:
+            ll = int(d['true_label'])
+            if d['true_label'] == d['{}_top5'.format(key)][0] and ll == label:
+                top1_count += 1
+                top3_count += 1
+                top5_count += 1
+
+            elif d['true_label'] in d['{}_top5'.format(key)][0:3] and ll == label:
+                top3_count += 1
+                top5_count += 1
+
+            elif d['true_label'] in d['{}_top5'.format(key)] and ll == label:
+                top5_count += 1
+
+            if ll == label:
+                count += 1
+
+        r = {}
+        r['top1'] = top1_count/count
+        r['top3'] = top3_count/count
+        r['top5'] = top5_count/count
+
+        return r
+
+    # t1 = topN('fb1')
+    # t2 = topN('fb2')
+    for i in range(len(list(label.keys()))):
+        t3 = topNlabel('fb3', i)    
+        print('"'+label[i]+'", ', t3['top1'])
+    
     def no_temporal(key):
         count = 0 
         for d in data:
@@ -258,6 +294,39 @@ with open(sys.argv[1], 'r') as f:
         'fb3' : p3['median'],
         'comment' : 'the median percentage of the video that needed to be watched to become correct until the end of the clip'    
     }        
+
+    def earliest_correct_fb_label(key, label):
+        '''
+        assuming the NN got the final answer correct by the third 
+        '''
+        
+        percentage_of_video_watched = []
+        for d in data:
+            ll = int(d['true_label'])
+            if d['true_label'] != d['{}_top5'.format(key)][0] or ll != label:
+                continue
+            #if d['true_label'] != d['fb1_top5'.format(key)][0] and d['true_label'] != d['fb2_top5'.format(key)][0] and d['true_label'] != d['fb3_top5'.format(key)][0]:
+            #    continue
+
+            last_incorrect = 0
+            for i in range(len(d['{}_frames_top1'.format(key)])):
+                if d['{}_frames_top1'.format(key)][i] != d['true_label']:
+                    last_incorrect = i
+
+
+            percentage_of_video_watched.append((last_incorrect+1) / len(d['{}_frames_top1'.format(key)]))
+
+        mean = np.mean(percentage_of_video_watched)
+        median = np.median(percentage_of_video_watched)
+
+        return {
+            'mean' : mean,
+            'median' : median
+        }
+
+    for i in range(len(list(label.keys()))):
+        p1 = earliest_correct_fb_label('fb1', i)
+        print('"'+label[i]+'", ', p1['mean'])
 
     def taxonomic_classification(key):
 
