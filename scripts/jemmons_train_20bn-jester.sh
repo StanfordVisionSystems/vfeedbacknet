@@ -28,4 +28,4 @@ python3 -u -B $DIR/vfeedbacknet_train $TWENTYBN_ROOT/jester-v1-labels.csv \
         $TWENTYBN_ROOT/20bn-jester-v1 \
         $2 \
         $3 \
-        $3/training_log.csv --twentybn $EXTRA_ARGS 2>&1 | tee -a $3/training_log.log 
+        $3/training_log.csv --jester $EXTRA_ARGS 2>&1 | tee -a $3/training_log.log 

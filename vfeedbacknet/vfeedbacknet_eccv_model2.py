@@ -9,13 +9,10 @@ from vfeedbacknet.vfeedbacknet_base import VFeedbackNetBase
 
 class Model:
     '''
-    Baseline feedback model. This model is a baseline for the set of experiments
-    where I show that temporal priors can help with accuracy in video action
-    recognition. This model DOES NOT pass temporal priors and thus serves as a 
-    baseline for future comparison. 
+    Temporal connections between all frames.
     '''
 
-    model_name = 'eccv_model1'
+    model_name = 'eccv_model2'
     
     def __init__(self, sess, num_classes, batch_size,
                  train_featurizer='FINE_TUNE', train_main_model='FINE_TUNE', train_fc='FINE_TUNE',
@@ -284,17 +281,15 @@ class Model:
         inputs = [ self.reshape_conv_layer(inp, 1, var_list=self.main_model_variables) for inp in featurizer_outputs ]
         ModelLogger.log('reshape_conv_layer1', inputs)
 
-        # DISJOINT! The LSTM is not being used as a sequence model. Each input is completely independent
-        inputs = [ self.convLSTM_layer1([inp], None, var_list=self.main_model_variables) for inp in inputs ]
-        inputs = list(map(lambda x: x[0], inputs))
+        # CONNECTED! The convLSTM WILL process frames as a sequence
+        inputs = self.convLSTM_layer1(inputs, None, var_list=self.main_model_variables)
         ModelLogger.log('convLSTM1', inputs)
 
         inputs = [ self.reshape_conv_layer(inp, 2, var_list=self.main_model_variables) for inp in inputs ]
         ModelLogger.log('reshape_conv_layer2', inputs)
 
-        # DISJOINT! The LSTM is not being used as a sequence model. Each input is completely independent
-        inputs = [ self.convLSTM_layer2([inp], None, var_list=self.main_model_variables) for inp in inputs ]
-        inputs = list(map(lambda x: x[0], inputs))
+        # CONNECTED! The convLSTM WILL process frames as a sequence
+        inputs = self.convLSTM_layer2(inputs, None, var_list=self.main_model_variables)
         ModelLogger.log('convLSTM2', inputs)
         
         inputs = [ self.reshape_conv_layer(inp, 3, var_list=self.main_model_variables) for inp in inputs ]

@@ -50,6 +50,7 @@ import vfeedbacknet.vfeedbacknet_vgg16 as vfeedbacknet_vgg
 import vfeedbacknet.vfeedbacknet_model28 as vfeedbacknet_model28
 import vfeedbacknet.vfeedbacknet_model29 as vfeedbacknet_model29
 import vfeedbacknet.vfeedbacknet_eccv_model1 as vfeedbacknet_eccv_model1
+import vfeedbacknet.vfeedbacknet_eccv_model2 as vfeedbacknet_eccv_model2
 
 # legacy models
 # import vfeedbacknet.legacy.convLSTM
