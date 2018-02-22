@@ -118,7 +118,11 @@ def main(args):
     # build model
     ############################################################################
     logging.info('building model: {}'.format(args.model_name))
-    sess = tf.Session()
+    config = tf.ConfigProto()
+    config.allow_soft_placement = True
+    #config.log_device_placement = True # will generate A LOT of log information
+    config.gpu_options.allow_growth = True
+    sess = tf.Session(config=config)
 
     # x_input = tf.placeholder(tf.float32,
     #                          [args.train_batch_size, args.video_length,
