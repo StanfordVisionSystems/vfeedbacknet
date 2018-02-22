@@ -33,7 +33,7 @@ def main(args):
     # open and parse the data and label files
     ############################################################################
     logging.info('loading input files')
-    assert args.ucf101 ^ args.twentybn ^ args.imagenet, 'you must specify exactly one dataset to use for training (XOR)'
+    assert args.ucf101 ^ args.jester ^ args.something_something ^ args.imagenet, 'you must specify exactly one dataset to use for training (XOR)'
 
     with open(args.label_file, 'r') as csvfile:
         labels_num2str = None
@@ -43,7 +43,7 @@ def main(args):
             reader = csv.reader(csvfile, delimiter=' ')
             labels_num2str = [ item[1] for item in reader ]
             labels_str2num =  { label : idx  for idx,label in zip(range(len(labels_num2str)), labels_num2str) }
-        elif args.twentybn:
+        elif args.jester or args.something_something:
             reader = csv.reader(csvfile, delimiter=';')
             labels_num2str = [ item[0].lower() for item in reader ]
             labels_str2num =  { label : idx  for idx,label in zip(range(len(labels_num2str)), labels_num2str) }
@@ -60,7 +60,7 @@ def main(args):
             reader = csv.reader(csvfile, delimiter=' ')
             validation_video_paths = [ item[0].split('.')[0] for item in reader ] 
             validation_labels = { item : labels_str2num[item.split('/')[0]] for item in validation_video_paths } 
-        elif args.twentybn:
+        elif args.jester or args.something_something:
             reader = csv.reader(csvfile, delimiter=';')
             validation_labels = { int(item[0]) : labels_str2num[item[1].lower()] for item in reader }
             validation_video_paths = np.asarray( list(validation_labels.keys()) ) 
@@ -90,7 +90,7 @@ def main(args):
             reader = csv.reader(csvfile, delimiter=' ')
             data_video_paths = [ item[0].split('.')[0] for item in reader ] 
             data_labels = { item : labels_str2num[item.split('/')[0]] for item in data_video_paths } 
-        elif args.twentybn:
+        elif args.jester or args.something_something:
             reader = csv.reader(csvfile, delimiter=';')
             data_labels = { int(item[0]) : labels_str2num[item[1].lower()] for item in reader }
             data_video_paths = np.asarray( list(data_labels.keys()) )
@@ -147,152 +147,6 @@ def main(args):
     assert args.num_gpus == 0 or args.train_batch_size % args.num_gpus == 0, 'train_batch_size must be divisible by num_gpus'
 
     model_generator_dict = {
-        'vfeedbacknet_model1' : lambda : v.vfeedbacknet_model1.VFeedbackNetModel1(sess, len(labels_num2str),
-                                                                                  train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
-                                                                                  weights_filename='/home/jemmons/data/vfeedbacknet_base_weights.npz'),
-        'vfeedbacknet_model2' : lambda : v.vfeedbacknet_model2.VFeedbackNetModel2(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
-                                                                                  train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
-                                                                                  weights_filename='/home/jemmons/data/vfeedbacknet_base_weights.npz'),
-        'vfeedbacknet_model3' : lambda : v.vfeedbacknet_model3.VFeedbackNetModel3(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
-                                                                                  train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
-                                                                                  weights_filename='/home/jemmons/data/vfeedbacknet_base_weights.npz'),
-        'vfeedbacknet_model4' : lambda : v.vfeedbacknet_model4.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
-                                                                     train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
-                                                                     weights_filename='/home/jemmons/data/vfeedbacknet_base_weights.npz'),
-        'vfeedbacknet_model5' : lambda : v.vfeedbacknet_model5.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
-                                                                     train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
-                                                                     weights_filename='/home/jemmons/data/vfeedbacknet_base_weights.npz'),
-        'vfeedbacknet_model6' : lambda : v.vfeedbacknet_model6.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
-                                                                     train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
-                                                                     weights_filename='/home/jemmons/data/vfeedbacknet_base_weights.npz'),
-        'vfeedbacknet_model7' : lambda : v.vfeedbacknet_model7.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
-                                                                     train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
-                                                                     weights_filename='/home/jemmons/data/vfeedbacknet_base_weights.npz'),
-        'vfeedbacknet_model8' : lambda : v.vfeedbacknet_model8.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
-                                                                     train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
-                                                                     weights_filename='/home/jemmons/data/vfeedbacknet_base_weights.npz'),
-        'vfeedbacknet_model9' : lambda : v.vfeedbacknet_model9.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
-                                                                     train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
-                                                                     weights_filename='/home/jemmons/data/vfeedbacknet_base_weights.npz'),
-        'vfeedbacknet_model10' : lambda : v.vfeedbacknet_model10.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
-                                                                       train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
-                                                                       weights_filename='/home/jemmons/data/vfeedbacknet_base_weights.npz'),
-        'vfeedbacknet_model11' : lambda : v.vfeedbacknet_model11.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
-                                                                       train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
-                                                                       weights_filename='/home/jemmons/data/vfeedbacknet_base_weights.npz'),
-        'vfeedbacknet_model12' : lambda : v.vfeedbacknet_model12.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
-                                                                       train_featurizer='FINE_TUNE', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
-                                                                       weights_filename='/home/jemmons/data/vfeedbacknet_base_weights.npz'),
-        'vfeedbacknet_model13' : lambda : v.vfeedbacknet_model13.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
-                                                                       train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
-                                                                       weights_filename='/home/jemmons/data/vfeedbacknet_base_weights.npz'),
-        'vfeedbacknet_model14' : lambda : v.vfeedbacknet_model14.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
-                                                                       train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
-                                                                       weights_filename='/home/jemmons/data/vfeedbacknet_base_weights.npz'),
-        'vfeedbacknet_model15' : lambda : v.vfeedbacknet_model15.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
-                                                                       train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
-                                                                       weights_filename='/home/jemmons/data/vfeedbacknet_base_weights.npz'),
-        'vfeedbacknet_model16.s' : lambda : v.vfeedbacknet_model16.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
-                                                                       train_featurizer='FROM_SCRATCH', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
-                                                                       weights_filename='/home/jemmons/data/vfeedbacknet_base_weights.npz'),
-        'vfeedbacknet_model16' : lambda : v.vfeedbacknet_model16.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
-                                                                       train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
-                                                                       weights_filename='/home/jemmons/data/vfeedbacknet_base_weights.npz'),
-        'vfeedbacknet_model16.f' : lambda : v.vfeedbacknet_model16.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
-                                                                         train_featurizer='FINE_TUNE', train_main_model='NO', train_fc='NO',
-                                                                         weights_filename='/mnt/data/jemmons/vfeedbacknet-results/20bn/vfeedbacknet_model16.gce/model_weights-epoch9-step8719.npz'),
-        'vfeedbacknet_model16.ucf' : lambda : v.vfeedbacknet_model16.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
-                                                                         train_featurizer='NO', train_main_model='NO', train_fc='FROM_SCRATCH',
-                                                                         weights_filename='/mnt/data/jemmons/vfeedbacknet-results/20bn/vfeedbacknet_model16.gce/model_weights-epoch9-step8719.npz'),
-        'vfeedbacknet_model16.ucf.r' : lambda : v.vfeedbacknet_model16_ucf.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
-                                                                                 train_featurizer='NO', train_main_model='NO', train_fc='FROM_SCRATCH',
-                                                                                 weights_filename='/mnt/data/jemmons/vfeedbacknet-results/20bn/vfeedbacknet_model16.gce/model_weights-epoch9-step8719.npz'),
-        'vfeedbacknet_model16.ucf.d' : lambda : v.vfeedbacknet_model16_ucf1.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
-                                                                                 train_featurizer='NO', train_main_model='NO', train_fc='FROM_SCRATCH',
-                                                                                 weights_filename='/mnt/data/jemmons/vfeedbacknet-results/20bn/vfeedbacknet_model16.gce/model_weights-epoch9-step8719.npz'),
-        'vfeedbacknet_model17' : lambda : v.vfeedbacknet_model17.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
-                                                                       train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
-                                                                       weights_filename='/home/jemmons/data/vfeedbacknet_base_weights.npz'), 
-        'vfeedbacknet_model18' : lambda : v.vfeedbacknet_model18.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
-                                                                       train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
-                                                                       weights_filename='/home/jemmons/data/vfeedbacknet_base_weights.npz'),
-        'vfeedbacknet_model19' : lambda : v.vfeedbacknet_model19.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
-                                                                       train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
-                                                                       weights_filename='/home/jemmons/data/vfeedbacknet_base_weights.npz'),
-        'vfeedbacknet_model20' : lambda : v.vfeedbacknet_model20.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
-                                                                       train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
-                                                                       weights_filename='/home/jemmons/data/vfeedbacknet_base_weights.npz'),
-        'vfeedbacknet_model19.ucf' : lambda : v.vfeedbacknet_model19.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
-                                                                           train_featurizer='NO', train_main_model='NO', train_fc='FROM_SCRATCH',
-                                                                           weights_filename='/mnt/data/jemmons/vfeedbacknet-results/20bn/vfeedbacknet_model19.gce/model_weights-epoch4-step5994.npz'), # achieved 82.2% on 20bn
-        'vfeedbacknet_model20.ucf' : lambda : v.vfeedbacknet_model20.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
-                                                                           train_featurizer='NO', train_main_model='NO', train_fc='FROM_SCRATCH',
-                                                                           weights_filename='/mnt/data/jemmons/vfeedbacknet-results/20bn/vfeedbacknet_model20.gce/model_weights-epoch4-step8207.npz'), # acheived 71.2% on 20bn
-        'vfeedbacknet_model21' : lambda : v.vfeedbacknet_model21.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
-                                                                       train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
-                                                                       weights_filename='/home/jemmons/data/vfeedbacknet_base_weights.npz'),
-        'vfeedbacknet_videoLSTM_1' : lambda : v.vfeedbacknet_videoLSTM_1.Model(sess, len(labels_num2str),
-                                                                               train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
-                                                                               weights_filename='/home/jemmons/data/vfeedbacknet_base_weights.npz'),
-        'vfeedbacknet_videoLSTM_2' : lambda : v.vfeedbacknet_videoLSTM_2.Model(sess, len(labels_num2str),
-                                                                               train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
-                                                                               weights_filename='/home/jemmons/data/vfeedbacknet_base_weights.npz'),
-        # 'vfeedbacknet_videoLSTM_2.ucf' : lambda : v.vfeedbacknet_videoLSTM_2.Model(sess, len(labels_num2str),
-        #                                                                            train_featurizer='NO', train_main_model='NO', train_fc='FROM_SCRATCH',
-        #                                                                            weights_filename='/mnt/data/jemmons/vfeedbacknet-results/20bn/vfeedbacknet_model1.recheck3/model_weights-epoch3-step24639.npz'),
-        'vfeedbacknet_model1.ucf' : lambda : v.vfeedbacknet_model1.VFeedbackNetModel1(sess, len(labels_num2str),
-                                                                                      train_featurizer='NO', train_main_model='NO', train_fc='FROM_SCRATCH',
-                                                                                      weights_filename='/mnt/data/jemmons/vfeedbacknet-results/20bn/vfeedbacknet_model1.recheck3/model_weights-epoch3-step24639.npz'),
-        'vfeedbacknet_fb_base' : lambda : v.vfeedbacknet_fb_base.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
-                                                                       train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
-                                                                       weights_filename='/home/jemmons/data/vfeedbacknet_base_weights.npz'),
-        'vfeedbacknet_fb_base1' : lambda : v.vfeedbacknet_fb_base1.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
-                                                                         train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
-                                                                         weights_filename='/home/jemmons/data/vfeedbacknet_base_weights.npz'),
-        'vfeedbacknet_fb_base1.f' : lambda : v.vfeedbacknet_fb_base1.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
-                                                                         train_featurizer='FINE_TUNE', train_main_model='FINE_TUNE', train_fc='FINE_TUNE',
-                                                                         weights_filename='/home/jemmons/data/vfeedbacknet_base_weights.npz'),
-        'vfeedbacknet_fb_base2' : lambda : v.vfeedbacknet_fb_base2.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
-                                                                         train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
-                                                                         weights_filename='/home/jemmons/data/vfeedbacknet_base_weights.npz'),
-        'vfeedbacknet_model22' : lambda : v.vfeedbacknet_model22.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
-                                                                       train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
-                                                                       weights_filename='/mnt/data/jemmons/vfeedbacknet-results/imagenet/vfeedbacknet_fb_base1/model_weights-epoch1-step4103.npz'),# pretrained on imagenet (17%)
-        'vfeedbacknet_model22.1' : lambda : v.vfeedbacknet_model22.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
-                                                                        train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
-                                                                        weights_filename='/mnt/data/jemmons/vfeedbacknet-results/imagenet/vfeedbacknet_fb_base1/model_weights-epoch8-step335.npz'),# pretrained on imagenet (26%)
-        'vfeedbacknet_model22.2' : lambda : v.vfeedbacknet_model22.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
-                                                                        train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
-                                                                        weights_filename='/mnt/data/jemmons/vfeedbacknet-results/imagenet/vfeedbacknet_fb_base1/model_weights-epoch11-step439.npz'),# pretrained on imagenet (36.1%)
-        'vfeedbacknet_model22.3' : lambda : v.vfeedbacknet_model22.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
-                                                                        train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
-                                                                        weights_filename='/mnt/data/jemmons/vfeedbacknet-results/imagenet/vfeedbacknet_fb_base1/model_weights-epoch110-step8607.npz'),# pretrained on imagenet (54.6%)
-        'vfeedbacknet_vgg' : lambda : v.vfeedbacknet_vgg.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
-                                                               train_featurizer='FROM_SCRATCH', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH'),
-        'vfeedbacknet_vgg.f' : lambda : v.vfeedbacknet_vgg.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
-                                                               train_featurizer='FINE_TUNE', train_main_model='FINE_TUNE', train_fc='FINE_TUNE',
-                                                               weights_filename='/home/jemmons/data/vfeedbacknet_base_weights.npz'),
-        'vfeedbacknet_vgg.f_fc' : lambda : v.vfeedbacknet_vgg.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
-                                                               train_featurizer='NO', train_main_model='NO', train_fc='FINE_TUNE',
-                                                               weights_filename='/home/jemmons/data/vfeedbacknet_base_weights.npz'),
-        'vfeedbacknet_vgg.ff' : lambda : v.vfeedbacknet_vgg.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
-                                                               train_featurizer='FINE_TUNE', train_main_model='FINE_TUNE', train_fc='FINE_TUNE',
-                                                               weights_filename='/mnt/data/jemmons/vfeedbacknet-results/imagenet/vgg16.test2/model_weights-epoch2-step767.npz'),
-        'vfeedbacknet_model23' : lambda : v.vfeedbacknet_model23.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
-                                                                       train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
-                                                                       weights_filename='/home/jemmons/data/vfeedbacknet_base_weights.npz'),
-        'vfeedbacknet_model24' : lambda : v.vfeedbacknet_model24.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
-                                                                       train_featurizer='FROM_SCRATCH', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
-                                                                       weights_filename='/home/jemmons/data/vfeedbacknet_base_weights.npz'),
-        'vfeedbacknet_model25' : lambda : v.vfeedbacknet_model25.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
-                                                                       train_featurizer='FROM_SCRATCH', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
-                                                                       weights_filename='/home/jemmons/data/vfeedbacknet_base_weights.npz'),
-        'vfeedbacknet_model26' : lambda : v.vfeedbacknet_model26.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
-                                                                       train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
-                                                                       weights_filename='/home/jemmons/data/vfeedbacknet_base_weights.npz'),
-        'vfeedbacknet_model27' : lambda : v.vfeedbacknet_model27.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
-                                                                       train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
-                                                                       weights_filename='/home/jemmons/data/vfeedbacknet_base_weights.npz'),
         'vfeedbacknet_model28' : lambda : v.vfeedbacknet_model28.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
                                                                        train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
                                                                        weights_filename='/home/jemmons/data/vfeedbacknet_base_weights.npz'),
@@ -340,6 +194,7 @@ def main(args):
         logging.debug('{} feedback iterations detected!'.format(len(logits_)))
         
         # output is list of tuples: [(losses, total_loss, predictions), ...]
+        # apply the extra loss penalty for the last element of the TEMPORAL iteration
         outputs = []
         for i in range(len(logits_)):
             multipler = args.last_loss_multipler if i == len(logits_)-1 else 1
@@ -350,11 +205,11 @@ def main(args):
                                                                       y_zeros,
                                                                       last_loss_multiple=multipler) ]
 
+        # apply the extra loss penalty for the last element of the FB SPATIAL iteration
         total_loss = 0
         for i in range(len(outputs)):
             output = outputs[i]
-            #multipler = args.last_loss_multipler if i == len(outputs)-1 else 1
-            mutlipler = 1
+            multipler = args.last_loss_multipler if i == len(outputs)-1 else 1
             
             total_loss += multipler * output[1]
         
@@ -463,9 +318,6 @@ def main(args):
                     #     im = Image.fromarray(frame)
                     #     im.save('/home/jemmons/data/frame{}.jpg'.format(i))
                     # return 
-
-                    for i in range(len(video_batch['video_numframes'])):
-                        video_batch['video_numframes'][i] = args.video_length
 
                     assert(not np.any(np.isnan(video_batch['video_rawframes'])))
 
@@ -714,11 +566,21 @@ if __name__ == '__main__':
                         action='store_true',
                         default=False)
 
-    parser.add_argument('--twentybn',
+    # parser.add_argument('--twentybn',
+    #                     help='flag specifying the dataset being used (legacy, used to refer to the jester dataset)',
+    #                     action='store_true',
+    #                     default=False)
+    
+    parser.add_argument('--jester',
                         help='flag specifying the dataset being used',
                         action='store_true',
                         default=False)
-    
+
+    parser.add_argument('--something_something',
+                        help='flag specifying the dataset being used',
+                        action='store_true',
+                        default=False)
+
     parser.add_argument('--imagenet',
                         help='flag specifying the dataset being used',
                         action='store_true',

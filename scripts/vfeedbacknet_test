@@ -26,7 +26,7 @@ logging.basicConfig(level=logging.INFO)
 
 def main(args):
     logging.info('loading input files')
-    assert args.ucf101 ^ args.twentybn, 'you must specify exactly one dataset to use for testing (XOR)'
+    assert args.ucf101 ^ args.jester ^ args.something_something, 'you must specify exactly one dataset to use for testing (XOR)'
 
     round2num = lambda x, num: num * (x // num)
 
@@ -38,7 +38,7 @@ def main(args):
             reader = csv.reader(csvfile, delimiter=' ')
             labels_num2str = [ item[1] for item in reader ]
             labels_str2num =  { label : idx  for idx,label in zip(range(len(labels_num2str)), labels_num2str) }
-        elif args.twentybn:
+        elif args.jester or args.something_something:
             reader = csv.reader(csvfile, delimiter=';')
             labels_num2str = [ item[0] for item in reader ]
             labels_str2num =  { label : idx  for idx,label in zip(range(len(labels_num2str)), labels_num2str) }
@@ -51,13 +51,15 @@ def main(args):
             reader = csv.reader(csvfile, delimiter=' ')
             data_video_paths = [ item[0].split('.')[0] for item in reader ] 
             data_labels = { item : labels_str2num[item.split('/')[0]] for item in data_video_paths } 
-        elif args.twentybn and not args.competition:
+        elif (args.jester or args.something_something) and not args.competition:
             reader = csv.reader(csvfile, delimiter=';')
             data_labels = { int(item[0]) : labels_str2num[item[1]] for item in reader }; 
             data_video_paths = np.asarray( list(data_labels.keys()) )
-        elif args.twentybn and args.competition:
+        elif args.jester and args.competition:
             reader = csv.reader(csvfile, delimiter=';')
             paths = [int(item[0]) for item in reader]
+        elif args.something_something and args.competition:
+            raise NotImplementedError('args.something_something an args.competition cannot be set at the same time yet')
             
             padded_len = round2num(len(paths), args.prefetch_batch_size) + args.prefetch_batch_size
             # print(len(paths))
@@ -234,7 +236,17 @@ if __name__ == '__main__':
                         action='store_true',
                         default=False)
 
-    parser.add_argument('--twentybn',
+    # parser.add_argument('--twentybn',
+    #                     help='flag specifying the dataset being used (legacy; used to referred to jester dataset)',
+    #                     action='store_true',
+    #                     default=False)
+
+    parser.add_argument('--jester',
+                        help='flag specifying the dataset being used',
+                        action='store_true',
+                        default=False)
+
+    parser.add_argument('--something_something',
                         help='flag specifying the dataset being used',
                         action='store_true',
                         default=False)
