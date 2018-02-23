@@ -122,6 +122,7 @@ def main(args):
     config.allow_soft_placement = True
     #config.log_device_placement = True # will generate A LOT of log information
     config.gpu_options.allow_growth = True
+    #config.gpu_options.per_process_gpu_memory_fraction = 0.9
     sess = tf.Session(config=config)
 
     # x_input = tf.placeholder(tf.float32,
@@ -161,6 +162,12 @@ def main(args):
                                                                                train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
                                                                                weights_filename='/home/jemmons/data/vfeedbacknet_base_weights.npz'),
         'vfeedbacknet_eccv_model2' : lambda : v.vfeedbacknet_eccv_model2.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
+                                                                               train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
+                                                                               weights_filename='/home/jemmons/data/vfeedbacknet_base_weights.npz'),
+        'vfeedbacknet_eccv_model3' : lambda : v.vfeedbacknet_eccv_model3.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
+                                                                               train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
+                                                                               weights_filename='/home/jemmons/data/vfeedbacknet_base_weights.npz'),
+        'vfeedbacknet_eccv_model4' : lambda : v.vfeedbacknet_eccv_model4.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
                                                                                train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
                                                                                weights_filename='/home/jemmons/data/vfeedbacknet_base_weights.npz'),
     }
