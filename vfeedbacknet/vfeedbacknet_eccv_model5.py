@@ -314,7 +314,7 @@ class Model:
         for i in range(len(inputs)):
             seq += [inputs[i] for _ in range(repeat)]
         inputs = seq
-        inputs = self.convLSTM_layer4(inputs, inputs_sequence_length, var_list=self.main_model_variables)
+        inputs = self.convLSTM_layer4(inputs, None, var_list=self.main_model_variables)
         ModelLogger.log('convLSTM4', inputs)
         seq = []
         for i in range(repeat-1, len(inputs),repeat):
