@@ -46,7 +46,7 @@ class TrainingLogger:
     '''
 
     @staticmethod
-    def process_prediction(predictions, labels, lengths, losses=None, competition=False, competition_video_num=None, competition_labels=None):
+    def process_prediction(predictions, labels, lengths, losses=None, logits=None, competition=False, competition_video_num=None, competition_labels=None):
 
         batch_size = predictions.shape[0]
         feedback_iterations = predictions.shape[1]

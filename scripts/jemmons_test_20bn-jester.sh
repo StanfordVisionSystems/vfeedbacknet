@@ -14,4 +14,4 @@ TWENTYBN_ROOT=/mnt/scratch/jemmons/20bn-jester
 python -u -B $DIR/vfeedbacknet_test $TWENTYBN_ROOT/jester-v1-labels.csv \
                                  $TWENTYBN_ROOT/jester-v1-validation.csv \
                                  $TWENTYBN_ROOT/20bn-jester-v1 \
-                                 $2 --twentybn ${*:3}
+                                 $2 --jester ${*:3}

@@ -154,7 +154,7 @@ def main(args):
                 ########################################################
                 # evaluate model
                 ########################################################
-                logging.debug('begin train batch')
+                logging.debug('begin test batch')
                 t1 = timeit.default_timer()
                 for i in range(0, num_batch_videos, args.eval_batch_size):
                     begin = i
@@ -163,16 +163,22 @@ def main(args):
 
                     #_total_loss_val, _loss_vals, _predict_vals = sess.run(['total_loss:0', 'loss:0', 'predictions:0'],
                     _total_loss_val, _loss_vals, _predict_vals = sess.run(['total_loss:0', 'losses_agg:0', 'predictions_agg:0'],
-                                                                       feed_dict={'x_input:0' : validation_batch['video_rawframes'][begin:end,:,:,:],
-                                                                                  'x_length:0' : validation_batch['video_numframes'][begin:end],
-                                                                                  'y_label:0' : batch_labels,
-                                                                                  'y_zeros:0' : zeros})
-
+                                                                          feed_dict={'x_input:0' : validation_batch['video_rawframes'][begin:end,:,:,:],
+                                                                                     'x_length:0' : validation_batch['video_numframes'][begin:end],
+                                                                                     'y_label:0' : batch_labels,
+                                                                                     'y_zeros:0' : zeros})
 
                     assert(not np.isnan(_total_loss_val))
                     assert(not np.any(np.isnan(_predict_vals)))
 
-                    analysis = TrainingLogger.process_prediction(_predict_vals, validation_batch['video_labelnums'][begin:end], validation_batch['video_numframes'][begin:end], competition=args.competition, competition_video_num=video_paths_batch[begin:end], competition_labels=labels_num2str)
+                    
+                    analysis = TrainingLogger.process_prediction(_predict_vals,
+                                                                 validation_batch['video_labelnums'][begin:end],
+                                                                 validation_batch['video_numframes'][begin:end],
+                                                                 competition=args.competition,
+                                                                 competition_video_num=video_paths_batch[begin:end],
+                                                                 competition_labels=labels_num2str)
+
                     correct_predictions = analysis[0]['correct_predictions']
                     correct_predictions3 = analysis[0]['correct_predictions3']
                     correct_predictions5 = analysis[0]['correct_predictions5']
@@ -230,6 +236,9 @@ if __name__ == '__main__':
 
     parser.add_argument('checkpoint_prefix', type=str, nargs=None,
                         help='path prefix to the model {metadata,data} to load')
+
+    parser.add_argument('--raw_predictions', type=str, nargs=None,
+                        help='the path to the .npz file to store raw predictions')
 
     parser.add_argument('--ucf101',
                         help='flag specifying the dataset being used',

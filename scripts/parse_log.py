@@ -64,38 +64,34 @@ label = {
     26: 'Doing other things'
 }
 
+num_fb = 1
+    
 with open(sys.argv[1], 'r') as f:
     print('processing file: {}'.format(sys.argv[1]))
     lines = list(filter(lambda x: '[' in x, f.read().strip().split('\n')))
 
-    assert len(lines) % 3 == 0, 'number of lines must be multiple of 3'
+    assert len(lines) % num_fb == 0, 'number of lines must be multiple of num_fb:{}'.format(num_fb)
 
     data = []
-    for i in range(0, len(lines), 3):
+    for i in range(0, len(lines), num_fb):
         fb1 = lines[i]
-        fb2 = lines[i+1]
-        fb3 = lines[i+2]
 
         # get necessary information
         true_label = int(fb1.split('true_label,prediction: ')[1].split(',')[0])
 
         fb1_top5 = list(map(lambda x: int(x), eval('['+ fb1.split('([')[1].split('])')[0] +']')))
-        fb2_top5 = list(map(lambda x: int(x), eval('['+ fb2.split('([')[1].split('])')[0] +']')))
-        fb3_top5 = list(map(lambda x: int(x), eval('['+ fb3.split('([')[1].split('])')[0] +']')))
 
         fb1_frames_top1 = list(map(lambda x: int(x), eval('['+ fb1.split(']) [')[1].split(']')[0] +']')))
-        fb2_frames_top1 = list(map(lambda x: int(x), eval('['+ fb2.split(']) [')[1].split(']')[0] +']')))
-        fb3_frames_top1 = list(map(lambda x: int(x), eval('['+ fb3.split(']) [')[1].split(']')[0] +']')))
 
         data.append({
             'true_label' : true_label,
             'num_frames' : len(fb1_frames_top1),
             'fb1_top5' : fb1_top5,
-            'fb2_top5' : fb2_top5,
-            'fb3_top5' : fb3_top5,
+            # 'fb2_top5' : fb2_top5,
+            # 'fb3_top5' : fb3_top5,
             'fb1_frames_top1' : fb1_frames_top1,
-            'fb2_frames_top1' : fb2_frames_top1,
-            'fb3_frames_top1' : fb3_frames_top1,
+            # 'fb2_frames_top1' : fb2_frames_top1,
+            # 'fb3_frames_top1' : fb3_frames_top1,
         })
 
     # perform analysis
@@ -105,8 +101,6 @@ with open(sys.argv[1], 'r') as f:
     # no temporal information...
 
     correct_bins1 = [ 0 for _ in range(20) ] # a bin for every 5% of video
-    correct_bins2 = [ 0 for _ in range(20) ] # a bin for every 5% of video
-    correct_bins3 = [ 0 for _ in range(20) ] # a bin for every 5% of video
     for d in data:
         true_label = d['true_label'] 
 
@@ -124,23 +118,20 @@ with open(sys.argv[1], 'r') as f:
 
             if d['fb1_frames_top1'][i] == true_label:
                 alloc(lower, upper, correct_bins1)
-            if d['fb2_frames_top1'][i] == true_label:
-                alloc(lower, upper, correct_bins2)
-            if d['fb3_frames_top1'][i] == true_label:
-                alloc(lower, upper, correct_bins3)
 
     for i in range(20):
-        print(correct_bins1[i] / len(data),  end='\t')
-        print(correct_bins2[i] / len(data),  end='\t')
-        print(correct_bins3[i] / len(data),  end='\n') 
+        print(correct_bins1[i] / len(data),  end='\n')
     print()
-    for i in range(20):
-        print(correct_bins2[i] / len(data), ',',  end='')
-    print()
-    for i in range(20):
-        print(correct_bins3[i] / len(data), ',',  end='') 
-    print()
+    # for i in range(20):
+    #     print(correct_bins2[i] / len(data), ',',  end='')
+    # print()
+    # for i in range(20):
+    #     print(correct_bins3[i] / len(data), ',',  end='') 
+    # print()
                
+    import sys
+    sys.exit(0)
+
     results = {}
 
     def topN(key):
