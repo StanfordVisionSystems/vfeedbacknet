@@ -53,8 +53,13 @@ def main(args):
             data_labels = { item : labels_str2num[item.split('/')[0]] for item in data_video_paths } 
         elif (args.jester or args.something_something) and not args.competition:
             reader = csv.reader(csvfile, delimiter=';')
-            data_labels = { int(item[0]) : labels_str2num[item[1]] for item in reader }; 
-            data_video_paths = np.asarray( list(data_labels.keys()) )
+            data_labels = {}
+            for item in reader:
+                basename = str(int(item[0]))
+                dirname = basename[-1]+'.dir'
+                video_path = os.path.join(dirname, basename)
+                data_labels[video_path] = labels_str2num[item[1].lower()]
+            data_video_paths = list(data_labels.keys())
         elif args.jester and args.competition:
             reader = csv.reader(csvfile, delimiter=';')
             paths = [int(item[0]) for item in reader]
