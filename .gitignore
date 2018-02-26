@@ -1,6 +1,8 @@
 # user added ignores
 #scripts/jemmons_setup.sh
 #scripts/jemmons_train.sh
+napoli107
+napoli110
 .venv
 vfeedbacknet/vgg16_weights.npz
 
