@@ -20,7 +20,12 @@ fi
 export CUDA_VISIBLE_DEVICES=$1
 mkdir -p $3
 
-TWENTYBN_ROOT=$TMPDIR/jemmons/20bn-jester
+if [[ -z $DATA_ROOT ]]; then
+    echo 'Need to set  DATA_ROOT environment variable!'
+    exit -1
+fi
+
+TWENTYBN_ROOT=$DATA_ROOT
 
 python3 -u -B $DIR/vfeedbacknet_train $TWENTYBN_ROOT/jester-v1-labels.csv \
         $TWENTYBN_ROOT/jester-v1-validation.csv \
