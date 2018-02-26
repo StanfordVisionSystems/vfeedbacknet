@@ -319,6 +319,7 @@ def main(args):
                 ############################################################
                 for batch_base_idx in range(0, num_data_videos, args.prefetch_batch_size):
 
+                    logging.debug('model name: {}'.format(args.model_name))
                     logging.debug('begin load videos future')
                     t1 = timeit.default_timer() 
                     # prefetch the batch ahead of the index (therefore, we must skip loading on the last loop iteration to avoid array overrun)
