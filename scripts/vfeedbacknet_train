@@ -64,7 +64,7 @@ def main(args):
             reader = csv.reader(csvfile, delimiter=';')
             validation_labels = {}
             for item in reader:
-                basename = str(int(item))
+                basename = str(int(item[0]))
                 dirname = basename[-1]+'.dir'
                 video_path = os.path.join(dirname, basename)
                 validation_labels[video_path] = labels_str2num[item[1].lower()]
@@ -99,7 +99,7 @@ def main(args):
             reader = csv.reader(csvfile, delimiter=';')
             data_labels = {}
             for item in reader:
-                basename = str(int(item))
+                basename = str(int(item[0]))
                 dirname = basename[-1]+'.dir'
                 video_path = os.path.join(dirname, basename)
                 data_labels[video_path] = labels_str2num[item[1].lower()]
