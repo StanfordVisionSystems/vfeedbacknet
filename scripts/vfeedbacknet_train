@@ -62,12 +62,17 @@ def main(args):
             validation_labels = { item : labels_str2num[item.split('/')[0]] for item in validation_video_paths } 
         elif args.jester or args.something_something:
             reader = csv.reader(csvfile, delimiter=';')
-            validation_labels = { int(item[0]) : labels_str2num[item[1].lower()] for item in reader }
-            validation_video_paths = np.asarray( list(validation_labels.keys()) ) 
+            validation_labels = {}
+            for item in reader:
+                basename = str(int(item[0]))
+                dirname = basename[-1]+'.dir'
+                video_path = os.path.join(dirname, basename)
+                validation_labels[video_path] = labels_str2num[item[1].lower()]
+            validation_video_paths = list(validation_labels.keys())
         elif args.imagenet:
             reader = csv.reader(csvfile, delimiter=' ')
             validation_labels = { item[0] : labels_str2num[item[0].split('/')[1].lower()] for item in reader }
-            validation_video_paths = np.asarray( list(validation_labels.keys()) )             
+            validation_video_paths = list(validation_labels.keys())
             
         random.seed(123) # shuffle with this particular seed to help with debugging
         random.shuffle(validation_video_paths)
@@ -92,12 +97,17 @@ def main(args):
             data_labels = { item : labels_str2num[item.split('/')[0]] for item in data_video_paths } 
         elif args.jester or args.something_something:
             reader = csv.reader(csvfile, delimiter=';')
-            data_labels = { int(item[0]) : labels_str2num[item[1].lower()] for item in reader }
-            data_video_paths = np.asarray( list(data_labels.keys()) )
+            data_labels = {}
+            for item in reader:
+                basename = str(int(item[0]))
+                dirname = basename[-1]+'.dir'
+                video_path = os.path.join(dirname, basename)
+                data_labels[video_path] = labels_str2num[item[1].lower()]
+            data_video_paths = list(data_labels.keys())
         elif args.imagenet:
             reader = csv.reader(csvfile, delimiter=' ')
             data_labels = { item[0] : labels_str2num[item[0].split('/')[1].lower()] for item in reader } 
-            data_video_paths = np.asarray( list(data_labels.keys()) )             
+            data_video_paths = list(data_labels.keys())
 
         random.seed(123) # shuffle with this particular seed to help with debugging
         random.shuffle(data_video_paths)
@@ -290,7 +300,7 @@ def main(args):
             #logfile.flush()
 
         logging.info('starting mutiprocessing pool')
-        with mp.Pool(processes=mp.cpu_count(), initializer=pool_init, initargs=(shared_mem,)) as pool:
+        with mp.Pool(processes=args.num_cpus, initializer=pool_init, initargs=(shared_mem,)) as pool:
             logging.info('Done! starting mutiprocessing pool')
             
             if args.continue_training:                    
@@ -611,6 +621,10 @@ if __name__ == '__main__':
     parser.add_argument('--pretrain_root_prefix', type=str, nargs=None,
                         help='the path prefix to where the pretrained model live',
                         default='/home/jemmons/data')
+
+    parser.add_argument('--num_cpus', type=int, nargs=None,
+                        help='number of cpus to use during training', 
+                        default=4)
 
     parser.add_argument('--num_gpus', type=int, nargs=None,
                         help='number of gpus to use during training', 
