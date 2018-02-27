@@ -630,11 +630,10 @@ if __name__ == '__main__':
 
     parser.add_argument('--num_cpus', type=int, nargs=None,
                         help='number of cpus to use during training', 
-                        default=4)
+                        default=12)
 
     parser.add_argument('--num_gpus', type=int, nargs=None,
-                        help='number of gpus to use during training', 
-                        default=1)
+                        help='number of gpus to use during training')
 
     parser.add_argument('--overfit',
                         help='overfit on a small chunk [16 data points] of data (official run: False)',
