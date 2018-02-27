@@ -82,17 +82,14 @@ class FeedbackLSTMCell_stack2(tf.nn.rnn_cell.RNNCell):
                     var_list.append(var)
 
 
-        outputs, state = tf.nn.dynamic_rnn(
+        outputs, state = tf.nn.static_rnn(
             self,
-            tf.stack(x, axis=0),
+            x,
             dtype=tf.float32,
-            time_major=True,
             sequence_length=None,
             initial_state=initial_state,
         )
         
-        outputs = tf.unstack(outputs, axis=0)
-
         return outputs
     
     
