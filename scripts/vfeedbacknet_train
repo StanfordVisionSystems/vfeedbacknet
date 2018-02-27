@@ -189,6 +189,9 @@ def main(args):
         'vfeedbacknet_eccv_model7' : lambda : v.vfeedbacknet_eccv_model7.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
                                                                                train_featurizer='FROM_SCRATCH', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
                                                                                weights_filename=None),
+        'vfeedbacknet_eccv_model8' : lambda : v.vfeedbacknet_eccv_model8.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
+                                                                               train_featurizer='FROM_SCRATCH', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
+                                                                               weights_filename=None),
     }
 
     model = None
@@ -253,12 +256,21 @@ def main(args):
         predictions = tf.stack(list(map(lambda x: x[2], outputs)), axis=1, name='predictions_agg')
         ModelLogger.log('losses_agg', losses)
         ModelLogger.log('predictions_agg', predictions)
-    
+
+    logging.info('compute loss')
+    t1 = timeit.default_timer()        
     step = tf.Variable(args.global_step_init if (args.global_step_init is not None) else 0, trainable=False, name='step')
     learning_rate = tf.maximum(tf.train.exponential_decay(args.learning_rate_init, step, args.prefetch_batch_size//args.train_batch_size, args.learning_rate_decay), args.learning_rate_min, name='learning_rate')
     optimizer = tf.train.AdadeltaOptimizer(learning_rate=learning_rate, name='optimizer')
     train_step = optimizer.minimize(total_loss, colocate_gradients_with_ops=True, global_step=step)
+    t2 = timeit.default_timer()
+    logging.debug('done! (compute loss: {})'.format(t2-t1))
+
+    logging.info('creating saver')
+    t1 = timeit.default_timer()
     saver = tf.train.Saver()
+    t2 = timeit.default_timer()
+    logging.debug('done! (create saver: {})'.format(t2-t1))
 
     ############################################################################
     # allocate shared memory up front 
@@ -327,8 +339,12 @@ def main(args):
                 video_paths = data_video_paths.copy()
                 random.shuffle(video_paths)
 
+                logging.info('loading initial batch of videos')
+                t1 = timeit.default_timer()
                 video_batch_f = load_videos(pool, args.data_root, data_labels, video_paths[0:args.prefetch_batch_size], args.video_width, args.video_height, args.video_length, args.video_downsample_ratio, True, args.prefetch_batch_size, shared_mem, shared_mem_idx, is_ucf101=args.ucf101)
-                video_batch = video_batch_f()
+                video_batch = video_batch_f() 
+                t2 = timeit.default_timer()
+                logging.info('Done! loading initial batch of videos: {}'.format(t2-t1))
 
                 ############################################################
                 # loop over all the videos in a random order
@@ -376,6 +392,7 @@ def main(args):
                         batch_labels = keras.utils.to_categorical(video_batch['video_labelnums'][begin:end], len(labels_num2str))
                         
                         t1_trainstep = timeit.default_timer()
+                        logging.debug('begin forward/back propagation')
                         _, _step, _learn_rate, _total_loss_val, _loss_vals, _predict_vals = sess.run([train_step, step, learning_rate, total_loss, losses, predictions],
                                                                                                      feed_dict={x_input : video_batch['video_rawframes'][begin:end,:,:,:],
                                                                                                                 x_length : video_batch['video_numframes'][begin:end],
@@ -386,6 +403,7 @@ def main(args):
                         assert(not np.isnan(_total_loss_val))
                         assert(not np.any(np.isnan(_predict_vals)))
                         t2_trainstep = timeit.default_timer()
+                        logging.debug('Done! forward/back propagation: {}'.format(t2_trainstep-t1_trainstep))
 
                         t1_log = timeit.default_timer()
                         if train_batch_count % max((args.validation_interval//2),1) == 0:
