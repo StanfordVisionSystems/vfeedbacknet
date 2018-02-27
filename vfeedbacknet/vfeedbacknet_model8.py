@@ -574,8 +574,8 @@ if __name__ == '__main__':
     #model.print_variables()
     
     # print out the model
-    # graph = tf.get_default_graph()    
-    # for op in graph.get_operations():
-    #     print((op.name))
+    graph = tf.get_default_graph()    
+    for op in graph.get_operations():
+        print((op.name))
 
     
