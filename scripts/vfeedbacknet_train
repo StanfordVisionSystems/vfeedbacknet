@@ -132,7 +132,7 @@ def main(args):
     #config.allow_soft_placement = True
     #config.log_device_placement = True # will generate A LOT of log information
     #config.gpu_options.allow_growth = True
-    #config.gpu_options.per_process_gpu_memory_fraction = 0.9
+    config.gpu_options.per_process_gpu_memory_fraction = 0.7
     sess = tf.Session(config=config)
 
     # x_input = tf.placeholder(tf.float32,
@@ -183,6 +183,12 @@ def main(args):
         'vfeedbacknet_eccv_model5' : lambda : v.vfeedbacknet_eccv_model5.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
                                                                                train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
                                                                                weights_filename=os.path.join(args.pretrain_root_prefix, 'vfeedbacknet_base_weights.npz')),
+        'vfeedbacknet_eccv_model6' : lambda : v.vfeedbacknet_eccv_model6.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
+                                                                               train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
+                                                                               weights_filename=os.path.join(args.pretrain_root_prefix, 'vfeedbacknet_base_weights.npz')),
+        'vfeedbacknet_eccv_model7' : lambda : v.vfeedbacknet_eccv_model7.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
+                                                                               train_featurizer='FROM_SCRATCH', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
+                                                                               weights_filename=None),
     }
 
     model = None
@@ -230,7 +236,7 @@ def main(args):
             multipler = args.last_loss_multipler if i == len(logits_)-1 else 1
             outputs += [ v.vfeedbacknet_lossfunctions.basic_loss_pred(logits_[i],
                                                                       x_length,
-                                                                      args.video_length,
+                                                                      len(logits_[i]), #args.video_length,
                                                                       y_label,
                                                                       y_zeros,
                                                                       last_loss_multiple=multipler) ]
