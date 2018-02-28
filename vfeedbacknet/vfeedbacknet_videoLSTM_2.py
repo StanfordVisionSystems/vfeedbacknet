@@ -12,7 +12,7 @@ class Model:
     '''
 
     def __init__(self, sess, num_classes,
-                 train_featurizer='FINE_TUNE', train_main_model='FINE_TUNE', train_fc='FINE_TUNE',
+                 train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
                  weights_filename=None, is_training=True):
 
         self.sess = sess
@@ -50,7 +50,7 @@ class Model:
 
                         n = 512
                         m = 4*n
-                        input_size = [7, 7, n]
+                        input_size = [4, 4, n]
                         kernel2d_size = [3, 3]
                         kernel_size = kernel2d_size + [2*n] + [m] 
 
@@ -61,7 +61,7 @@ class Model:
                             W_co = tf.get_variable('W_co', input_size, initializer=initializer, regularizer=regularizer)
                             bias = tf.get_variable('bias', [m], initializer=tf.zeros_initializer(), regularizer=regularizer)
                             
-                self.convLSTMCell1 = ConvLSTMCell([7, 7], 512, [3, 3])
+                self.convLSTMCell1 = ConvLSTMCell([4, 4], 512, [3, 3])
                         
             with tf.variable_scope('convlstm2'):
                 with tf.variable_scope('rnn'):
@@ -72,7 +72,7 @@ class Model:
 
                         n = 512
                         m = 4*n
-                        input_size = [7, 7, n]
+                        input_size = [4, 4, n]
                         kernel2d_size = [3, 3]
                         kernel_size = kernel2d_size + [2*n] + [m] 
 
@@ -83,7 +83,7 @@ class Model:
                             W_co = tf.get_variable('W_co', input_size, initializer=initializer, regularizer=regularizer)
                             bias = tf.get_variable('bias', [m], initializer=tf.zeros_initializer(), regularizer=regularizer)
                             
-                self.convLSTMCell2 = ConvLSTMCell([7, 7], 512, [3, 3])
+                self.convLSTMCell2 = ConvLSTMCell([4, 4], 512, [3, 3])
                     
 
     def get_variables(self):
