@@ -224,6 +224,15 @@ def main(args):
                                                                                 weights_filename=os.path.join(args.pretrain_root_prefix, 'vfeedbacknet_base_weights.npz')),
         'vfeedbacknet_videoLSTM_2' : lambda : v.vfeedbacknet_videoLSTM_2.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
                                                                                train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
+        'vfeedbacknet_eccv_model18' : lambda : v.vfeedbacknet_eccv_model18.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
+                                                                                train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
+                                                                                weights_filename=os.path.join(args.pretrain_root_prefix, 'vfeedbacknet_base_weights.npz')),
+        'vfeedbacknet_eccv_model19' : lambda : v.vfeedbacknet_eccv_model19.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
+                                                                                train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
+                                                                                weights_filename=os.path.join(args.pretrain_root_prefix, 'vfeedbacknet_base_weights.npz')),
+        'vfeedbacknet_eccv_model20' : lambda : v.vfeedbacknet_eccv_model20.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
+                                                                                train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
+                                                                                weights_filename=os.path.join(args.pretrain_root_prefix, 'vfeedbacknet_base_weights.npz')),
                                                                                weights_filename=os.path.join(args.pretrain_root_prefix, 'vfeedbacknet_base_weights.npz')),
     }
 

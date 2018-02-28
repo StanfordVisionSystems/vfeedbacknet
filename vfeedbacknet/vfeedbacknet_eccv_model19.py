@@ -14,8 +14,8 @@ class Model:
     architecture works best for video tasks.
     '''
 
-    model_name = 'eccv_model18'
-    NFEEDBACK_ITERATIONS = 2
+    model_name = 'eccv_model17'
+    NFEEDBACK_ITERATIONS = 3
     
     def __init__(self, sess, num_classes, batch_size,
                  train_featurizer='FINE_TUNE', train_main_model='FINE_TUNE', train_fc='FINE_TUNE',
