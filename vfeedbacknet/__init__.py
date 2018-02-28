@@ -70,6 +70,14 @@ import vfeedbacknet.vfeedbacknet_eccv_model17 as vfeedbacknet_eccv_model17
 #import vfeedbacknet.vfeedbacknet_eccv_model19 as vfeedbacknet_eccv_model19
 #import vfeedbacknet.vfeedbacknet_eccv_model20 as vfeedbacknet_eccv_model20
 
+import vfeedbacknet.vfeedbacknet_eccv_small_model1 as vfeedbacknet_eccv_small_model1
+import vfeedbacknet.vfeedbacknet_eccv_small_model2 as vfeedbacknet_eccv_small_model2
+import vfeedbacknet.vfeedbacknet_eccv_small_model4 as vfeedbacknet_eccv_small_model4
+
+import vfeedbacknet.vfeedbacknet_eccv_videoLSTM_2 as vfeedbacknet_eccv_videoLSTM_2
+import vfeedbacknet.vfeedbacknet_eccv_videoLSTM_2_with_fb1 as vfeedbacknet_eccv_videoLSTM_2_with_fb1
+import vfeedbacknet.vfeedbacknet_eccv_videoLSTM_2_with_fb2 as vfeedbacknet_eccv_videoLSTM_2_with_fb2
+
 # legacy models
 # import vfeedbacknet.legacy.convLSTM
 # import vfeedbacknet.legacy.convLSTM
