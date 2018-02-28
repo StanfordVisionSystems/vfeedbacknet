@@ -129,18 +129,17 @@ class FeedbackLSTMCell_stack2(tf.nn.rnn_cell.RNNCell):
         # xo_t = tf.contrib.layers.layer_norm(xo_t, trainable=self._is_training)
         
         xi_t = tf.nn.conv2d(xi_t, self._xi_kernel2, [1, 1, 1, 1], padding='SAME')
-        xi_t = tf.nn.relu( tf.nn.bias_add(xi_t + skip_x_t, self._xi_bias2) )
+        xi_t = tf.nn.bias_add(xi_t + skip_x_t, self._xi_bias2)
         xf_t = tf.nn.conv2d(xf_t, self._xf_kernel2, [1, 1, 1, 1], padding='SAME')
-        xf_t = tf.nn.relu( tf.nn.bias_add(xf_t + skip_x_t, self._xf_bias2) )
+        xf_t = tf.nn.bias_add(xf_t + skip_x_t, self._xf_bias2)
         xc_t = tf.nn.conv2d(xc_t, self._xc_kernel2, [1, 1, 1, 1], padding='SAME')
-        xc_t = tf.nn.relu( tf.nn.bias_add(xc_t + skip_x_t, self._xc_bias2) )
+        xc_t = tf.nn.bias_add(xc_t + skip_x_t, self._xc_bias2)
         xo_t = tf.nn.conv2d(xo_t, self._xo_kernel2, [1, 1, 1, 1], padding='SAME')
-        xo_t = tf.nn.relu( tf.nn.bias_add(xo_t + skip_x_t, self._xo_bias2) )
+        xo_t = tf.nn.bias_add(xo_t + skip_x_t, self._xo_bias2)
         # -- end resnet block --
         
         # compute h (single conv)
         _h_tm1 = tf.nn.conv2d(skip_h_tm1, self._h_kernel1, [1, 1, 1, 1], padding='SAME')
-        _h_tm1 = tf.nn.relu(_h_tm1)
 
         hi_t, hf_t, hc_t, ho_t = tf.split(_h_tm1, 4, axis=-1)
 
@@ -149,7 +148,7 @@ class FeedbackLSTMCell_stack2(tf.nn.rnn_cell.RNNCell):
         cf_t = self._W_cf * c_tm1
 
         # compute i
-        i_preactivation = ci_t + hi_t #xi_t + hi_t + ci_t
+        i_preactivation = xi_t + hi_t + ci_t
         i_t = tf.sigmoid(i_preactivation)
         # i_t = tf.contrib.layers.layer_norm(i_t, trainable=self._is_training)
 
@@ -280,13 +279,12 @@ class FeedbackLSTMCell_stack1(tf.nn.rnn_cell.RNNCell):
         
         # compute x (single conv)
         _x_t = tf.nn.conv2d(skip_x_t, self._x_kernel1, [1, 1, 1, 1], padding='SAME')
-        _x_t = tf.nn.relu( tf.nn.bias_add(_x_t, self._x_bias1) )
+        _x_t = tf.nn.bias_add(_x_t, self._x_bias1)
 
         xi_t, xf_t, xc_t, xo_t = tf.split(_x_t, 4, axis=-1)
 
         # compute h (single conv)
         _h_tm1 = tf.nn.conv2d(skip_h_tm1, self._h_kernel1, [1, 1, 1, 1], padding='SAME')
-        _h_tm1 = tf.nn.relu(_h_tm1)
 
         hi_t, hf_t, hc_t, ho_t = tf.split(_h_tm1, 4, axis=-1)
 
@@ -295,7 +293,7 @@ class FeedbackLSTMCell_stack1(tf.nn.rnn_cell.RNNCell):
         cf_t = self._W_cf * c_tm1
 
         # compute i
-        i_preactivation = ci_t + hi_t #xi_t + hi_t + ci_t
+        i_preactivation = xi_t + hi_t + ci_t
         i_t = tf.sigmoid(i_preactivation)
         # i_t = tf.contrib.layers.layer_norm(i_t, trainable=self._is_training)
 
