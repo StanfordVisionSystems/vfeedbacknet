@@ -231,7 +231,7 @@ class Model:
         for fbi in range(Model.NFEEDBACK_ITERATIONS):
             inputs = fb_sequence[fbi]
             
-            inputs = self.convLSTM_layer1(inputs, None, var_list=self.main_model_variables)
+            inputs = self.convLSTM_layer1(inputs, inputs_sequence_length, var_list=self.main_model_variables)
             ModelLogger.log('fb{}_convLSTM1'.format(fbi), inputs)
 
             inputs = [ self.vfeedbacknet_base.ave_pool(inp) for inp in inputs ]
