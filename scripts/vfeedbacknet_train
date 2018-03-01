@@ -276,6 +276,9 @@ def main(args):
         'vfeedbacknet_eccv_bigfb_model4' : lambda : v.vfeedbacknet_eccv_bigfb_model4.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
                                                                                     train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
                                                                                     weights_filename=os.path.join(args.pretrain_root_prefix, 'vfeedbacknet_base_weights.npz')),
+        'vfeedbacknet_eccv_bigfb_model1_debug' : lambda : v.vfeedbacknet_eccv_bigfb_model1_debug.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
+	                                                                                    train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
+                                                                                            weights_filename=os.path.join(args.pretrain_root_prefix, 'vfeedbacknet_base_weights.npz')),
     }
 
     model = None
