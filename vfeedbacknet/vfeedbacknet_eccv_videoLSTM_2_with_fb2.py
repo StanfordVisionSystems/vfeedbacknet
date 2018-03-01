@@ -285,13 +285,13 @@ if __name__ == '__main__':
     sess = tf.Session()
 
     video_length = 10
-    x = tf.placeholder(tf.float32, [None, video_length, 224, 224, 3], name='inputs')
+    x = tf.placeholder(tf.float32, [None, video_length, 112, 112, 3], name='inputs')
     x_len = tf.placeholder(tf.float32, [None], name='inputs_len')
     zeros = tf.placeholder(tf.float32, [video_length], name='inputs_len')
     labels = tf.placeholder(tf.float32, [None], name='inputs_len')
 
     #vfeedbacknet_model1 = VFeedbackNetModel1(sess, 27))
-    vfeedbacknet_model1 = Model(sess, 27, train_featurizer='NO', weights_filename='/home/jemmons/data/vfeedbacknet_base_weights.npz')
+    vfeedbacknet_model1 = Model(sess, 27, train_featurizer='NO', weights_filename='/home/jemmons/vfeedbacknet_base_weights.npz')
 
     logits = vfeedbacknet_model1(x, x_len)
     ModelLogger.log('logits', logits)

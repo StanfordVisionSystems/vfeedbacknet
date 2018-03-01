@@ -270,6 +270,12 @@ def main(args):
         'vfeedbacknet_eccv_videoLSTM_2_with_fb2' : lambda : v.vfeedbacknet.vfeedbacknet_eccv_videoLSTM_2_with_fb2.Model(sess, len(labels_num2str), 
                                                                                         train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
                                                                                         weights_filename=os.path.join(args.pretrain_root_prefix, 'vfeedbacknet_base_weights.npz')),
+        'vfeedbacknet_eccv_bigfb_model1' : lambda : v.vfeedbacknet_eccv_bigfb_model1.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
+                                                                                    train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
+                                                                                    weights_filename=os.path.join(args.pretrain_root_prefix, 'vfeedbacknet_base_weights.npz')),
+        'vfeedbacknet_eccv_bigfb_model4' : lambda : v.vfeedbacknet_eccv_bigfb_model4.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
+                                                                                    train_featurizer='NO', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH',
+                                                                                    weights_filename=os.path.join(args.pretrain_root_prefix, 'vfeedbacknet_base_weights.npz')),
     }
 
     model = None
@@ -726,7 +732,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--num_cpus', type=int, nargs=None,
                         help='number of cpus to use during training', 
-                        default=12)
+                        default=6)
 
     parser.add_argument('--num_gpus', type=int, nargs=None,
                         help='number of gpus to use during training')

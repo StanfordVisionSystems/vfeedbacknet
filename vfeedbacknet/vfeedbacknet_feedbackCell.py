@@ -1,5 +1,185 @@
 import tensorflow as tf
 
+class BatchNorm:
+
+    def __init__(self, input_shape, beta=0, gamma=1):
+        
+        with tf.variable_scope('batch_norm'):
+
+            #self.beta = tf.get_variable('beta', input_shape, 
+            #                            initializer=tf.constant_initializer(0.0, tf.float32), 
+            #                            trainable=False)
+            #self.gamma = tf.get_variable('gamma', input_shape, 
+            #                             initializer=tf.constant_initializer(1.0, tf.float32), 
+            #                             trainable=False)
+            
+            self.beta = tf.constant(0.0, shape=input_shape, dtype=tf.float32)
+            self.gamma = tf.constant(0.0, shape=input_shape, dtype=tf.float32)
+
+            nchannels = input_shape[-1]
+            initializer = tf.contrib.layers.xavier_initializer()
+            self.moving_averages = tf.get_variable('moving_averages', [nchannels], initializer=initializer)
+            self.moving_variances = tf.get_variable('moving_variances', [nchannels], initializer=initializer)
+
+
+    @property
+    def variables(self):
+        
+        #return [self.beta, self.gamma, self.moving_averages, self.moving_variances]
+        return [self.moving_averages, self.moving_variances]
+
+    def apply(self, x, is_training=False):
+
+        with tf.variable_scope('batch_norm'):
+
+            if is_training:
+                mean, variance = tf.nn.moments(x, [0, 1, 2], name='moments')
+                
+                tf.assign(self.moving_averages, 0.99*self.moving_averages + 0.01*mean)
+                tf.assign(self.moving_variances, 0.99*self.moving_variances + 0.01*variance)
+
+            y = tf.nn.batch_normalization(x, self.moving_averages, self.moving_variances, 
+                                          self.beta, self.gamma, 0.001)
+            y.set_shape(x.get_shape())
+                
+            return y    
+
+
+class FeedbackRNNCell_stack1(tf.nn.rnn_cell.RNNCell):
+    '''
+    A feedback cell based on a simple RNN structure (Elman RNN) 
+    with a simple set of convolutions. 
+    '''
+    
+    
+    def __init__(self, input_shape, feedback_iterations,
+                 forget_bias=1.0,
+                 activation=tf.tanh,
+                 is_training=True,
+                 initializer=tf.contrib.layers.xavier_initializer(),
+                 regularizer=None):
+
+        super().__init__(_reuse=None)
+
+        self._kernel = [3, 3]
+        self._input_shape = input_shape
+        self._feedback_iterations = feedback_iterations
+
+        self._forget_bias = forget_bias
+        self._activation = activation
+
+        self._is_training = is_training
+
+        with tf.variable_scope('feedback_cell'):
+            
+            #with tf.variable_scope('batch_norm1'):
+            #    self.batch_normalizer1 = BatchNorm(input_shape)
+
+            #with tf.variable_scope('batch_norm2'):
+            #    self.batch_normalizer2 = BatchNorm(input_shape)
+
+            #with tf.variable_scope('batch_norm3'):
+            #    self.batch_normalizer3 = BatchNorm(input_shape)
+
+            with tf.variable_scope('rnn'):
+                with tf.variable_scope('convlstm'):
+
+                    input_nchannels = input_shape[-1]
+
+                    kernel_size = self._kernel + [input_nchannels, input_nchannels]
+
+                    self.Wx = tf.get_variable('Wx', kernel_size, initializer=initializer, regularizer=regularizer)
+                    self.bx = tf.get_variable('bx', [input_nchannels], initializer=initializer, regularizer=regularizer)
+
+                    self.Wh = tf.get_variable('Wh', kernel_size, initializer=initializer, regularizer=regularizer)
+                    self.bh = tf.get_variable('bh', [input_nchannels], initializer=initializer, regularizer=regularizer)
+
+                    self.Wy = tf.get_variable('Wy', kernel_size, initializer=initializer, regularizer=regularizer)
+                    self.by = tf.get_variable('by', [input_nchannels], initializer=initializer, regularizer=regularizer)
+ 
+                    self.h_bias = tf.get_variable('h_bias', [input_nchannels], 
+                                                  initializer=initializer, regularizer=regularizer)
+                    self.y_bias = tf.get_variable('y_bias', [input_nchannels], 
+                                                  initializer=initializer, regularizer=regularizer)
+
+                   
+    @property
+    def defined_variables(self):
+
+        return [self.Wx, self.bx, self.Wh, self.bh, self.Wy, self.by, self.h_bias, self.y_bias] # + \
+               # self.batch_normalizer1.variables + self.batch_normalizer2.variables + self.batch_normalizer3.variables
+
+    
+    @property
+    def state_size(self):
+
+        return tf.TensorShape(self._input_shape)
+
+    
+    @property
+    def output_size(self):
+        
+        return tf.TensorShape(self._input_shape)
+
+    
+    def apply_layer(self, x, sequence_length=None, initial_state=None, var_list=None):
+        '''
+        Input should be a python list of length `feedback_iterations`. It should
+        contain tensors with `input_shape`.
+        '''
+
+        assert len(x) == self._feedback_iterations, 'input should be {} elements long, but was {}'.format(self._feedback_iterations, len(x))
+        
+        # add variables to var_list for model exporting
+        if var_list is not None:
+            for var in self.defined_variables:
+                if var not in var_list:
+                    var_list.append(var)
+
+        with tf.variable_scope('feedback_cell', reuse=True):
+
+            outputs, state = tf.nn.static_rnn(
+                self,
+                x,
+                dtype=tf.float32,
+                sequence_length=None,
+                initial_state=initial_state,
+            )
+        
+        return outputs
+
+    
+    def call(self, inputs, state):
+
+        x_t = tf.nn.relu(
+            tf.nn.bias_add(
+                tf.nn.conv2d(inputs, self.Wx, [1, 1, 1, 1], padding='SAME'),
+                self.bx)
+        )
+        #x_t = self.batch_normalizer1.apply(x_t, is_training=self._is_training)
+        
+        h_tm1 = tf.nn.relu(
+            tf.nn.bias_add(
+                tf.nn.conv2d(state, self.Wh, [1, 1, 1, 1], padding='SAME'),
+                self.bh)
+        )
+        #h_tm1 = self.batch_normalizer2.apply(h_tm1, is_training=self._is_training)
+
+        next_state = tf.sigmoid(x_t + h_tm1 + self.h_bias)
+        
+        y_t = tf.nn.relu(
+            tf.nn.bias_add(
+                tf.nn.conv2d(next_state, self.Wy, [1, 1, 1, 1], padding='SAME'),
+                self.by)
+        )
+        #y_t = self.batch_normalizer3.apply(y_t, is_training=self._is_training)
+        
+
+        output = tf.sigmoid(y_t + self.y_bias)
+
+        return output, next_state
+
+
 class FeedbackLSTMCell_stack1(tf.nn.rnn_cell.RNNCell):
     '''
     A feedback cell based on a convLSTM structure with a resnet-like set of 
