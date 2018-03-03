@@ -8,7 +8,17 @@ import numpy as np
 import multiprocessing
 import tensorflow as tf
 
-import os
+import uuid
+import os;
+
+try:
+    tmpdir = os.environ['TMPDIR']
+except:
+    os.environ['TMPDIR'] = '/tmp/jemmons' 
+tempdir = os.path.join(os.environ['TMPDIR'], str(uuid.uuid4()))
+os.makedirs(tempdir)
+os.environ['TENSORPACK_DATASET'] = tempdir
+
 import zipfile
 
 from abc import abstractmethod
@@ -141,7 +151,7 @@ def eval_on_ILSVRC12(model, sessinit, dataflow):
         model=model,
         session_init=sessinit,
         input_names=['input', 'label'],
-        output_names=['wrong-top1', 'wrong-top5']
+        output_names=['wrong-top1', 'wrong-top5', 'train-error-top1', 'train-error-top5', 'xentropy-loss']
     )
     pred = SimpleDatasetPredictor(pred_config, dataflow)
     acc1, acc5 = RatioCounter(), RatioCounter()
@@ -223,6 +233,11 @@ class ImageNetModel(ModelDesc):
 
     @staticmethod
     def compute_loss_and_error(logits, label):
+
+        # TODO(jremmons) make it so the loss is computed correctly
+        # 
+        # print('logits.shape', logits.shape)
+        
         loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits, labels=label)
         loss = tf.reduce_mean(loss, name='xentropy-loss')
 

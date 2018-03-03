@@ -31,7 +31,25 @@ from resnet_model import (
 TOTAL_BATCH_SIZE = 128
 BASE_LR = 0.1 * (TOTAL_BATCH_SIZE // 256)
 
+LOG_FREQUENCY = 1281167//512000
 
+
+class ModelSaverNPZ(callbacks.Callback):
+
+    
+    def __init__(self, model):
+
+        self._model = model
+
+
+    def _trigger(self):
+
+        print('Johns trigger was just called!!')
+        # add a refernce to the model variables, this will let us save the model our own format :)
+        # ta dah!
+
+
+# possible define our own ImageNetModel subclass with the corresponding fb functions
 class Model(ImageNetModel):
     def get_logits(self, image):
         group_func = resnet_group
@@ -52,7 +70,10 @@ class Model(ImageNetModel):
                       .apply(group_func, 'group3', block_func, 512, num_blocks[3], 2)
                       .GlobalAvgPooling('gap')
                       .FullyConnected('linear', 1000, nl=tf.identity)())
-
+            
+            # logits is just a tensor! (batch_size x 1000)
+            #logits = tf.stack([logits, logits, logits], axis=1)
+            
         return logits
 
 def get_data(name, batch):
@@ -75,27 +96,44 @@ def get_config(model):
     dataset_train = get_data('train', batch)
     dataset_val = get_data('val', batch)
 
-    infs = [ClassificationError('wrong-top1', 'val-error-top1'),
-            ClassificationError('wrong-top5', 'val-error-top5')]
     callbacks = [
-        ModelSaver(),
-        GPUUtilizationTracker(),
+        PeriodicTrigger(
+            ModelSaver(max_to_keep=10000, keep_checkpoint_every_n_hours=10000),
+            every_k_steps=LOG_FREQUENCY),
+        PeriodicTrigger(
+            GPUUtilizationTracker(),
+            every_k_steps=LOG_FREQUENCY),
+        PeriodicTrigger(
+            MovingAverageSummary(),
+            every_k_steps=LOG_FREQUENCY),
+        PeriodicTrigger(
+            ModelSaverNPZ(model),
+            every_k_steps=LOG_FREQUENCY),
         ScheduledHyperParamSetter('learning_rate',
             [(0, 0.1), (3, BASE_LR)], interp='linear'),
         ScheduledHyperParamSetter('learning_rate',
             [(30, BASE_LR * 1e-1), (60, BASE_LR * 1e-2), (80, BASE_LR * 1e-3)]),
         PeriodicTrigger(
             DataParallelInferenceRunner(
-                dataset_val, infs, list(range(nr_tower))),
-            every_k_epochs=1),
+                dataset_val,
+                [ClassificationError('wrong-top1', 'val-error-top1'),
+                 ClassificationError('wrong-top5', 'val-error-top5')],
+                list(range(nr_tower))),
+            every_k_steps=LOG_FREQUENCY),
     ]
 
+    monitors = [
+      JSONWriter(),    
+      ScalarPrinter(enable_step=True),
+    ]
+        
     input = QueueInput(dataset_train)
     input = StagingInput(input, nr_stage=1)
     return TrainConfig(
         model=model,
         data=input,
         callbacks=callbacks,
+        monitors=monitors,
         steps_per_epoch=1281167 // TOTAL_BATCH_SIZE,
         max_epoch=100,
     )
