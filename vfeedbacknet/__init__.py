@@ -89,6 +89,7 @@ import vfeedbacknet.vfeedbacknet_eccv_videoLSTM_2_with_fb2 as vfeedbacknet_eccv_
 import vfeedbacknet.vfeedbacknet_eccv_bigfb_model1 as vfeedbacknet_eccv_bigfb_model1
 import vfeedbacknet.vfeedbacknet_eccv_bigfb_model4 as vfeedbacknet_eccv_bigfb_model4
 
+import vfeedbacknet.vfeedbacknet_simple_eccv_model1 as vfeedbacknet_simple_eccv_model1
 
 # legacy models
 # import vfeedbacknet.legacy.convLSTM
