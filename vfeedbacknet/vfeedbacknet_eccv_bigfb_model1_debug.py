@@ -3,7 +3,7 @@ import tensorflow as tf
 import logging
 
 from vfeedbacknet.vfeedbacknet_convLSTM import ConvLSTMCell
-from vfeedbacknet.vfeedbacknet_feedbackCell import FeedbackLSTMCell_stack1
+from vfeedbacknet.vfeedbacknet_feedbackCell import FeedbackRNNCell_stack1
 from vfeedbacknet.vfeedbacknet_utilities import ModelLogger
 
 from vfeedbacknet.vfeedbacknet_base import VFeedbackNetBase
@@ -14,8 +14,8 @@ class Model:
     architecture works best for video tasks.
     '''
 
-    model_name = 'eccv_model17'
-    NFEEDBACK_ITERATIONS = 3
+    model_name = 'eccv_bifg_model1'
+    NFEEDBACK = 1
     
     def __init__(self, sess, num_classes, batch_size,
                  train_featurizer='FINE_TUNE', train_main_model='FINE_TUNE', train_fc='FINE_TUNE',
@@ -52,7 +52,13 @@ class Model:
         with tf.variable_scope('vfeedbacknet_{}'.format(Model.model_name)):
             
             with tf.variable_scope('feedbackcell1'):
-                self.feedbackLSTMCell1 = FeedbackLSTMCell_stack1([7, 7, 512], Model.NFEEDBACK_ITERATIONS)
+                self.feedbackCell1 = FeedbackRNNCell_stack1([56, 56, 64], Model.NFEEDBACK)
+
+            with tf.variable_scope('feedbackcell2'):
+                self.feedbackCell2 = FeedbackRNNCell_stack1([28, 28, 32], Model.NFEEDBACK)
+
+            with tf.variable_scope('feedbackcell3'):
+                self.feedbackCell3 = FeedbackRNNCell_stack1([14, 14, 64], Model.NFEEDBACK)
 
             with tf.variable_scope('convlstm1'):
                 with tf.variable_scope('rnn'):
@@ -61,7 +67,7 @@ class Model:
                         regularizer = None # tf.contrib.layers.l2_regularizer(scale=0.25)
                         initializer = tf.contrib.layers.xavier_initializer()
 
-                        n = 512
+                        n = 256
                         m = 4*n
                         input_size = [7, 7, n]
                         kernel2d_size = [3, 3]
@@ -83,24 +89,24 @@ class Model:
                     regularizer = None # tf.contrib.layers.l2_regularizer(scale=0.25)
                     initializer = tf.contrib.layers.xavier_initializer()
 
-                    kernel = tf.get_variable('kernel', shape=[3, 3, 64, 128], dtype=tf.float32, regularizer=regularizer, initializer=initializer)
-                    biases = tf.get_variable('biases', shape=[128], dtype=tf.float32, regularizer=regularizer, initializer=initializer)
+                    kernel = tf.get_variable('kernel', shape=[3, 3, 64, 32], dtype=tf.float32, regularizer=regularizer, initializer=initializer)
+                    biases = tf.get_variable('biases', shape=[32], dtype=tf.float32, regularizer=regularizer, initializer=initializer)
             
                 with tf.variable_scope('conv2'):
 
                     regularizer = None # tf.contrib.layers.l2_regularizer(scale=0.25)
                     initializer = tf.contrib.layers.xavier_initializer()
 
-                    kernel = tf.get_variable('kernel', shape=[3, 3, 128, 256], dtype=tf.float32, regularizer=regularizer, initializer=initializer)
-                    biases = tf.get_variable('biases', shape=[256], dtype=tf.float32, regularizer=regularizer, initializer=initializer)
+                    kernel = tf.get_variable('kernel', shape=[3, 3, 32, 128], dtype=tf.float32, regularizer=regularizer, initializer=initializer)
+                    biases = tf.get_variable('biases', shape=[128], dtype=tf.float32, regularizer=regularizer, initializer=initializer)
 
                 with tf.variable_scope('conv3'):
 
                     regularizer = None # tf.contrib.layers.l2_regularizer(scale=0.25)
                     initializer = tf.contrib.layers.xavier_initializer()
 
-                    kernel = tf.get_variable('kernel', shape=[3, 3, 256, 512], dtype=tf.float32, regularizer=regularizer, initializer=initializer)
-                    biases = tf.get_variable('biases', shape=[512], dtype=tf.float32, regularizer=regularizer, initializer=initializer)
+                    kernel = tf.get_variable('kernel', shape=[3, 3, 128, 256], dtype=tf.float32, regularizer=regularizer, initializer=initializer)
+                    biases = tf.get_variable('biases', shape=[256], dtype=tf.float32, regularizer=regularizer, initializer=initializer)
                     
                 # with tf.variable_scope('conv4'):
 
@@ -125,7 +131,7 @@ class Model:
 
                 trainable = False if self.train_fc == 'NO' else True
 
-                weight = tf.get_variable('weights', shape=[512, 256], dtype=tf.float32, initializer=initializer, regularizer=regularizer, trainable=trainable)
+                weight = tf.get_variable('weights', shape=[256, 256], dtype=tf.float32, initializer=initializer, regularizer=regularizer, trainable=trainable)
                 biases = tf.get_variable('biases', shape=[256], dtype=tf.float32, initializer=initializer, regularizer=regularizer, trainable=trainable)
 
             with tf.variable_scope('fc2'):
@@ -211,24 +217,32 @@ class Model:
         featurizer_outputs = inputs
 
         # feedback model
-        inputs = [ self.reshape_conv_layer(inp, 1, var_list=self.main_model_variables) for inp in inputs ]
-        ModelLogger.log('reshape_conv_layer1', inputs)
+        # inputs = [ self.feedbackCell1.apply_layer([inp for _ in range(Model.NFEEDBACK)], var_list=self.main_model_variables) for inp in inputs]
+        # ModelLogger.log('feedbackCell1', list(map(lambda x: x[0], inputs)))
+        inputs = [ [inp] for inp in inputs ] 
 
-        inputs = [ self.reshape_conv_layer(inp, 2, var_list=self.main_model_variables) for inp in inputs ]
-        ModelLogger.log('reshape_conv_layer2', inputs)
+        inputs = [[self.reshape_conv_layer(inp, 1, var_list=self.main_model_variables) for inp in fb ] for fb in inputs]
+        ModelLogger.log('reshape_conv_layer1', list(map(lambda x: x[0], inputs)))
 
-        inputs = [ self.reshape_conv_layer(inp, 3, var_list=self.main_model_variables) for inp in inputs ]
-        ModelLogger.log('reshape_conv_layer3', inputs)
+        #inputs = [ self.feedbackCell2.apply_layer(inp, var_list=self.main_model_variables) for inp in inputs]
+        #ModelLogger.log('feedbackCell2', list(map(lambda x: x[0], inputs)))
 
-        inputs = [ self.feedbackLSTMCell1.apply_layer([inp for _ in range(Model.NFEEDBACK_ITERATIONS)], var_list=self.main_model_variables) for inp in inputs]
-        fb_sequence = [ [] for _ in range(Model.NFEEDBACK_ITERATIONS) ]
+        inputs = [[self.reshape_conv_layer(inp, 2, var_list=self.main_model_variables) for inp in fb ] for fb in inputs]
+        ModelLogger.log('reshape_conv_layer2', list(map(lambda x: x[0], inputs)))
+
+        #inputs = [ self.feedbackCell3.apply_layer(inp, var_list=self.main_model_variables) for inp in inputs]
+        #ModelLogger.log('feedbackCell3', list(map(lambda x: x[0], inputs)))        
+
+        inputs = [[self.reshape_conv_layer(inp, 3, var_list=self.main_model_variables) for inp in fb ] for fb in inputs]
+        ModelLogger.log('reshape_conv_layer3', list(map(lambda x: x[0], inputs)))
+        
+        fb_sequence = [ [] for _ in range(Model.NFEEDBACK) ]
         for inp in inputs:
-            for i in range(Model.NFEEDBACK_ITERATIONS):
+            for i in range(Model.NFEEDBACK):
                 fb_sequence[i].append(inp[i])
-        ModelLogger.log('feedbackCell1', fb_sequence[0])        
 
         logits = []
-        for fbi in range(Model.NFEEDBACK_ITERATIONS):
+        for fbi in range(Model.NFEEDBACK):
             inputs = fb_sequence[fbi]
             
             inputs = self.convLSTM_layer1(inputs, inputs_sequence_length, var_list=self.main_model_variables)
