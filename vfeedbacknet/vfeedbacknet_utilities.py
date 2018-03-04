@@ -1,8 +1,10 @@
 import numpy as np
 import multiprocessing as mp
+import io
 import os
 import random
 import sys
+import zipfile 
                     
 import PIL
 from PIL import Image
@@ -145,7 +147,7 @@ def pool_init(shared_mem_):
     shared_mem = shared_mem_
     
 def prepare_video(args):
-    data_root, video_path, video_width, video_height, video_length, video_downsample_ratio, video_index, batch_size, shared_mem_idx, is_training, is_ucf101 = args
+    data_root, video_path, video_width, video_height, video_length, video_downsample_ratio, video_index, batch_size, shared_mem_idx, is_training, is_ucf101, is_imagenet = args
 
     video_mem = np.frombuffer(shared_mem[shared_mem_idx], np.ctypeslib.ctypes.c_float)
     video_mem = video_mem.reshape((batch_size, video_length, video_height, video_width, 3))
@@ -185,7 +187,21 @@ def prepare_video(args):
     for i in range(num_frames):
         image_idx = video_downsample_ratio * (i + t_offset)
         image_idx = min(image_idx + stride_offset, len(frames))
-        image = Image.open(pathgen(frames[image_idx])) # in RGB order by default
+
+        image = None
+        if is_imagenet:
+            fname = pathgen(frames[image_idx])
+
+            jpeg_filename = os.path.basename(fname)
+            jpeg_dirname = os.path.basename( os.path.dirname(fname) )
+            zip_filepath = os.path.dirname(fname) + '.zip'
+            f = zipfile.ZipFile(zip_filepath, 'r')
+            compress_jpeg = io.BytesIO(f.read(os.path.join(jpeg_dirname,jpeg_filename)))
+            image = Image.open(compress_jpeg)
+
+        else:
+            image = Image.open(pathgen(frames[image_idx])) # in RGB order by default
+
         image = image.convert('RGB')
         #image = image.convert('L') # convert to YUV and grab Y-component
         
@@ -215,9 +231,9 @@ def prepare_video(args):
         
     return { 'num_frames' : num_frames, 'video_path' : video_path }
 
-def load_videos(pool, data_root, data_labels, video_paths, video_width, video_height, video_length, video_downsample_ratio, is_training, batch_size, shared_mem, shared_mem_idx, is_ucf101=False):
+def load_videos(pool, data_root, data_labels, video_paths, video_width, video_height, video_length, video_downsample_ratio, is_training, batch_size, shared_mem, shared_mem_idx, is_ucf101=False, is_imagenet=False):
 
-    prepare_video_jobs = [ (data_root, video_paths[i], video_width, video_height, video_length, video_downsample_ratio, i, batch_size, shared_mem_idx, is_training, is_ucf101) for i in range(batch_size) ]
+    prepare_video_jobs = [ (data_root, video_paths[i], video_width, video_height, video_length, video_downsample_ratio, i, batch_size, shared_mem_idx, is_training, is_ucf101, is_imagenet) for i in range(batch_size) ]
     prepared_videos_f = pool.map_async(prepare_video, prepare_video_jobs)
 
     def future():
