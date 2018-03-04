@@ -91,6 +91,7 @@ import vfeedbacknet.vfeedbacknet_eccv_bigfb_model1_debug as vfeedbacknet_eccv_bi
 import vfeedbacknet.vfeedbacknet_eccv_bigfb_model4 as vfeedbacknet_eccv_bigfb_model4
 
 import vfeedbacknet.vfeedbacknet_simple_eccv_model1 as vfeedbacknet_simple_eccv_model1
+import vfeedbacknet.vfeedbacknet_simple_eccv_model1 as vfeedbacknet_simple_eccv_model1_debug
 
 # legacy models
 # import vfeedbacknet.legacy.convLSTM
