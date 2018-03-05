@@ -20,7 +20,7 @@ fi
 export CUDA_VISIBLE_DEVICES=$1
 mkdir -p $3
 
-IMAGENET_ROOT=/mnt/scratch/jemmons/imagenet2012
+IMAGENET_ROOT=/mnt/scratch/jemmons/imagenet2012.xs
 
 python3 -u -B $DIR/vfeedbacknet_train $IMAGENET_ROOT/imagenet2012_labels.txt \
         $IMAGENET_ROOT/imagenet2012_validation.txt \
@@ -28,4 +28,4 @@ python3 -u -B $DIR/vfeedbacknet_train $IMAGENET_ROOT/imagenet2012_labels.txt \
         $IMAGENET_ROOT \
         $2 \
         $3 \
-        $3/training_log.csv --imagenet --video_length=1 --video_downsample_ratio=1 $EXTRA_ARGS 2>&1 | tee -a $3/training_log.log 
+        $3/training_log.csv --imagenet --imagenet_zipped --video_length=1 --video_downsample_ratio=1 $EXTRA_ARGS 2>&1 | tee -a $3/training_log.log 

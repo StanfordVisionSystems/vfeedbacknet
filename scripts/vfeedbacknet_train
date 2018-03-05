@@ -462,7 +462,7 @@ def main(args):
                     if batch_base_idx+args.prefetch_batch_size < num_data_videos:
                         video_paths_batch = video_paths[batch_base_idx+args.prefetch_batch_size:batch_base_idx+2*args.prefetch_batch_size]
                         next_shared_mem_idx = (shared_mem_idx + 1) % 2
-                        video_batch_f = load_videos(pool, args.data_root, data_labels, video_paths_batch, args.video_width, args.video_height, args.video_length, args.video_downsample_ratio, True, args.prefetch_batch_size, shared_mem, next_shared_mem_idx, is_ucf101=args.ucf101, is_imagenet=args.imagenet)
+                        video_batch_f = load_videos(pool, args.data_root, data_labels, video_paths_batch, args.video_width, args.video_height, args.video_length, args.video_downsample_ratio, True, args.prefetch_batch_size, shared_mem, next_shared_mem_idx, is_ucf101=args.ucf101, is_imagenet=args.imagenet, is_zipped=args.imagenet_zipped)
                     t2 = timeit.default_timer()
                     logging.debug('done! (load videos future): {})'.format(t2-t1))
                     
