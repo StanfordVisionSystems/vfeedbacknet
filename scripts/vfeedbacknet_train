@@ -298,6 +298,8 @@ def main(args):
                                                                                             weights_filename=os.path.join(args.pretrain_root_prefix, 'vfeedbacknet_base_weights.npz')),
         'vfeedbacknet_eccv_base1' : lambda : v.vfeedbacknet_eccv_base1.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
                                                                            train_featurizer='FROM_SCRATCH', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH')
+        'vfeedbacknet_eccv_base2' : lambda : v.vfeedbacknet_eccv_base2.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
+                                                                           train_featurizer='FROM_SCRATCH', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH')
      }
 
     model = None
