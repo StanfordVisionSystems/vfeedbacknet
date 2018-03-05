@@ -151,7 +151,7 @@ class TrainingLogger:
 
     
 def prepare_video(args):
-    data_root, video_path, video_width, video_height, video_length, video_downsample_ratio, video_index, batch_size, shared_mem_idx, is_training, is_ucf101, is_imagenet = args
+    data_root, video_path, video_width, video_height, video_length, video_downsample_ratio, video_index, batch_size, shared_mem_idx, is_training, is_ucf101, is_imagenet, is_zipped = args
 
     augs = [
         imgaug.BrightnessScale((0.6, 1.4), clip=False),
@@ -214,7 +214,7 @@ def prepare_video(args):
         image_idx = min(image_idx + stride_offset, len(frames))
 
         image = None
-        if is_imagenet:
+        if is_imagenet and is_zipped:
             fname = pathgen(frames[image_idx])
 
             jpeg_filename = os.path.basename(fname)
@@ -274,9 +274,9 @@ def prepare_video(args):
         
     return { 'num_frames' : num_frames, 'video_path' : video_path }
 
-def load_videos(pool, data_root, data_labels, video_paths, video_width, video_height, video_length, video_downsample_ratio, is_training, batch_size, shared_mem, shared_mem_idx, is_ucf101=False, is_imagenet=False):
+def load_videos(pool, data_root, data_labels, video_paths, video_width, video_height, video_length, video_downsample_ratio, is_training, batch_size, shared_mem, shared_mem_idx, is_ucf101=False, is_imagenet=False, is_zipped=False):
 
-    prepare_video_jobs = [ (data_root, video_paths[i], video_width, video_height, video_length, video_downsample_ratio, i, batch_size, shared_mem_idx, is_training, is_ucf101, is_imagenet) for i in range(batch_size) ]
+    prepare_video_jobs = [ (data_root, video_paths[i], video_width, video_height, video_length, video_downsample_ratio, i, batch_size, shared_mem_idx, is_training, is_ucf101, is_imagenet, is_zipped) for i in range(batch_size) ]
     prepared_videos_f = pool.map_async(prepare_video, prepare_video_jobs)
 
     def future():

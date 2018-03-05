@@ -445,7 +445,7 @@ def main(args):
 
                 logging.info('loading initial batch of videos')
                 t1 = timeit.default_timer()
-                video_batch_f = load_videos(pool, args.data_root, data_labels, video_paths[0:args.prefetch_batch_size], args.video_width, args.video_height, args.video_length, args.video_downsample_ratio, True, args.prefetch_batch_size, shared_mem, shared_mem_idx, is_ucf101=args.ucf101, is_imagenet=args.imagenet)
+                video_batch_f = load_videos(pool, args.data_root, data_labels, video_paths[0:args.prefetch_batch_size], args.video_width, args.video_height, args.video_length, args.video_downsample_ratio, True, args.prefetch_batch_size, shared_mem, shared_mem_idx, is_ucf101=args.ucf101, is_imagenet=args.imagenet, is_zipped=args.imagenet_zipped)
                 video_batch = video_batch_f() 
                 t2 = timeit.default_timer()
                 logging.info('Done! loading initial batch of videos: {}'.format(t2-t1))
@@ -741,6 +741,11 @@ if __name__ == '__main__':
                         default=False)
 
     parser.add_argument('--imagenet',
+                        help='flag specifying the dataset being used',
+                        action='store_true',
+                        default=False)
+
+    parser.add_argument('--imagenet_zipped',
                         help='flag specifying the dataset being used',
                         action='store_true',
                         default=False)
