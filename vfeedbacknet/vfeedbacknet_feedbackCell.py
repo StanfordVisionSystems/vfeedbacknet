@@ -21,7 +21,7 @@ class BatchNorm:
             nchannels = input_shape[-1]
             initializer = tf.contrib.layers.xavier_initializer()
             self.moving_averages = tf.get_variable('moving_averages', [nchannels], initializer=tf.constant_initializer(0.0, tf.float32))
-            self.moving_variances = tf.get_variable('moving_variances', [nchannels], initializer=tf.constant_initializer(0.25, tf.float32))
+            self.moving_variances = tf.get_variable('moving_variances', [nchannels], initializer=tf.constant_initializer(1.0, tf.float32))
 
 
     @property
@@ -40,8 +40,8 @@ class BatchNorm:
             if is_training:
                 mean, variance = tf.nn.moments(x, [0, 1, 2], name='moments')
                 
-                curr_mean = tf.assign(self.moving_averages, 0.99*self.moving_averages + 0.01*mean, validate_shape=True, use_locking=True)
-                curr_var = tf.assign(self.moving_variances, 0.99*self.moving_variances + 0.01*variance, validate_shape=True, use_locking=True)
+                curr_mean = tf.assign(self.moving_averages, 0.999*self.moving_averages + 0.001*mean, validate_shape=True, use_locking=True)
+                curr_var = tf.assign(self.moving_variances, 0.999*self.moving_variances + 0.001*variance, validate_shape=True, use_locking=True)
 
             else:
                 curr_mean = self.moving_averages
@@ -405,11 +405,11 @@ class FeedbackLSTMCell_RB3(tf.nn.rnn_cell.RNNCell):
                                          'xc' : tf.get_variable('W_xc{}'.format(i), kernel_size, initializer=initializer, regularizer=regularizer),
                                          'xo' : tf.get_variable('W_xo{}'.format(i), kernel_size, initializer=initializer, regularizer=regularizer),
                                      },
-                                     'bn' : {
-                                         'xf' : BatchNorm(input_shape, scope_suffix='_{}_{}'.format('xf',i)), 
-                                         'xi' : BatchNorm(input_shape, scope_suffix='_{}_{}'.format('xi',i)), 
-                                         'xc' : BatchNorm(input_shape, scope_suffix='_{}_{}'.format('xc',i)), 
-                                         'xo' : BatchNorm(input_shape, scope_suffix='_{}_{}'.format('xo',i)), 
+                                     'b' : {
+                                         'xf' : tf.get_variable('b_xf{}'.format(i), [input_nchannels], initializer=initializer, regularizer=regularizer), 
+                                         'xi' : tf.get_variable('b_xi{}'.format(i), [input_nchannels], initializer=initializer, regularizer=regularizer), 
+                                         'xc' : tf.get_variable('b_xc{}'.format(i), [input_nchannels], initializer=initializer, regularizer=regularizer), 
+                                         'xo' : tf.get_variable('b_xo{}'.format(i), [input_nchannels], initializer=initializer, regularizer=regularizer), 
                                      },
                                  },
                             'h' : {
@@ -420,11 +420,11 @@ class FeedbackLSTMCell_RB3(tf.nn.rnn_cell.RNNCell):
                                          'ho' : tf.get_variable('W_ho{}'.format(i), kernel_size, initializer=initializer, regularizer=regularizer)
                                      }
                                      ,
-                                     'bn' : {
-                                         'hf' : BatchNorm(input_shape, scope_suffix='_{}_{}'.format('hf',i)), 
-                                         'hi' : BatchNorm(input_shape, scope_suffix='_{}_{}'.format('hi',i)), 
-                                         'hc' : BatchNorm(input_shape, scope_suffix='_{}_{}'.format('hc',i)), 
-                                         'ho' : BatchNorm(input_shape, scope_suffix='_{}_{}'.format('ho',i)), 
+                                     'b' : {
+                                         'hf' : tf.get_variable('b_hf{}'.format(i), [input_nchannels], initializer=initializer, regularizer=regularizer), 
+                                         'hi' : tf.get_variable('b_hi{}'.format(i), [input_nchannels], initializer=initializer, regularizer=regularizer), 
+                                         'hc' : tf.get_variable('b_hc{}'.format(i), [input_nchannels], initializer=initializer, regularizer=regularizer), 
+                                         'ho' : tf.get_variable('b_ho{}'.format(i), [input_nchannels], initializer=initializer, regularizer=regularizer), 
                                      }
                                  },
                         })
@@ -433,18 +433,15 @@ class FeedbackLSTMCell_RB3(tf.nn.rnn_cell.RNNCell):
     @property
     def defined_variables(self):
 
-        bn = []
+        biases = []
         kernels = []
         for weights in self._kernel_weights:
             kernels += list(weights['x']['W'].values()) + list(weights['h']['W'].values())
-
-            _bn = [ b.variables for b in weights['x']['bn'].values() ] + [ b.variables for b in weights['h']['bn'].values() ]
-            for bn_vars in _bn:
-                bn += bn_vars
+            biases = list(weights['x']['b'].values()) + list(weights['h']['b'].values())
             
         gates = [self.W_cf, self.W_ci, self.W_co, self.b_f, self.b_i, self.b_c, self.b_o]
 
-        return bn + kernels + gates
+        return biases + kernels + gates
 
     
     @property
@@ -498,8 +495,8 @@ class FeedbackLSTMCell_RB3(tf.nn.rnn_cell.RNNCell):
             x_features = { k : x for k in ['xf', 'xi', 'xc', 'xo'] }
             h_features = { k : h for k in ['hf', 'hi', 'hc', 'ho'] }
 
-            first_x_features = { k : None for k in ['xf', 'xi', 'xc', 'xo'] }
-            first_h_features = { k : None for k in ['hf', 'hi', 'hc', 'ho'] }
+            first_x_features = { k : x for k in ['xf', 'xi', 'xc', 'xo'] }
+            first_h_features = { k : h for k in ['hf', 'hi', 'hc', 'ho'] }
             
             first = True
             for layer_params in self._kernel_weights:
@@ -507,28 +504,22 @@ class FeedbackLSTMCell_RB3(tf.nn.rnn_cell.RNNCell):
                 # prop through x convs 
                 for layer_key in x_features.keys():
                     w = layer_params['x']['W'][layer_key]
-                    bn = layer_params['x']['bn'][layer_key]
+                    bias = layer_params['x']['b'][layer_key]
                     
-                    x_features[layer_key] = bn.apply(x_features[layer_key])
                     if not first:
                         x_features[layer_key] = self._conv_activation(x_features[layer_key])
-                    else:
-                        first_x_features[layer_key] = x_features[layer_key]
-                        
-                    x_features[layer_key] = tf.nn.conv2d(x_features[layer_key], w, [1, 1, 1, 1], padding='SAME')
+
+                    x_features[layer_key] = tf.nn.bias_add(tf.nn.conv2d(x_features[layer_key], w, [1, 1, 1, 1], padding='SAME'), bias)
 
                 # prop through h convs 
                 for layer_key in h_features.keys():
                     w = layer_params['h']['W'][layer_key]
-                    bn = layer_params['h']['bn'][layer_key]
+                    bias = layer_params['h']['b'][layer_key]
                     
-                    h_features[layer_key] = bn.apply(h_features[layer_key])
                     if not first:
                         h_features[layer_key] = self._conv_activation(h_features[layer_key])
-                    else:
-                        first_h_features[layer_key] = h_features[layer_key]
                         
-                    h_features[layer_key] = tf.nn.conv2d(h_features[layer_key], w, [1, 1, 1, 1], padding='SAME')
+                    h_features[layer_key] = tf.nn.bias_add(tf.nn.conv2d(h_features[layer_key], w, [1, 1, 1, 1], padding='SAME'), bias)                                                           
                     
                 first = False
 
