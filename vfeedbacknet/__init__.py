@@ -14,9 +14,9 @@ import vfeedbacknet.vfeedbacknet_vgg16 as vfeedbacknet_vgg
 import vfeedbacknet.vfeedbacknet_videoLSTM_1 as vfeedbacknet_videoLSTM_1
 import vfeedbacknet.vfeedbacknet_videoLSTM_2 as vfeedbacknet_videoLSTM_2
 
-# import vfeedbacknet.vfeedbacknet_fb_base as vfeedbacknet_fb_base
-# import vfeedbacknet.vfeedbacknet_fb_base1 as vfeedbacknet_fb_base1
-# import vfeedbacknet.vfeedbacknet_fb_base2 as vfeedbacknet_fb_base2
+import vfeedbacknet.vfeedbacknet_fb_base as vfeedbacknet_fb_base
+import vfeedbacknet.vfeedbacknet_fb_base1 as vfeedbacknet_fb_base1
+import vfeedbacknet.vfeedbacknet_fb_base2 as vfeedbacknet_fb_base2
 
 # import vfeedbacknet.vfeedbacknet_model1 as vfeedbacknet_model1 # VGG16 + 2 x convLSTM
 # import vfeedbacknet.vfeedbacknet_model2 as vfeedbacknet_model2 # VGG16 + deconv feedback (no fine tuning on pretrained VGG layers)
@@ -91,6 +91,7 @@ import vfeedbacknet.vfeedbacknet_eccv_bigfb_model1_debug as vfeedbacknet_eccv_bi
 import vfeedbacknet.vfeedbacknet_eccv_bigfb_model4 as vfeedbacknet_eccv_bigfb_model4
 
 import vfeedbacknet.vfeedbacknet_simple_eccv_model1 as vfeedbacknet_simple_eccv_model1
+import vfeedbacknet.vfeedbacknet_simple_eccv_model1 as vfeedbacknet_simple_eccv_model1_debug
 
 # legacy models
 # import vfeedbacknet.legacy.convLSTM

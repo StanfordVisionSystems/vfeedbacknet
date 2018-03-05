@@ -31,7 +31,7 @@ from resnet_model import (
 TOTAL_BATCH_SIZE = 128
 BASE_LR = 0.1 * (TOTAL_BATCH_SIZE // 256)
 
-LOG_FREQUENCY = 1281167//512000
+LOG_FREQUENCY = 1281167//512
 
 
 class ModelSaverNPZ(callbacks.Callback):
@@ -74,10 +74,6 @@ class Model(ImageNetModel):
             logits = (LinearWrap(image)
                       .Conv2D('conv0', 64, 7, stride=2, nl=BNReLU)
                       .MaxPooling('pool0', shape=3, stride=2, padding='SAME')
-                      .apply(group_func, 'group0', block_func, 64, num_blocks[0], 1)
-                      .apply(group_func, 'group1', block_func, 128, num_blocks[1], 2)
-                      .apply(group_func, 'group2', block_func, 256, num_blocks[2], 2)
-                      .apply(group_func, 'group3', block_func, 512, num_blocks[3], 2)
                       .GlobalAvgPooling('gap')
                       .FullyConnected('linear', 1000, nl=tf.identity)())
             
