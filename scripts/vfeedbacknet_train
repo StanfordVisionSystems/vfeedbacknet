@@ -596,7 +596,7 @@ def main(args):
                         cum_validation_correct_predictions3_l = []
                         cum_validation_correct_predictions5_l = []
 
-                        validation_batch_f = load_videos(pool, args.data_root, validation_labels, validation_video_paths[0:args.prefetch_batch_size], args.video_width, args.video_height, args.video_length, args.video_downsample_ratio, False, args.prefetch_batch_size, shared_mem, shared_mem_idx)
+                        validation_batch_f = load_videos(pool, args.data_root, validation_labels, validation_video_paths[0:args.prefetch_batch_size], args.video_width, args.video_height, args.video_length, args.video_downsample_ratio, False, args.prefetch_batch_size, shared_mem, shared_mem_idx, is_ucf101=args.ucf101, is_imagenet=args.imagenet, is_zipped=args.imagenet_zipped)
                         validation_batch = validation_batch_f()
                         # print('min: {} max:{}'.format(0, num_validation_videos))
                         # print('loaded {} to {}'.format(0, args.prefetch_batch_size))
@@ -606,7 +606,7 @@ def main(args):
                             # prefetch the batch ahead of the index (therefore, we must skip loading on the last loop iteration to avoid array overrun)
                             if valid_base_idx+args.prefetch_batch_size < num_validation_videos:
                                 next_shared_mem_idx = (shared_mem_idx + 1) % 2
-                                validation_batch_f = load_videos(pool, args.data_root, validation_labels, validation_video_paths[valid_base_idx+args.prefetch_batch_size:valid_base_idx+2*args.prefetch_batch_size], args.video_width, args.video_height, args.video_length, args.video_downsample_ratio, False, args.prefetch_batch_size, shared_mem, next_shared_mem_idx)
+                                validation_batch_f = load_videos(pool, args.data_root, validation_labels, validation_video_paths[valid_base_idx+args.prefetch_batch_size:valid_base_idx+2*args.prefetch_batch_size], args.video_width, args.video_height, args.video_length, args.video_downsample_ratio, False, args.prefetch_batch_size, shared_mem, next_shared_mem_idx, is_ucf101=args.ucf101, is_imagenet=args.imagenet, is_zipped=args.imagenet_zipped)
                                 # print('loaded {} to {}'.format(valid_base_idx+args.prefetch_batch_size, valid_base_idx+2*args.prefetch_batch_size))
 
                             # print('out a video to make sure things are working')
