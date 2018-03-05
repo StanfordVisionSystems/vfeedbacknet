@@ -137,6 +137,7 @@ class VFeedbackNetBase:
     
     def print_variables(self):
 
+        print(self.get_variables())
         for var in self.get_variables():
             print(var.name)
 
