@@ -248,9 +248,10 @@ def prepare_video(args):
         assert image.shape == (video_width, video_height, 3), 'cropped image must be {} but was {}'.format((video_width, video_height, 3), image.shape) 
 
         if is_imagenet:
-            for a in augs:
-                a.reset_state()
-                image = a.augment(image)
+            if is_training:
+                for a in augs:
+                    a.reset_state()
+                    image = a.augment(image)
 
             image = np.asarray(image, dtype=np.float32)
             image = image * (1.0 / 255)
