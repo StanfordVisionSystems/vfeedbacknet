@@ -5,7 +5,7 @@ import os
 import random
 import sys
 
-from tensorpack import imgaug, InputDesc
+from tensorpack import imgaug
 from tensorpack.dataflow import AugmentImageComponent
 import zipfile 
                     
@@ -153,6 +153,22 @@ class TrainingLogger:
 def prepare_video(args):
     data_root, video_path, video_width, video_height, video_length, video_downsample_ratio, video_index, batch_size, shared_mem_idx, is_training, is_ucf101, is_imagenet = args
 
+    augs = [
+        imgaug.BrightnessScale((0.6, 1.4), clip=False),
+        imgaug.Contrast((0.6, 1.4), clip=False),
+        imgaug.Saturation(0.4, rgb=True),
+        imgaug.Lighting(0.1,
+                    eigval=np.asarray(
+                        [0.2175, 0.0188, 0.0045]) * 255.0,
+                        eigvec=np.array(
+                            [[-0.5675, 0.7192, 0.4009],
+                            [-0.5808, -0.0045, -0.8140],
+                            [-0.5836, -0.6948, 0.4203]],
+                            dtype='float32')
+                            ),
+    ]
+    random.shuffle(augs)
+    
     video_mem = np.frombuffer(shared_mem[shared_mem_idx], np.ctypeslib.ctypes.c_float)
     video_mem = video_mem.reshape((batch_size, video_length, video_height, video_width, 3))
 
@@ -183,12 +199,12 @@ def prepare_video(args):
     pow2_width = round2pow2(video_width)
     pow2_height = round2pow2(video_height)
     crop_margin_x = pow2_width - video_width
-    crop_margin_x = pow2_height - video_height    
+    crop_margin_y = pow2_height - video_height    
 
     x1 = random.choice(list(range(crop_margin_x)))
     y1 = random.choice(list(range(crop_margin_y)))
-    x2 = pow2_width - random.choice(list(range(crop_margin_x)))
-    y2 = pow2_height - random.choice(list(range(crop_margin_y)))
+    x2 = pow2_width - (crop_margin_x - x1)
+    y2 = pow2_height - (crop_margin_y - y1) 
 
     rotation_angle = random.choice(list(range(-10,10,1))) if is_training else 0
     
@@ -217,7 +233,6 @@ def prepare_video(args):
         if crop_frames:
             image = image.resize((pow2_width, pow2_height), PIL.Image.BICUBIC)
             image = image.crop(box=(x1,y1,x2,y2))
-            assert image.shape == (video_width, video_height), 'cropped image must be {} but was {}'.format((video_width, video_height), image.shape) 
         else:
             image = image.resize((video_width, video_height), PIL.Image.BICUBIC)            
         
@@ -228,10 +243,13 @@ def prepare_video(args):
 
         if rotation_angle != 0:
             image = image.rotate(rotation_angle)
-            
+
+        image = np.asarray(image, dtype=np.uint8)
+        assert image.shape == (video_width, video_height, 3), 'cropped image must be {} but was {}'.format((video_width, video_height, 3), image.shape) 
+
         if is_imagenet:
-            aug = random.shuffle(aug)
-            for a in aug:
+            for a in augs:
+                a.reset_state()
                 image = a.augment(image)
 
             image = np.asarray(image, dtype=np.float32)
@@ -241,6 +259,7 @@ def prepare_video(args):
             image = (image - mean) / std 
 
         else:
+            image = np.asarray(image, dtype=np.uint32)
             image = image - 116  # center on mean value of 116 (as computed in preprocessing step)
             image = np.clip(image, -128, 128)
 
@@ -257,23 +276,7 @@ def prepare_video(args):
 
 def load_videos(pool, data_root, data_labels, video_paths, video_width, video_height, video_length, video_downsample_ratio, is_training, batch_size, shared_mem, shared_mem_idx, is_ucf101=False, is_imagenet=False):
 
-    aug = [
-        imgaug.BrightnessScale((0.6, 1.4), clip=False),
-        imgaug.Contrast((0.6, 1.4), clip=False),
-        imgaug.Saturation(0.4, rgb=True),
-        imgaug.Lighting(0.1,
-                    eigval=np.asarray(
-                        [0.2175, 0.0188, 0.0045]) * 255.0,
-                        eigvec=np.array(
-                            [[-0.5675, 0.7192, 0.4009],
-                            [-0.5808, -0.0045, -0.8140],
-                            [-0.5836, -0.6948, 0.4203]],
-                            dtype='float32')
-                            ),
-        imgaug.Flip(horiz=True),
-        ]
-    
-    prepare_video_jobs = [ (data_root, video_paths[i], video_width, video_height, video_length, video_downsample_ratio, i, batch_size, shared_mem_idx, is_training, is_ucf101, aug) for i in range(batch_size) ]
+    prepare_video_jobs = [ (data_root, video_paths[i], video_width, video_height, video_length, video_downsample_ratio, i, batch_size, shared_mem_idx, is_training, is_ucf101, is_imagenet) for i in range(batch_size) ]
     prepared_videos_f = pool.map_async(prepare_video, prepare_video_jobs)
 
     def future():

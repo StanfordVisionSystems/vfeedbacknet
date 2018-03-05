@@ -20,7 +20,7 @@ fi
 export CUDA_VISIBLE_DEVICES=$1
 mkdir -p $3
 
-IMAGENET_ROOT=/mnt/scratch/jemmons/imagenet2012
+IMAGENET_ROOT=/mnt/scratch/jemmons/imagenet2012.xs
 
 python3 -u -B $DIR/vfeedbacknet_train $IMAGENET_ROOT/imagenet2012_labels.txt \
         $IMAGENET_ROOT/imagenet2012_validation.txt \
