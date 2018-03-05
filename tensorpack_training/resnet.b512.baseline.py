@@ -51,7 +51,17 @@ class ModelSaverNPZ(callbacks.Callback):
 
 # possible define our own ImageNetModel subclass with the corresponding fb functions
 class Model(ImageNetModel):
+
+    def __init__(self, data_format='NCHW'):
+        self.data_format = data_format
+        # add everything that we need for fb
+        
     def get_logits(self, image):
+
+        # image is a float32 (N, 3, size, size)
+        print(image)
+        print(image.shape)
+        
         group_func = resnet_group
         block_func = resnet_bottleneck
         num_blocks = [3, 4, 6, 3]
@@ -72,7 +82,7 @@ class Model(ImageNetModel):
                       .FullyConnected('linear', 1000, nl=tf.identity)())
             
             # logits is just a tensor! (batch_size x 1000)
-            #logits = tf.stack([logits, logits, logits], axis=1)
+            # logits = tf.stack([logits, logits, logits], axis=1)
             
         return logits
 

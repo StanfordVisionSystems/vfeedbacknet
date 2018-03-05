@@ -3,13 +3,20 @@ import multiprocessing as mp
 import os
 import random
 import sys
-                    
+
+from tensorpack import imgaug, InputDesc
+from tensorpack.dataflow import AugmentImageComponent
+
 import PIL
 from PIL import Image
 
 import logging
 
 logging.basicConfig(level=logging.DEBUG)
+
+def pool_init(shared_mem_):
+    global shared_mem
+    shared_mem = shared_mem_
 
 class ModelLogger:
     '''
@@ -139,13 +146,10 @@ class TrainingLogger:
             })    
 
         return predictions_summary
-            
-def pool_init(shared_mem_):
-    global shared_mem
-    shared_mem = shared_mem_
+
     
 def prepare_video(args):
-    data_root, video_path, video_width, video_height, video_length, video_downsample_ratio, video_index, batch_size, shared_mem_idx, is_training, is_ucf101 = args
+    data_root, video_path, video_width, video_height, video_length, video_downsample_ratio, video_index, batch_size, shared_mem_idx, is_training, is_ucf101, aug = args
 
     video_mem = np.frombuffer(shared_mem[shared_mem_idx], np.ctypeslib.ctypes.c_float)
     video_mem = video_mem.reshape((batch_size, video_length, video_height, video_width, 3))
@@ -158,10 +162,9 @@ def prepare_video(args):
     else:
         frames = [ os.path.join(data_root, str(video_path)) ]
         
-    flip_frames = bool(random.getrandbits(1)) and is_training and False # no fliping while training on 20bn
-    flip_frames = bool(random.getrandbits(1)) and is_ucf101
     crop_frames = is_training
-    add_noise = bool(random.getrandbits(1)) and is_training
+    flip_frames = bool(random.getrandbits(1)) and is_training and (is_ucf101 or is_imagenet)
+    add_noise = bool(random.getrandbits(1)) and is_training and not is_training
 
     # choose a random time to start the video
     num_frames = len(frames)//video_downsample_ratio
@@ -174,10 +177,16 @@ def prepare_video(args):
     num_frames = min(len(frames)//video_downsample_ratio, video_length)
     assert num_frames != 0, 'num frames in video cannot be 0: {}'.format(video_path)
 
-    x1 = random.choice(list(range(20)))
-    y1 = random.choice(list(range(20)))
-    x2 = video_width - random.choice(list(range(20)))
-    y2 = video_height - random.choice(list(range(20)))
+    round2pow2 = lambda x : 2**(x - 1).bit_length()
+    pow2_width = round2pow2(video_width)
+    pow2_height = round2pow2(video_height)
+    crop_margin_x = pow2_width - video_width
+    crop_margin_x = pow2_height - video_height    
+
+    x1 = random.choice(list(range(crop_margin_x)))
+    y1 = random.choice(list(range(crop_margin_y)))
+    x2 = pow2_width - random.choice(list(range(crop_margin_x)))
+    y2 = pow2_height - random.choice(list(range(crop_margin_y)))
 
     rotation_angle = random.choice(list(range(-10,10,1))) if is_training else 0
     
@@ -189,22 +198,37 @@ def prepare_video(args):
         image = image.convert('RGB')
         #image = image.convert('L') # convert to YUV and grab Y-component
         
-        image = image.resize((video_width, video_height), PIL.Image.BICUBIC)
+        if crop_frames:
+            image = image.resize((pow2_width, pow2_height), PIL.Image.BICUBIC)
+            image = image.crop(box=(x1,y1,x2,y2))
+            assert image.shape == (video_width, video_height), 'cropped image must be {} but was {}'.format((video_width, video_height), image.shape) 
+        else:
+            image = image.resize((video_width, video_height), PIL.Image.BICUBIC)            
         
+
         if flip_frames:
             image = image.transpose(PIL.Image.FLIP_LEFT_RIGHT)
+
 
         if rotation_angle != 0:
             image = image.rotate(rotation_angle)
             
-        if crop_frames:
-            image = image.crop(box=(x1,y1,x2,y2))
-            image = image.resize((video_width, video_height), PIL.Image.BICUBIC)
+        if is_imagenet:
+            aug = random.shuffle(aug)
+            for a in aug:
+                image = a.augment(image)
 
-        image = np.asarray(image, dtype=np.int32)
-        image = image - 116  # center on mean value of 116 (as computed in preprocessing step)
+            image = np.asarray(image, dtype=np.float32)
+            image = image * (1.0 / 255)
+            mean = np.asarray([0.485, 0.456, 0.406])
+            std = np.asarray([0.229, 0.224, 0.225])
+            image = (image - mean) / std 
+
+        else:
+            image = image - 116  # center on mean value of 116 (as computed in preprocessing step)
+            image = np.clip(image, -128, 128)
+
         image = np.asarray(image, dtype=np.float32)
-        image = np.clip(image, -128, 128)
 
         if add_noise:
             noise = np.random.normal(loc=0, scale=5, size=(video_height, video_width, 3))
@@ -217,7 +241,23 @@ def prepare_video(args):
 
 def load_videos(pool, data_root, data_labels, video_paths, video_width, video_height, video_length, video_downsample_ratio, is_training, batch_size, shared_mem, shared_mem_idx, is_ucf101=False):
 
-    prepare_video_jobs = [ (data_root, video_paths[i], video_width, video_height, video_length, video_downsample_ratio, i, batch_size, shared_mem_idx, is_training, is_ucf101) for i in range(batch_size) ]
+    aug = [
+        imgaug.BrightnessScale((0.6, 1.4), clip=False),
+        imgaug.Contrast((0.6, 1.4), clip=False),
+        imgaug.Saturation(0.4, rgb=True),
+        imgaug.Lighting(0.1,
+                    eigval=np.asarray(
+                        [0.2175, 0.0188, 0.0045]) * 255.0,
+                        eigvec=np.array(
+                            [[-0.5675, 0.7192, 0.4009],
+                            [-0.5808, -0.0045, -0.8140],
+                            [-0.5836, -0.6948, 0.4203]],
+                            dtype='float32')
+                            ),
+        imgaug.Flip(horiz=True),
+        ]
+    
+    prepare_video_jobs = [ (data_root, video_paths[i], video_width, video_height, video_length, video_downsample_ratio, i, batch_size, shared_mem_idx, is_training, is_ucf101, aug) for i in range(batch_size) ]
     prepared_videos_f = pool.map_async(prepare_video, prepare_video_jobs)
 
     def future():

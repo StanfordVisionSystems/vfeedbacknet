@@ -66,7 +66,6 @@ class GoogleNetResize(imgaug.ImageAugmentor):
         out = imgaug.CenterCrop(self.target_shape).augment(out)
         return out
 
-
 def fbresnet_augmentor(isTrain):
     """
     Augmentor used in fb.resnet.torch, for BGR images in range [0,255].
@@ -75,7 +74,8 @@ def fbresnet_augmentor(isTrain):
         augmentors = [
             GoogleNetResize(),
             imgaug.RandomOrderAug(
-                [imgaug.BrightnessScale((0.6, 1.4), clip=False),
+                [JohnAug(),
+                 imgaug.BrightnessScale((0.6, 1.4), clip=False),
                  imgaug.Contrast((0.6, 1.4), clip=False),
                  imgaug.Saturation(0.4, rgb=False),
                  # rgb-bgr conversion for the constants copied from fb.resnet.torch
