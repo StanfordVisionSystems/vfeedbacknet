@@ -1,5 +1,225 @@
 import tensorflow as tf
 
+
+class FeedbackLSTMCell_RB3(tf.nn.rnn_cell.RNNCell):
+    '''
+    A feedback cell based on a convLSTM structure with a resnet-like set of 
+    convolutions. 
+    '''
+    
+    
+    def __init__(self, input_shape, feedback_iterations,
+                 forget_bias=1.0,
+                 activation=tf.tanh,
+                 is_training=True,
+                 initializer=tf.contrib.layers.xavier_initializer(),
+                 regularizer=None):
+
+        super().__init__(_reuse=None)
+
+        self._kernels = [[3, 3], [3, 3]]
+        self._num_kernels = len(self._kernels)
+        self._conv_activation = lambda x : tf.nn.leaky_relu(x, alpha=0.1)
+        self._residual = True
+        
+        self._input_shape = input_shape
+        self._feedback_iterations = feedback_iterations
+
+        self._forget_bias = forget_bias
+        self._activation = activation
+
+        self._is_training = is_training
+
+        with tf.variable_scope('feedback_cell'):
+            with tf.variable_scope('rnn'):
+                with tf.variable_scope('convlstm'):
+
+                    input_nchannels = input_shape[-1]
+                    self.W_cf = tf.get_variable('W_cf', input_shape, initializer=initializer, regularizer=regularizer)
+                    self.W_ci = tf.get_variable('W_ci', input_shape, initializer=initializer, regularizer=regularizer)
+                    self.W_co = tf.get_variable('W_co', input_shape, initializer=initializer, regularizer=regularizer)
+                    
+                    self.b_f = tf.get_variable('b_f', [input_nchannels], initializer=initializer, regularizer=regularizer)
+                    self.b_i = tf.get_variable('b_i', [input_nchannels], initializer=initializer, regularizer=regularizer)
+                    self.b_c = tf.get_variable('b_c', [input_nchannels], initializer=initializer, regularizer=regularizer)
+                    self.b_o = tf.get_variable('b_o', [input_nchannels], initializer=initializer, regularizer=regularizer)
+
+                    self._kernel_weights = []
+                    for i in range(self._num_kernels):
+                        kernel_size = self._kernels[i] + [input_nchannels, input_nchannels]
+                        
+                        self._kernel_weights.append({                            
+                            'x' : {
+                                     'W' : {
+                                         'xf' : tf.get_variable('W_xf{}'.format(i), kernel_size, initializer=initializer, regularizer=regularizer),
+                                         'xi' : tf.get_variable('W_xi{}'.format(i), kernel_size, initializer=initializer, regularizer=regularizer),
+                                         'xc' : tf.get_variable('W_xc{}'.format(i), kernel_size, initializer=initializer, regularizer=regularizer),
+                                         'xo' : tf.get_variable('W_xo{}'.format(i), kernel_size, initializer=initializer, regularizer=regularizer),
+                                     },
+                                     'b' : {
+                                         'xf' : tf.get_variable('b_xf{}'.format(i), [input_nchannels], initializer=initializer, regularizer=regularizer), 
+                                         'xi' : tf.get_variable('b_xi{}'.format(i), [input_nchannels], initializer=initializer, regularizer=regularizer), 
+                                         'xc' : tf.get_variable('b_xc{}'.format(i), [input_nchannels], initializer=initializer, regularizer=regularizer), 
+                                         'xo' : tf.get_variable('b_xo{}'.format(i), [input_nchannels], initializer=initializer, regularizer=regularizer), 
+                                     },
+                                 },
+                            'h' : {
+                                     'W' : {
+                                         'hf' : tf.get_variable('W_hf{}'.format(i), kernel_size, initializer=initializer, regularizer=regularizer),
+                                         'hi' : tf.get_variable('W_hi{}'.format(i), kernel_size, initializer=initializer, regularizer=regularizer),
+                                         'hc' : tf.get_variable('W_hc{}'.format(i), kernel_size, initializer=initializer, regularizer=regularizer),
+                                         'ho' : tf.get_variable('W_ho{}'.format(i), kernel_size, initializer=initializer, regularizer=regularizer)
+                                     }
+                                     ,
+                                     'b' : {
+                                         'hf' : tf.get_variable('b_hf{}'.format(i), [input_nchannels], initializer=initializer, regularizer=regularizer), 
+                                         'hi' : tf.get_variable('b_hi{}'.format(i), [input_nchannels], initializer=initializer, regularizer=regularizer), 
+                                         'hc' : tf.get_variable('b_hc{}'.format(i), [input_nchannels], initializer=initializer, regularizer=regularizer), 
+                                         'ho' : tf.get_variable('b_ho{}'.format(i), [input_nchannels], initializer=initializer, regularizer=regularizer), 
+                                     }
+                                 },
+                        })
+                        
+                    
+    @property
+    def defined_variables(self):
+
+        biases = []
+        kernels = []
+        for weights in self._kernel_weights:
+            kernels += list(weights['x']['W'].values()) + list(weights['h']['W'].values())
+            biases += list(weights['x']['b'].values()) + list(weights['h']['b'].values())
+            
+        gates = [self.W_cf, self.W_ci, self.W_co, self.b_f, self.b_i, self.b_c, self.b_o]
+
+        return biases + kernels + gates
+
+    
+    @property
+    def state_size(self):
+
+        return tf.nn.rnn_cell.LSTMStateTuple(tf.TensorShape(self._input_shape), tf.TensorShape(self._input_shape))
+
+    
+    @property
+    def output_size(self):
+        
+        return tf.TensorShape(self._input_shape)
+
+    
+    def apply_layer(self, x, sequence_length=None, initial_state=None, var_list=None):
+        '''
+        Input should be a python list of length `feedback_iterations`. It should
+        contain tensors with `input_shape`.
+        '''
+
+        assert len(x) == self._feedback_iterations, 'input should be {} elements long, but was {}'.format(self._feedback_iterations, len(x))
+        
+        # add variables to var_list for model exporting
+        if var_list is not None:
+            for var in self.defined_variables:
+                if var not in var_list:
+                    var_list.append(var)
+
+        with tf.variable_scope('feedback_cell', reuse=True):
+
+            outputs, state = tf.nn.static_rnn(
+                self,
+                x,
+                dtype=tf.float32,
+                sequence_length=None,
+                initial_state=initial_state,
+            )
+        
+        return outputs
+    
+    
+    def call(self, inputs, state):
+        '''
+        See equation 3 from https://arxiv.org/pdf/1506.04214.pdf
+        '''
+
+        cell_state, hidden_state = state
+        
+        def apply_kernels(x, h):
+
+            x_features = { k : x for k in ['xf', 'xi', 'xc', 'xo'] }
+            h_features = { k : h for k in ['hf', 'hi', 'hc', 'ho'] }
+
+            first_x_features = { k : x for k in ['xf', 'xi', 'xc', 'xo'] }
+            first_h_features = { k : h for k in ['hf', 'hi', 'hc', 'ho'] }
+            
+            first = True
+            for layer_params in self._kernel_weights:
+
+                # prop through x convs 
+                for layer_key in x_features.keys():
+                    w = layer_params['x']['W'][layer_key]
+                    bias = layer_params['x']['b'][layer_key]
+                    
+                    if not first:
+                        x_features[layer_key] = self._conv_activation(x_features[layer_key])
+
+                    x_features[layer_key] = tf.nn.bias_add(tf.nn.conv2d(x_features[layer_key], w, [1, 1, 1, 1], padding='SAME'), bias)
+
+                # prop through h convs 
+                for layer_key in h_features.keys():
+                    w = layer_params['h']['W'][layer_key]
+                    bias = layer_params['h']['b'][layer_key]
+                    
+                    if not first:
+                        h_features[layer_key] = self._conv_activation(h_features[layer_key])
+                        
+                    h_features[layer_key] = tf.nn.bias_add(tf.nn.conv2d(h_features[layer_key], w, [1, 1, 1, 1], padding='SAME'), bias)                                                           
+                    
+                first = False
+
+            # add x residual
+            for key in x_features.keys():
+                x_features[key] = self._conv_activation(first_x_features[key] + x_features[key])
+                
+            # add h residual
+            for key in h_features.keys():
+                h_features[key] = self._conv_activation(first_h_features[key] + h_features[key])
+                
+            return x_features, h_features
+
+
+        x_features, h_features = apply_kernels(inputs, hidden_state)
+                    
+        i_t = tf.sigmoid(
+            tf.nn.bias_add(
+                x_features['xi'] + h_features['hi'] + 
+                tf.multiply(cell_state, self.W_ci, name='element_wise_multipy'),
+                self.b_i)
+        )
+
+        f_t = tf.sigmoid(
+            tf.nn.bias_add(
+                x_features['xf'] + h_features['hf'] + 
+                tf.multiply(cell_state, self.W_cf, name='element_wise_multipy_ft'),
+                self.b_f)
+        )
+
+        j = tf.nn.bias_add(x_features['xc'] + h_features['hc'], self.b_c)
+
+        new_cell_state = (tf.multiply(f_t, cell_state, name='element_wise_multipy_ct1') + 
+                         tf.multiply(i_t, tf.tanh( j ), name='element_wise_multipy_ct2'))
+                         
+        o_t = tf.sigmoid( 
+            tf.nn.bias_add(
+                x_features['xo'] + h_features['ho'] + 
+                tf.multiply(new_cell_state, self.W_co, name='element_wise_multipy_ot'), 
+                self.b_o)
+        )
+
+        new_hidden_state = tf.multiply(o_t, tf.tanh(new_cell_state), name='element_wise_multipy_it')
+
+        state = tf.nn.rnn_cell.LSTMStateTuple(new_cell_state, new_hidden_state)
+
+        return new_hidden_state, state
+    
+
 class BatchNorm:
 
     def __init__(self, input_shape, beta=0, gamma=1, scope_suffix=''):
@@ -349,224 +569,6 @@ class FeedbackLSTMCell_stack1(tf.nn.rnn_cell.RNNCell):
 
         return new_hidden_state, state
 
-    
-class FeedbackLSTMCell_RB3(tf.nn.rnn_cell.RNNCell):
-    '''
-    A feedback cell based on a convLSTM structure with a resnet-like set of 
-    convolutions. 
-    '''
-    
-    
-    def __init__(self, input_shape, feedback_iterations,
-                 forget_bias=1.0,
-                 activation=tf.tanh,
-                 is_training=True,
-                 initializer=tf.contrib.layers.xavier_initializer(),
-                 regularizer=None):
-
-        super().__init__(_reuse=None)
-
-        self._kernels = [[3, 3], [3, 3]]
-        self._num_kernels = len(self._kernels)
-        self._conv_activation = lambda x : tf.nn.leaky_relu(x, alpha=0.1)
-        self._residual = True
-        
-        self._input_shape = input_shape
-        self._feedback_iterations = feedback_iterations
-
-        self._forget_bias = forget_bias
-        self._activation = activation
-
-        self._is_training = is_training
-
-        with tf.variable_scope('feedback_cell'):
-            with tf.variable_scope('rnn'):
-                with tf.variable_scope('convlstm'):
-
-                    input_nchannels = input_shape[-1]
-                    self.W_cf = tf.get_variable('W_cf', input_shape, initializer=initializer, regularizer=regularizer)
-                    self.W_ci = tf.get_variable('W_ci', input_shape, initializer=initializer, regularizer=regularizer)
-                    self.W_co = tf.get_variable('W_co', input_shape, initializer=initializer, regularizer=regularizer)
-                    
-                    self.b_f = tf.get_variable('b_f', [input_nchannels], initializer=initializer, regularizer=regularizer)
-                    self.b_i = tf.get_variable('b_i', [input_nchannels], initializer=initializer, regularizer=regularizer)
-                    self.b_c = tf.get_variable('b_c', [input_nchannels], initializer=initializer, regularizer=regularizer)
-                    self.b_o = tf.get_variable('b_o', [input_nchannels], initializer=initializer, regularizer=regularizer)
-
-                    self._kernel_weights = []
-                    for i in range(self._num_kernels):
-                        kernel_size = self._kernels[i] + [input_nchannels, input_nchannels]
-                        
-                        self._kernel_weights.append({                            
-                            'x' : {
-                                     'W' : {
-                                         'xf' : tf.get_variable('W_xf{}'.format(i), kernel_size, initializer=initializer, regularizer=regularizer),
-                                         'xi' : tf.get_variable('W_xi{}'.format(i), kernel_size, initializer=initializer, regularizer=regularizer),
-                                         'xc' : tf.get_variable('W_xc{}'.format(i), kernel_size, initializer=initializer, regularizer=regularizer),
-                                         'xo' : tf.get_variable('W_xo{}'.format(i), kernel_size, initializer=initializer, regularizer=regularizer),
-                                     },
-                                     'b' : {
-                                         'xf' : tf.get_variable('b_xf{}'.format(i), [input_nchannels], initializer=initializer, regularizer=regularizer), 
-                                         'xi' : tf.get_variable('b_xi{}'.format(i), [input_nchannels], initializer=initializer, regularizer=regularizer), 
-                                         'xc' : tf.get_variable('b_xc{}'.format(i), [input_nchannels], initializer=initializer, regularizer=regularizer), 
-                                         'xo' : tf.get_variable('b_xo{}'.format(i), [input_nchannels], initializer=initializer, regularizer=regularizer), 
-                                     },
-                                 },
-                            'h' : {
-                                     'W' : {
-                                         'hf' : tf.get_variable('W_hf{}'.format(i), kernel_size, initializer=initializer, regularizer=regularizer),
-                                         'hi' : tf.get_variable('W_hi{}'.format(i), kernel_size, initializer=initializer, regularizer=regularizer),
-                                         'hc' : tf.get_variable('W_hc{}'.format(i), kernel_size, initializer=initializer, regularizer=regularizer),
-                                         'ho' : tf.get_variable('W_ho{}'.format(i), kernel_size, initializer=initializer, regularizer=regularizer)
-                                     }
-                                     ,
-                                     'b' : {
-                                         'hf' : tf.get_variable('b_hf{}'.format(i), [input_nchannels], initializer=initializer, regularizer=regularizer), 
-                                         'hi' : tf.get_variable('b_hi{}'.format(i), [input_nchannels], initializer=initializer, regularizer=regularizer), 
-                                         'hc' : tf.get_variable('b_hc{}'.format(i), [input_nchannels], initializer=initializer, regularizer=regularizer), 
-                                         'ho' : tf.get_variable('b_ho{}'.format(i), [input_nchannels], initializer=initializer, regularizer=regularizer), 
-                                     }
-                                 },
-                        })
-                        
-                    
-    @property
-    def defined_variables(self):
-
-        biases = []
-        kernels = []
-        for weights in self._kernel_weights:
-            kernels += list(weights['x']['W'].values()) + list(weights['h']['W'].values())
-            biases = list(weights['x']['b'].values()) + list(weights['h']['b'].values())
-            
-        gates = [self.W_cf, self.W_ci, self.W_co, self.b_f, self.b_i, self.b_c, self.b_o]
-
-        return biases + kernels + gates
-
-    
-    @property
-    def state_size(self):
-
-        return tf.nn.rnn_cell.LSTMStateTuple(tf.TensorShape(self._input_shape), tf.TensorShape(self._input_shape))
-
-    
-    @property
-    def output_size(self):
-        
-        return tf.TensorShape(self._input_shape)
-
-    
-    def apply_layer(self, x, sequence_length=None, initial_state=None, var_list=None):
-        '''
-        Input should be a python list of length `feedback_iterations`. It should
-        contain tensors with `input_shape`.
-        '''
-
-        assert len(x) == self._feedback_iterations, 'input should be {} elements long, but was {}'.format(self._feedback_iterations, len(x))
-        
-        # add variables to var_list for model exporting
-        if var_list is not None:
-            for var in self.defined_variables:
-                if var not in var_list:
-                    var_list.append(var)
-
-        with tf.variable_scope('feedback_cell', reuse=True):
-
-            outputs, state = tf.nn.static_rnn(
-                self,
-                x,
-                dtype=tf.float32,
-                sequence_length=None,
-                initial_state=initial_state,
-            )
-        
-        return outputs
-    
-    
-    def call(self, inputs, state):
-        '''
-        See equation 3 from https://arxiv.org/pdf/1506.04214.pdf
-        '''
-
-        cell_state, hidden_state = state
-        
-        def apply_kernels(x, h):
-
-            x_features = { k : x for k in ['xf', 'xi', 'xc', 'xo'] }
-            h_features = { k : h for k in ['hf', 'hi', 'hc', 'ho'] }
-
-            first_x_features = { k : x for k in ['xf', 'xi', 'xc', 'xo'] }
-            first_h_features = { k : h for k in ['hf', 'hi', 'hc', 'ho'] }
-            
-            first = True
-            for layer_params in self._kernel_weights:
-
-                # prop through x convs 
-                for layer_key in x_features.keys():
-                    w = layer_params['x']['W'][layer_key]
-                    bias = layer_params['x']['b'][layer_key]
-                    
-                    if not first:
-                        x_features[layer_key] = self._conv_activation(x_features[layer_key])
-
-                    x_features[layer_key] = tf.nn.bias_add(tf.nn.conv2d(x_features[layer_key], w, [1, 1, 1, 1], padding='SAME'), bias)
-
-                # prop through h convs 
-                for layer_key in h_features.keys():
-                    w = layer_params['h']['W'][layer_key]
-                    bias = layer_params['h']['b'][layer_key]
-                    
-                    if not first:
-                        h_features[layer_key] = self._conv_activation(h_features[layer_key])
-                        
-                    h_features[layer_key] = tf.nn.bias_add(tf.nn.conv2d(h_features[layer_key], w, [1, 1, 1, 1], padding='SAME'), bias)                                                           
-                    
-                first = False
-
-            # add x residual
-            for key in x_features.keys():
-                x_features[key] = self._conv_activation(first_x_features[key] + x_features[key])
-                
-            # add h residual
-            for key in h_features.keys():
-                h_features[key] = self._conv_activation(first_h_features[key] + h_features[key])
-                
-            return x_features, h_features
-
-
-        x_features, h_features = apply_kernels(inputs, hidden_state)
-                    
-        i_t = tf.sigmoid(
-            tf.nn.bias_add(
-                x_features['xi'] + h_features['hi'] + 
-                tf.multiply(cell_state, self.W_ci, name='element_wise_multipy'),
-                self.b_i)
-        )
-
-        f_t = tf.sigmoid(
-            tf.nn.bias_add(
-                x_features['xf'] + h_features['hf'] + 
-                tf.multiply(cell_state, self.W_cf, name='element_wise_multipy_ft'),
-                self.b_f)
-        )
-
-        j = tf.nn.bias_add(x_features['xc'] + h_features['hc'], self.b_c)
-
-        new_cell_state = (tf.multiply(f_t, cell_state, name='element_wise_multipy_ct1') + 
-                         tf.multiply(i_t, tf.tanh( j ), name='element_wise_multipy_ct2'))
-                         
-        o_t = tf.sigmoid( 
-            tf.nn.bias_add(
-                x_features['xo'] + h_features['ho'] + 
-                tf.multiply(new_cell_state, self.W_co, name='element_wise_multipy_ot'), 
-                self.b_o)
-        )
-
-        new_hidden_state = tf.multiply(o_t, tf.tanh(new_cell_state), name='element_wise_multipy_it')
-
-        state = tf.nn.rnn_cell.LSTMStateTuple(new_cell_state, new_hidden_state)
-
-        return new_hidden_state, state
     
     
 class FeedbackLSTMCell_stack2(tf.nn.rnn_cell.RNNCell):
