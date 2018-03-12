@@ -300,8 +300,11 @@ def main(args):
                                                                            train_featurizer='FROM_SCRATCH', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH'),
         'vfeedbacknet_eccv_base2' : lambda : v.vfeedbacknet_eccv_base2.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
                                                                            train_featurizer='FROM_SCRATCH', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH'),
+        'vfeedbacknet_eccv_base2.con' : lambda : v.vfeedbacknet_eccv_base2.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
+                                                                                 train_featurizer='NO', train_main_model='NO', train_fc='NO',
+                                                                                 weights_filename=os.path.join(args.pretrain_root_prefix, 'vfeedbacknet-results/imagenet/vfeedbacknet_eccv_base2.loss_uniform/model_weights-epoch4-step959.npz')),
         'vfeedbacknet_eccv_base3' : lambda : v.vfeedbacknet_eccv_base3.Model(sess, len(labels_num2str), args.train_batch_size // args.num_gpus,
-                                                                           train_featurizer='FROM_SCRATCH', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH'),
+                                                                             train_featurizer='FROM_SCRATCH', train_main_model='FROM_SCRATCH', train_fc='FROM_SCRATCH'),
      }
 
     model = None
@@ -368,10 +371,11 @@ def main(args):
         ModelLogger.log('predictions_agg', predictions)
 
     logging.info('compute loss')
-    t1 = timeit.default_timer()        
+    t1 = timeit.default_timer()
     step = tf.Variable(args.global_step_init if (args.global_step_init is not None) else 0, trainable=False, name='step')
     learning_rate = tf.maximum(tf.train.exponential_decay(args.learning_rate_init, step, args.prefetch_batch_size//args.train_batch_size, args.learning_rate_decay), args.learning_rate_min, name='learning_rate')
     optimizer = tf.train.AdadeltaOptimizer(learning_rate=learning_rate, name='optimizer')
+    #optimizer = tf.train.RMSPropOptimizer(learning_rate, name='optimizer')
     train_step = optimizer.minimize(total_loss, colocate_gradients_with_ops=True, global_step=step)
     t2 = timeit.default_timer()
     logging.debug('done! (compute loss: {})'.format(t2-t1))
@@ -444,7 +448,6 @@ def main(args):
                 model.initialize_variables() # set any model specific variables
                 logging.info('Done! initializing variables')
 
-                        
             for epoch in range(args.num_epoch):
                 video_paths = data_video_paths.copy()
                 random.shuffle(video_paths)
